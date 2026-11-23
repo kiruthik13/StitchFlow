@@ -1,0 +1,20 @@
+{
+  "quality": "गुणवत्ता",
+  "qcDashboard": "QC डैशबोर्ड",
+  "pendingInspection": "लंबित निरीक्षण",
+  "passed": "पास",
+  "rework": "रिवर्क",
+  "rejected": "अस्वीकृत",
+  "released": "जारी किया",
+  "hold": "होल्ड",
+  "defects": "दोष",
+  "severity": "गंभीरता",
+  "minor": "मामूली",
+  "major": "प्रमुख",
+  "critical": "गंभीर",
+  "releaseQty": "जारी मात्रा",
+  "confirmRelease": "जारी करने की पुष्टि करें",
+  "releaseSuccess": "{{qty}} टुकड़े सफलतापूर्वक जारी किए गए।",
+  "inspectionComplete": "निरीक्षण पूर्ण",
+  "passRate": "पास दर"
+}

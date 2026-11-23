@@ -1,0 +1,20 @@
+{
+  "quality": "தரம்",
+  "qcDashboard": "QC டாஷ்போர்டு",
+  "pendingInspection": "நிலுவையில் உள்ள பரிசோதனை",
+  "passed": "தேர்ச்சி",
+  "rework": "மறு வேலை",
+  "rejected": "நிராகரிக்கப்பட்டது",
+  "released": "வெளியிடப்பட்டது",
+  "hold": "நிறுத்தப்பட்டது",
+  "defects": "குறைபாடுகள்",
+  "severity": "தீவிரம்",
+  "minor": "சிறிய",
+  "major": "பெரிய",
+  "critical": "அவசரமான",
+  "releaseQty": "வெளியீட்டு அளவு",
+  "confirmRelease": "வெளியீட்டை உறுதிப்படுத்துக",
+  "releaseSuccess": "{{qty}} துண்டுகள் வெற்றிகரமாக வெளியிடப்பட்டன.",
+  "inspectionComplete": "பரிசோதனை முடிந்தது",
+  "passRate": "தேர்ச்சி விகிதம்"
+}
