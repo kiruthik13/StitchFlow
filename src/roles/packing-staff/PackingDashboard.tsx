@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
@@ -31,6 +32,7 @@ export function PackingDashboard() {
   const { bundles } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['packing', 'common']);
   const [selectedSize, setSelectedSize] = useState('L');
 
   const packingBundle = bundles.find((b) => b.status === 'packing') ?? bundles[2];
@@ -42,7 +44,7 @@ export function PackingDashboard() {
         subtitle={`Packing Station · ${user?.lineName ?? 'Line 1'}`}
         rightEl={
           <AppButton
-            title="+ New Carton"
+            title={t('packing:newCarton')}
             size="sm"
             onPress={() => router.push('/(app)/cartons/create')}
           />
@@ -55,12 +57,12 @@ export function PackingDashboard() {
       >
         {/* Packing KPIs Bento Grid */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Today's Packing Output
+          {t('packing:todayOutput')}
         </AppText>
         <View style={styles.grid2}>
           <View style={{ flex: 1 }}>
             <MetricCard
-              label="Packed Total"
+              label={t('packing:packedTotal')}
               value="196"
               unit="pcs"
               variant="lime"
@@ -72,11 +74,11 @@ export function PackingDashboard() {
           <View style={{ width: spacing[2] }} />
           <View style={{ flex: 1 }}>
             <MetricCard
-              label="QC Released"
+              label={t('packing:qcReleased')}
               value="180"
               unit="pcs"
               variant="brand"
-              subLabel="Authorized limit"
+              subLabel={t('packing:authorizedLimit')}
               icon={<ShieldCheck size={14} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.4} />}
               compact
             />
@@ -85,7 +87,7 @@ export function PackingDashboard() {
         <View style={[styles.grid2, { marginTop: spacing[2] }]}>
           <View style={{ flex: 1 }}>
             <MetricCard
-              label="Total Cartons"
+              label={t('packing:totalCartons')}
               value="3"
               unit="boxes"
               compact
@@ -95,17 +97,17 @@ export function PackingDashboard() {
           <View style={{ width: spacing[2] }} />
           <View style={{ flex: 1 }}>
             <MetricCard
-              label="Sealed Cartons"
+              label={t('packing:sealedCartons')}
               value="2"
               unit="boxes"
               variant="success"
-              subLabel="Ready for FG store"
+              subLabel={t('packing:readyForFGStore')}
               compact
             />
           </View>
         </View>
 
-        {/* QC Release Verification Safeguard */}
+        {/* {t('packing:qcSafeguardTitle')} */}
         <View
           style={[
             styles.releaseNote,
@@ -123,16 +125,16 @@ export function PackingDashboard() {
             </AppText>
           </View>
           <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
-            Max packable qty: {packingQCInspection?.releasedQty ?? 180} pcs (QC Released)
+            {t('packing:maxPackableQty', { qty: packingQCInspection?.releasedQty ?? 180 })}
           </AppText>
           <AppText variant="caption" bold style={{ color: tokens.danger, marginTop: 1, fontSize: 11 }}>
-            Do NOT pack rework ({packingQCInspection?.reworkQty ?? 15}) or rejected ({packingQCInspection?.rejectedQty ?? 5}) pieces.
+            {t('packing:doNotPackReworkWarning', { rework: packingQCInspection?.reworkQty ?? 15, rejected: packingQCInspection?.rejectedQty ?? 5 })}
           </AppText>
         </View>
 
         {/* Quick Operations for Packing */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Packing Workflows
+          {t('packing:packingWorkflows')}
         </AppText>
         <View style={styles.chipRow}>
           <TouchableOpacity
@@ -142,7 +144,7 @@ export function PackingDashboard() {
           >
             <PackagePlus size={16} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />
             <AppText variant="label" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.brand }}>
-              Create Carton
+              {t('packing:createCarton')}
             </AppText>
           </TouchableOpacity>
 
@@ -153,7 +155,7 @@ export function PackingDashboard() {
           >
             <Truck size={16} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />
             <AppText variant="label" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.brand }}>
-              Store Handover
+              {t('packing:storeHandover')}
             </AppText>
           </TouchableOpacity>
 
@@ -164,7 +166,7 @@ export function PackingDashboard() {
           >
             <History size={16} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />
             <AppText variant="label" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.brand }}>
-              Packing History
+              {t('packing:packingHistory')}
             </AppText>
           </TouchableOpacity>
         </View>
@@ -173,7 +175,7 @@ export function PackingDashboard() {
         {packingBundle && (
           <>
             <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-              Ready for Packing Ticket
+              {t('packing:readyTicket')}
             </AppText>
             <GarmentTicketCard
               bundle={packingBundle}
@@ -187,7 +189,7 @@ export function PackingDashboard() {
 
         {/* Cartons Created */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Packed Cartons
+          {t('packing:packedCartons')}
         </AppText>
         {CARTONS.map((c) => (
           <TouchableOpacity
@@ -223,7 +225,7 @@ export function PackingDashboard() {
 
       <BottomScanAction
         onPress={() => router.push('/(app)/(tabs)/scan')}
-        label="Scan Bundle to Pack"
+        label={t('packing:scanBundleToPack')}
       />
     </View>
   );
@@ -234,6 +236,7 @@ export function PackingWork() {
   const { bundles } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['packing', 'common']);
   const [selectedSize, setSelectedSize] = useState('L');
   const packBundles = bundles.filter((b) => ['packing', 'packed'].includes(b.status));
 
@@ -250,7 +253,7 @@ export function PackingWork() {
         ]}
       >
         <AppText variant="h3" bold style={{ color: tokens.textPrimary }}>
-          Assigned Packing
+          {t('packing:assignedPacking')}
         </AppText>
       </View>
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: 100 }]}>

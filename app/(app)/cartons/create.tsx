@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useDemoStore } from '../../../src/store/demoStore';
@@ -21,6 +22,7 @@ export default function CreateCartonScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { createCarton } = useDemoStore();
+  const { t } = useTranslation(['packing', 'common']);
 
   const [selectedJob, setSelectedJob] = useState(JOBS[0]);
   const [selectedSize, setSelectedSize] = useState('L');
@@ -51,7 +53,7 @@ export default function CreateCartonScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title="Create Export Carton" subtitle="Garment Packaging & Labeling" showBack onBack={() => router.back()} />
+      <AppHeader title={t('packing:cartonCreation')} subtitle={t('packing:packingOverview')} showBack onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
         {/* QC Safeguard Banner */}

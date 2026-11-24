@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { useDemoStore } from '../../store/demoStore';
 import { AppText } from '../../design-system/components/AppText';
@@ -15,6 +16,7 @@ export function CuttingEntryView() {
   const { tokens } = useThemeStore();
   const router = useRouter();
   const { addScan } = useDemoStore();
+  const { t } = useTranslation(['production', 'common']);
 
   const [selectedJob, setSelectedJob] = useState(JOBS[0]);
   const [rollNo, setRollNo] = useState('ROLL-9821');

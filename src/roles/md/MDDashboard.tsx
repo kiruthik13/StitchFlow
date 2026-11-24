@@ -2,6 +2,7 @@ import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { AppText } from '../../design-system/components/AppText';
@@ -26,11 +27,12 @@ export function MDDashboard() {
   const { user } = useAuthStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['production', 'common']);
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
       <BrandHeader
-        subtitle="Executive Group Overview · Managing Director"
+        subtitle={`${t('production:executiveGroupOverview')} · ${t('common:roles.md')}`}
       />
 
       <ScrollView
@@ -39,14 +41,14 @@ export function MDDashboard() {
       >
         {/* Group Summary Bento */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Manufacturing Group Summary
+          {t('production:manufacturingGroupSummary')}
         </AppText>
         <View style={styles.grid2}>
           <View style={{ flex: 1 }}>
             <MetricCard
-              label="Operating Plants"
+              label={t('production:operatingPlants')}
               value="2"
-              unit="factories"
+              unit={t('common:factories')}
               icon={<Building2 size={14} color={tokens.brand} strokeWidth={2.4} />}
               compact
             />
@@ -54,9 +56,9 @@ export function MDDashboard() {
           <View style={{ width: spacing[2] }} />
           <View style={{ flex: 1 }}>
             <MetricCard
-              label="Active Jobs"
+              label={t('production:activeJobs')}
               value="4"
-              unit="orders"
+              unit={t('common:orders')}
               variant="brand"
               compact
             />
@@ -65,7 +67,7 @@ export function MDDashboard() {
         <View style={[styles.grid2, { marginTop: spacing[2] }]}>
           <View style={{ flex: 1 }}>
             <MetricCard
-              label="Overall Efficiency"
+              label={t('production:overallEfficiency')}
               value="77%"
               trend={{ value: '+3.4%', isPositive: true }}
               variant="warning"
@@ -75,9 +77,9 @@ export function MDDashboard() {
           <View style={{ width: spacing[2] }} />
           <View style={{ flex: 1 }}>
             <MetricCard
-              label="Pending QC"
+              label={t('production:pendingQC')}
               value="380"
-              unit="pcs"
+              unit={t('common:pieces')}
               variant="warning"
               compact
             />
@@ -86,9 +88,9 @@ export function MDDashboard() {
         <View style={[styles.grid2, { marginTop: spacing[2] }]}>
           <View style={{ flex: 1 }}>
             <MetricCard
-              label="Total Packed"
+              label={t('production:totalPacked')}
               value="1,476"
-              unit="pcs"
+              unit={t('common:pieces')}
               variant="lime"
               trend={{ value: '+12%', isPositive: true }}
               compact
@@ -97,9 +99,9 @@ export function MDDashboard() {
           <View style={{ width: spacing[2] }} />
           <View style={{ flex: 1 }}>
             <MetricCard
-              label="Total Rework"
+              label={t('production:totalRework')}
               value="77"
-              unit="pcs"
+              unit={t('common:pieces')}
               variant="danger"
               compact
             />
@@ -108,7 +110,7 @@ export function MDDashboard() {
 
         {/* Quick Executive Navigation */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Executive Analytics
+          {t('production:executiveAnalytics')}
         </AppText>
         <View style={styles.quickGrid}>
           <TouchableOpacity
@@ -120,10 +122,10 @@ export function MDDashboard() {
               <Zap size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />
             </View>
             <AppText variant="label" bold style={{ color: tokens.textPrimary, marginTop: spacing[1] }}>
-              Bottleneck Analytics
+              {t('production:bottleneckAnalytics')}
             </AppText>
             <AppText variant="caption" color="secondary">
-              Delay & buffer alerts
+              {t('production:delayBufferAlerts')}
             </AppText>
           </TouchableOpacity>
 
@@ -136,17 +138,17 @@ export function MDDashboard() {
               <TrendingUp size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.primaryDeep} strokeWidth={2.2} />
             </View>
             <AppText variant="label" bold style={{ color: tokens.textPrimary, marginTop: spacing[1] }}>
-              SAM Efficiency
+              {t('production:samEfficiency')}
             </AppText>
             <AppText variant="caption" color="secondary">
-              Line-wise SAM metrics
+              {t('production:linewiseSamMetrics')}
             </AppText>
           </TouchableOpacity>
         </View>
 
         {/* Multi-Factory Performance */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Factory Comparison & Benchmark
+          {t('production:factoryComparison')}
         </AppText>
         {FACTORIES.map((factory) => {
           const eff = factory.id === 'factory-a' ? 82 : 68;
@@ -173,7 +175,7 @@ export function MDDashboard() {
                       {factory.location}
                     </AppText>
                     <AppText variant="caption" color="secondary">
-                      {factory.activeLines}/{factory.totalLines} lines active
+                      {factory.activeLines}/{factory.totalLines} {t('production:linesActive')}
                     </AppText>
                   </View>
                   <View style={{ alignItems: 'flex-end' }}>
@@ -190,7 +192,7 @@ export function MDDashboard() {
                       {eff}%
                     </AppText>
                     <AppText variant="caption" color="secondary">
-                      efficiency
+                      {t('common:efficiency')}
                     </AppText>
                   </View>
                 </View>
@@ -217,7 +219,7 @@ export function MDDashboard() {
 
         {/* Critical Alerts */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Critical Production Alerts
+          {t('production:criticalAlerts')}
         </AppText>
         {ALERTS.filter((a) => !a.isRead).map((alert) => (
           <View
@@ -250,7 +252,7 @@ export function MDDashboard() {
 
         {/* High Risk Jobs */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          High-Risk Production Orders
+          {t('production:highRiskOrders')}
         </AppText>
         <AppCard padding={spacing[4]}>
           <View style={styles.riskRow}>
@@ -262,7 +264,7 @@ export function MDDashboard() {
                 Linen Shirt — Zara International
               </AppText>
               <AppText variant="caption" bold style={{ color: tokens.danger, marginTop: 3 }}>
-                ⚠ On Hold — Fabric Lot Shade Variation
+                {t('production:fabricLotShadeVariationAlert')}
               </AppText>
             </View>
             <StatusBadge label="ON HOLD" variant="warning" size="sm" dot />
@@ -277,6 +279,7 @@ export function MDWork() {
   const { tokens } = useThemeStore();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useTranslation(['production', 'common']);
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
@@ -291,7 +294,7 @@ export function MDWork() {
         ]}
       >
         <AppText variant="h3" bold style={{ color: tokens.textPrimary }}>
-          Factories & Production Units
+          {t('production:factoriesAndUnits')}
         </AppText>
       </View>
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -318,15 +321,15 @@ export function MDWork() {
                 </AppText>
                 <View style={[styles.rowStats, { borderTopColor: tokens.border, borderTopWidth: 1 }]}>
                   <View style={{ flex: 1 }}>
-                    <AppText variant="caption" color="secondary">Lines</AppText>
+                    <AppText variant="caption" color="secondary">{t('production:lines')}</AppText>
                     <AppText variant="label" bold mono>{f.activeLines}/{f.totalLines}</AppText>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <AppText variant="caption" color="secondary">Capacity</AppText>
+                    <AppText variant="caption" color="secondary">{t('production:capacity')}</AppText>
                     <AppText variant="label" bold mono>{f.capacity}</AppText>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <AppText variant="caption" color="secondary">Efficiency</AppText>
+                    <AppText variant="caption" color="secondary">{t('common:efficiency')}</AppText>
                     <AppText
                       variant="label"
                       bold

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   ScrollView,
@@ -50,6 +51,7 @@ export default function ScanTabScreen() {
   const { addScan, submitProductionQty, recentScans } = useDemoStore();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useTranslation(['common', 'production', 'quality', 'inventory', 'packing']);
 
   const [manualCode, setManualCode] = useState('');
   const [phase, setPhase] = useState<ScanPhase>('idle');
@@ -110,11 +112,11 @@ export default function ScanTabScreen() {
 
   const getActionLabel = (): string => {
     const role = user?.role;
-    if (role === 'operator') return 'Enter Output Quantity';
-    if (role === 'qc-inspector') return 'Start Quality Inspection';
-    if (role === 'packing-staff') return 'Pack Verified Bundle';
-    if (role === 'store-dispatch') return 'Record Dispatch Movement';
-    return 'View Bundle Details';
+    if (role === 'operator') return t('production:enterOutputQty');
+    if (role === 'qc-inspector') return t('quality:startQualityInspection');
+    if (role === 'packing-staff') return t('packing:packVerifiedBundle');
+    if (role === 'store-dispatch') return t('inventory:recordDispatchMovement');
+    return t('common:viewBundleDetails');
   };
 
   const handlePrimaryAction = () => {
@@ -146,13 +148,13 @@ export default function ScanTabScreen() {
         <View style={styles.headerRow}>
           <View>
             <AppText variant="h3" bold style={{ color: tokens.textPrimary }}>
-              Barcode Scanner
+              {t('common:scanBarcode')}
             </AppText>
             <AppText variant="caption" color="secondary">
               Optical QR / 1D & HID Scanner
             </AppText>
           </View>
-          <StatusBadge label="DEMO SCANNER" variant="warning" size="sm" />
+          <StatusBadge label={t('common:demoModeBadge')} variant="warning" size="sm" />
         </View>
       </View>
 
@@ -186,7 +188,7 @@ export default function ScanTabScreen() {
             </View>
 
             <AppText variant="label" bold center style={{ color: tokens.textPrimary, marginTop: spacing[3] }}>
-              POINT AT BUNDLE BARCODE
+              {t('common:scanBarcode')}
             </AppText>
             <AppText variant="caption" color="secondary" center style={{ marginTop: 2, paddingHorizontal: spacing[4] }}>
               QR codes and Code-128 industrial tags are decoded instantly.
@@ -300,7 +302,7 @@ export default function ScanTabScreen() {
               style={[styles.lookupBtn, { backgroundColor: tokens.brand }]}
             >
               <AppText variant="label" color="inverse" bold>
-                Lookup
+                {t('common:search')}
               </AppText>
             </TouchableOpacity>
           </View>
@@ -417,7 +419,7 @@ export default function ScanTabScreen() {
               </AppText>
             </View>
             <AppButton
-              title="Scan Next Bundle"
+              title={t('production:scanNext')}
               fullWidth
               size="lg"
               style={{ marginTop: spacing[4] }}

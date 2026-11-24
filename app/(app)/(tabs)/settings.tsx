@@ -35,7 +35,7 @@ import { ROLE_DISPLAY_NAMES } from '../../../src/core/permissions';
 export default function SettingsTabScreen() {
   const { tokens } = useThemeStore();
   const { user, logout } = useAuthStore();
-  const { t } = useTranslation();
+  const { t } = useTranslation(['common', 'auth']);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -65,7 +65,7 @@ export default function SettingsTabScreen() {
           <AppText variant="h3" bold style={{ color: tokens.textPrimary }}>
             {t('settings')}
           </AppText>
-          <StatusBadge label="OFFLINE DEMO" variant="warning" size="sm" />
+          <StatusBadge label={t('common:offlineDemo')} variant="warning" size="sm" />
         </View>
       </View>
 
@@ -93,7 +93,7 @@ export default function SettingsTabScreen() {
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2, gap: spacing[2] }}>
                 <StatusBadge
-                  label={ROLE_DISPLAY_NAMES[user?.role ?? 'operator']}
+                  label={t('common:roles.' + (user?.role ?? 'operator'))}
                   variant="brand"
                   size="sm"
                 />
@@ -108,19 +108,19 @@ export default function SettingsTabScreen() {
 
           <InfoRow
             icon={<Building2 size={15} color={tokens.textSecondary} />}
-            label="Factory"
+            label={t('common:factory')}
             value={user?.factoryName ?? 'Tirupur Unit 1'}
           />
           {user?.lineName && (
             <InfoRow
               icon={<Layers size={15} color={tokens.textSecondary} />}
-              label="Line"
+              label={t('common:line')}
               value={user.lineName}
             />
           )}
           <InfoRow
             icon={<Clock size={15} color={tokens.textSecondary} />}
-            label="Shift"
+            label={t('common:shift')}
             value={user?.shiftType ?? 'Day Shift (08:00 - 17:00)'}
           />
 
@@ -194,7 +194,7 @@ export default function SettingsTabScreen() {
 
           <View style={[styles.divider, { backgroundColor: tokens.border }]} />
 
-          <InfoRow label="Build Version" value="2.0.0-release (2026.11)" />
+          <InfoRow label={t('common:version')} value="2.0.0-release (2026.11)" />
           <InfoRow label="Environment" value="Expo 52 · React Native 0.76" />
           <InfoRow label="Protocol" value="StitchFlow Sync v2 · Local Mock" />
           <InfoRow label="Organization" value="Tirupur Garments Cluster" />
@@ -226,7 +226,7 @@ export default function SettingsTabScreen() {
       <ConfirmSheet
         visible={showLogoutConfirm}
         title={t('logout')}
-        message="Are you sure you want to exit the current operator session? Unsynchronized demo floor actions will be reset."
+        message={t('common:logoutConfirm')}
         confirmLabel={t('logout')}
         cancelLabel={t('cancel')}
         onConfirm={handleLogout}

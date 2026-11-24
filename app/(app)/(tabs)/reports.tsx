@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -60,6 +61,7 @@ export default function ReportsTabScreen() {
   const { tokens } = useThemeStore();
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['reports', 'common', 'production', 'quality']);
   const [selectedReport, setSelectedReport] = useState<string | null>('shift');
 
   const isSimpleRole = user?.role === 'operator' || user?.role === 'packing-staff';
@@ -80,14 +82,14 @@ export default function ReportsTabScreen() {
         <View style={styles.headerRow}>
           <View>
             <AppText variant="h3" bold style={{ color: tokens.textPrimary }}>
-              Reports & Logs
+              {t('reports:reportsAndLogs')}
             </AppText>
             <AppText variant="caption" color="secondary">
-              Production analytics and shift records
+              {t('reports:analyticsAndRecords')}
             </AppText>
           </View>
           <StatusBadge
-            label={ROLE_DISPLAY_NAMES[user?.role ?? 'operator']}
+            label={t('common:roles.' + (user?.role ?? 'operator'))}
             variant="neutral"
             size="sm"
           />
@@ -116,10 +118,10 @@ export default function ReportsTabScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <AppText variant="caption" bold style={{ color: tokens.textPrimary }}>
-              DEMO EXPORT NOTICE
+              {t('reports:demoExportNotice')}
             </AppText>
             <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
-              Standard PDF and Excel exports require a live StitchFlow enterprise server. Previewing with floor mock datasets.
+              {t('reports:demoExportNoticeDesc')}
             </AppText>
           </View>
         </View>
@@ -127,14 +129,14 @@ export default function ReportsTabScreen() {
         {isSimpleRole ? (
           <>
             {/* Operator / Packer Output View */}
-            <SectionHead label="My Shift Performance" />
+            <SectionHead label={t('reports:myShiftPerformance')} />
             <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
               <View style={styles.statGrid}>
-                <StatCell label="Completed" value="267" unit="pcs" color={tokens.success} />
+                <StatCell label={t('common:completed')} value="267" unit="pcs" color={tokens.success} />
                 <View style={[styles.vertSep, { backgroundColor: tokens.border }]} />
-                <StatCell label="Target" value="320" unit="pcs" color={tokens.textPrimary} />
+                <StatCell label={t('common:target')} value="320" unit="pcs" color={tokens.textPrimary} />
                 <View style={[styles.vertSep, { backgroundColor: tokens.border }]} />
-                <StatCell label="Efficiency" value="83.4" unit="%" color={tokens.warning} />
+                <StatCell label={t('common:efficiency')} value="83.4" unit="%" color={tokens.warning} />
               </View>
             </AppCard>
 
@@ -243,7 +245,7 @@ export default function ReportsTabScreen() {
                 >
                   <FileText size={18} color={tokens.brand} strokeWidth={2} />
                   <AppText variant="label" bold style={{ color: tokens.textPrimary, marginLeft: spacing[2] }}>
-                    Export PDF
+                    {t('reports:exportPDF')}
                   </AppText>
                 </TouchableOpacity>
 
@@ -265,7 +267,7 @@ export default function ReportsTabScreen() {
                 >
                   <FileSpreadsheet size={18} color={tokens.brand} strokeWidth={2} />
                   <AppText variant="label" bold style={{ color: tokens.textPrimary, marginLeft: spacing[2] }}>
-                    Export Excel
+                    {t('reports:exportExcel')}
                   </AppText>
                 </TouchableOpacity>
               </View>

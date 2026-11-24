@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
+import { useTranslation } from 'react-i18next';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
 import { MetricCard } from '../../design-system/components/MetricCard';
@@ -18,6 +19,7 @@ const STAGE_SAM_STATS = [
 
 export function SamMonitorView() {
   const { tokens } = useThemeStore();
+  const { t } = useTranslation(['production', 'common']);
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>

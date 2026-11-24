@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useDemoStore } from '../../../src/store/demoStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
@@ -13,17 +14,13 @@ import { EmptyState } from '../../../src/design-system/components/EmptyState';
 import { spacing } from '../../../src/design-system/tokens/spacing';
 import { Job } from '../../../src/core/types';
 
-const STATUS_FILTERS = [
-  { key: 'all', label: 'All' },
-  { key: 'active', label: 'Active' },
-  { key: 'on-hold', label: 'On Hold' },
-  { key: 'completed', label: 'Completed' },
-];
+// filters translated in render
 
 export default function JobsIndexScreen() {
   const { tokens } = useThemeStore();
   const { jobs } = useDemoStore();
   const router = useRouter();
+  const { t } = useTranslation(['production', 'common']);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
 
@@ -39,22 +36,27 @@ export default function JobsIndexScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: tokens.background }]}>
-      <AppHeader title="Jobs" showBack />
+      <AppHeader title={t('production:workOrdersAndJobs')} showBack />
       <View style={styles.filters}>
         <SearchField
           value={search}
           onChangeText={setSearch}
-          placeholder="Search job code, style, buyer..."
+          placeholder={t('production:jobSearch')}
         />
         <View style={{ marginTop: spacing[2] }}>
-          <FilterBar options={STATUS_FILTERS} selected={filter} onSelect={setFilter} />
+          <FilterBar options={[
+            { key: 'all', label: t('common:all') },
+            { key: 'active', label: t('common:active') },
+            { key: 'on-hold', label: t('common:onHold') },
+            { key: 'completed', label: t('common:completed') },
+          ]} selected={filter} onSelect={setFilter} />
         </View>
       </View>
       <FlatList
         data={filtered}
         keyExtractor={(j) => j.id}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<EmptyState title="No jobs found" message="Try adjusting your filters." />}
+        ListEmptyComponent={<EmptyState title={t('production:noJobsFound')} />}
         renderItem={({ item }) => <JobRow job={item} onPress={() => router.push(`/(app)/jobs/${item.id}`)} tokens={tokens} />}
         ItemSeparatorComponent={() => <View style={{ height: spacing[2] }} />}
       />

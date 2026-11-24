@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
@@ -33,30 +34,31 @@ export function SupervisorDashboard() {
   const { jobs } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['production', 'common', 'quality']);
 
   const supervisorOps: QuickOperation[] = [
     {
       id: 'assignment',
       icon: <ClipboardList size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Work Assignment',
+      label: t('production:workAssignment'),
       onPress: () => router.push('/(app)/operations/work-assignment'),
     },
     {
       id: 'tailor-map',
       icon: <Users size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Tailor Mapping',
+      label: t('production:tailorMapping'),
       onPress: () => router.push('/(app)/operations/tailor-mapping'),
     },
     {
       id: 'sam-monitor',
       icon: <Timer size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'SAM Monitor',
+      label: t('production:samMonitor'),
       onPress: () => router.push('/(app)/operations/sam-monitor'),
     },
     {
       id: 'tag-reprint',
       icon: <Tag size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Tag Reprint',
+      label: t('production:tagReprints'),
       onPress: () => router.push('/(app)/operations/tag-reprint'),
     },
   ];
@@ -73,19 +75,19 @@ export function SupervisorDashboard() {
       >
         {/* Shift KPIs 2x2 Bento Grid */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Line KPIs & Throughput
+          {t('production:lineKPIs')}
         </AppText>
         <View style={styles.kpiGrid}>
           <View style={styles.kpiCol}>
             <MetricCard
-              label="Line Efficiency"
+              label={t('production:lineEfficiency')}
               value="77%"
               trend={{ value: '+2.1%', isPositive: true }}
               icon={<TrendingUp size={14} color={tokens.warning} strokeWidth={2.4} />}
               variant="warning"
             />
             <MetricCard
-              label="WIP Pieces"
+              label={t('production:wipPieces')}
               value="1,200"
               unit="pcs"
               icon={<Layers size={14} color={tokens.info} strokeWidth={2.4} />}
@@ -94,14 +96,14 @@ export function SupervisorDashboard() {
           </View>
           <View style={styles.kpiCol}>
             <MetricCard
-              label="Packed Output"
+              label={t('production:packedOutput')}
               value="760"
               unit="pcs"
               icon={<ClipboardList size={14} color={tokens.success} strokeWidth={2.4} />}
               variant="success"
             />
             <MetricCard
-              label="Rework Queue"
+              label={t('quality:reworkQueue')}
               value="45"
               unit="pcs"
               trend={{ value: '-5 pcs', isPositive: true }}
@@ -113,7 +115,7 @@ export function SupervisorDashboard() {
 
         {/* Shift Progress */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Shift Schedule Progress
+          {t('production:shiftScheduleProgress')}
         </AppText>
         <ShiftProgressCard shift={TODAY_SHIFT} />
 
@@ -137,10 +139,10 @@ export function SupervisorDashboard() {
             </View>
             <View style={{ flex: 1 }}>
               <AppText variant="label" bold style={{ color: tokens.danger }}>
-                Bottleneck Alert: Ironing Stage
+                {t('production:bottleneckAlertIroning')}
               </AppText>
               <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
-                240 pcs queued · JOB-1001 · Tap to inspect SAM & line pace
+                {t('production:bottleneckAlertSub')}
               </AppText>
             </View>
             <ArrowRight size={16} color={tokens.danger} strokeWidth={2.2} />
@@ -149,13 +151,13 @@ export function SupervisorDashboard() {
 
         {/* Quick Operations Links */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Supervisor Actions
+          {t('production:supervisorActions')}
         </AppText>
         <QuickOperationsGrid operations={supervisorOps} columns={2} />
 
         {/* Line Job Status */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Line Jobs & Orders
+          {t('production:lineJobsAndOrders')}
         </AppText>
         {jobs.map((job) => (
           <JobTicketCard
@@ -174,6 +176,7 @@ export function SupervisorWork() {
   const { bundles } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['production', 'common']);
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
@@ -188,12 +191,12 @@ export function SupervisorWork() {
         ]}
       >
         <AppText variant="h3" bold style={{ color: tokens.textPrimary }}>
-          Line Bundles & WIP
+          {t('production:lineBundlesWIP')}
         </AppText>
       </View>
       <ScrollView contentContainerStyle={styles.scroll}>
         <AppText variant="caption" color="secondary" uppercase bold style={{ marginBottom: spacing[2] }}>
-          Line 1 Bundles
+          {t('production:line1Bundles')}
         </AppText>
         {bundles
           .filter((b) => b.lineId === 'line-1')
@@ -214,7 +217,7 @@ export function SupervisorWork() {
                       {b.jobCode} · {b.styleName} · {b.color} · Size {b.size}
                     </AppText>
                     <AppText variant="caption" color="secondary">
-                      Stage: {b.currentStage} · Qty: {b.quantity} pcs
+                      {t('production:stage')}: {b.currentStage} · {t('common:quantity')}: {b.quantity} {t('common:pieces')}
                     </AppText>
                   </View>
                   <StatusBadge

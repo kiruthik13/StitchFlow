@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
@@ -13,6 +14,7 @@ import { STOCK_ITEMS } from '../../fixtures/mockData';
 export function StockMovementView({ mode }: { mode: 'input-in' | 'input-out' | 'output-in' | 'output-out' }) {
   const { tokens } = useThemeStore();
   const router = useRouter();
+  const { t } = useTranslation(['inventory', 'common']);
 
   const titles: Record<string, { title: string; subtitle: string; source: string; dest: string }> = {
     'input-in': { title: 'Raw Material Goods Inward', subtitle: 'Receive fabric/trims into store', source: 'Supplier / Mill', dest: 'Main Store' },

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useDemoStore } from '../../../src/store/demoStore';
@@ -31,6 +32,7 @@ export default function InspectionDetailScreen() {
   const { tokens } = useThemeStore();
   const { bundles, updateQCInspection, qcInspections } = useDemoStore();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['quality', 'common', 'errors']);
 
   const bundle = bundles.find((b) => b.id === id);
   const [phase, setPhase] = useState<InspPhase>('pending');
@@ -40,7 +42,7 @@ export default function InspectionDetailScreen() {
   const [defects, setDefects] = useState<QCDefect[]>([]);
   const [showRelease, setShowRelease] = useState(false);
 
-  if (!bundle) return <EmptyState title="Bundle not found" />;
+  if (!bundle) return <EmptyState title={t('errors:bundleNotFound')} />;
 
   const totalInspected = passedQty + reworkQty + rejectedQty;
   const isValid = totalInspected <= bundle.quantity && totalInspected > 0;

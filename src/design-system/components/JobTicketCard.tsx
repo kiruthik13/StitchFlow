@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { AppText } from './AppText';
@@ -15,6 +16,7 @@ export interface JobTicketCardProps {
 
 export function JobTicketCard({ job, onPress }: JobTicketCardProps) {
   const { tokens, mode } = useThemeStore();
+  const { t } = useTranslation('common');
   const eff = job.efficiency;
   const effColor = eff >= 80 ? tokens.success : eff >= 70 ? tokens.warning : tokens.danger;
 
@@ -68,7 +70,7 @@ export function JobTicketCard({ job, onPress }: JobTicketCardProps) {
             {eff}%
           </AppText>
           <AppText variant="caption" color="secondary">
-            efficiency
+            {t('efficiency')}
           </AppText>
         </View>
       </View>

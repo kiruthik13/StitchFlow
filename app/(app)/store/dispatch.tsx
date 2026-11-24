@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
@@ -16,6 +17,7 @@ export default function DispatchScreen() {
   const { tokens } = useThemeStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['inventory', 'common']);
 
   const [truckNo, setTruckNo] = useState('TN-11-BX-5521');
   const [containerSeal, setContainerSeal] = useState('SEAL-EU-99214');
@@ -34,7 +36,7 @@ export default function DispatchScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title="Order Dispatch & Freight" subtitle="Outward Shipment Manifest" showBack onBack={() => router.back()} />
+      <AppHeader title={t('inventory:dispatchManifest')} subtitle={t('inventory:finishedGoodsStore')} showBack onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
         <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>

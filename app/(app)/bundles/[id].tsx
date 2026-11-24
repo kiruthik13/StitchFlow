@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useDemoStore } from '../../../src/store/demoStore';
@@ -23,13 +24,14 @@ export default function BundleDetailScreen() {
   const { bundles, submitProductionQty } = useDemoStore();
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['common', 'production', 'errors']);
   const [qty, setQty] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [selectedSize, setSelectedSize] = useState('');
 
   const bundle = bundles.find((b) => b.id === id);
-  if (!bundle) return <EmptyState title="Bundle not found" />;
+  if (!bundle) return <EmptyState title={t('errors:bundleNotFound')} />;
 
   const perms = getPermissions(user?.role ?? 'operator');
   const canSubmit = perms.canScan && !submitted;

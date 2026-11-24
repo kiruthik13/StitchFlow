@@ -42,9 +42,9 @@ export default function TabsLayout() {
           shadowRadius: 8,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 10.5,
           fontWeight: '600',
-          letterSpacing: 0.2,
+          letterSpacing: 0.1,
           marginTop: 2,
         },
       }}
@@ -52,7 +52,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: isMD ? (t('overview') || 'Overview') : (t('home') || 'Home'),
+          title: isMD ? t('overview') : t('home'),
           tabBarIcon: ({ color }) => (
             <LayoutDashboard size={22} color={color} strokeWidth={2} />
           ),
@@ -61,7 +61,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="work"
         options={{
-          title: isMD ? (t('factories') || 'Factories') : (t('work') || 'Production'),
+          title: isMD ? t('factories') : t('work'),
           tabBarIcon: ({ color }) =>
             isMD ? (
               <Building2 size={22} color={color} strokeWidth={2} />
@@ -76,12 +76,12 @@ export default function TabsLayout() {
           isMD
             ? { href: null }
             : {
-                title: t('scan') || 'Scan',
+                title: t('scan'),
                 tabBarButton: (props) => (
                   <TouchableOpacity
                     activeOpacity={0.85}
                     onPress={props.onPress}
-                    accessibilityLabel="Scan Barcode or QR Code"
+                    accessibilityLabel={t('scanBarcodeOrQR')}
                     accessibilityRole="button"
                     style={styles.scannerWrapper}
                   >

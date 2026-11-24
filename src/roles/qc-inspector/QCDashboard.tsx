@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
@@ -34,6 +35,7 @@ export function QCDashboard() {
   const { bundles } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['quality', 'common']);
 
   const pendingBundles = bundles.filter((b) => b.status === 'qc-pending');
   const completedInspection = QC_INSPECTIONS.find((q) => q.status === 'passed');
@@ -52,31 +54,31 @@ export function QCDashboard() {
     {
       id: 'inline',
       icon: <Search size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Inline QC',
+      label: t('quality:inlineQC'),
       onPress: () => router.push('/(app)/inspections/inline'),
     },
     {
       id: 'endline',
       icon: <Target size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Endline QC',
+      label: t('quality:endlineQC'),
       onPress: () => router.push('/(app)/inspections/endline'),
     },
     {
       id: 'measurement',
       icon: <Ruler size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Measurement Spec',
+      label: t('quality:measurementCheck'),
       onPress: () => router.push('/(app)/inspections/measurement'),
     },
     {
       id: 'evidence',
       icon: <Camera size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Photo Evidence',
+      label: t('quality:photoEvidence'),
       onPress: () => router.push('/(app)/inspections/photo-evidence'),
     },
     {
       id: 'reinspection',
       icon: <RefreshCw size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Reinspection Loop',
+      label: t('quality:reinspection'),
       onPress: () => router.push('/(app)/inspections/reinspection'),
     },
   ];
@@ -84,14 +86,14 @@ export function QCDashboard() {
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
       <BrandHeader
-        subtitle={`QC Hub · Inspector: ${user?.name ?? 'QC Floor'}`}
+        subtitle={`QC Hub · ${t('common:inspector')}: ${user?.name ?? 'QC Floor'}`}
       />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Inspection Queue Card */}
+        {/* {t('quality:inspectionQueue')} Card */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
           Inspection Queue
         </AppText>
@@ -111,11 +113,11 @@ export function QCDashboard() {
                 {pendingBundles.length}
               </AppText>
               <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
-                Bundles awaiting quality verification
+                {t('quality:bundlesAwaitingVerification')}
               </AppText>
             </View>
             <AppButton
-              title="Start Scan"
+              title={t('quality:startScan')}
               size="md"
               variant="primary"
               onPress={() => router.push('/(app)/(tabs)/scan')}
@@ -125,18 +127,18 @@ export function QCDashboard() {
 
         {/* Specialized QC Workflows */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Specialized Quality Forms
+          {t('quality:specializedForms')}
         </AppText>
         <QuickOperationsGrid operations={qcOps} columns={3} />
 
         {/* Today's QC Stats with standard QC equation verification */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Quality Balance (Inspected = Passed + Rework + Rejected)
+          {t('quality:qualityBalanceEquation')}
         </AppText>
         <AppCard padding={spacing[4]}>
           <View style={styles.qcStats}>
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <AppText variant="caption" color="secondary">Inspected</AppText>
+              <AppText variant="caption" color="secondary">{t('quality:inspected')}</AppText>
               <AppText
                 style={{
                   fontSize: 22,
@@ -150,7 +152,7 @@ export function QCDashboard() {
               </AppText>
             </View>
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <AppText variant="caption" color="secondary">Passed</AppText>
+              <AppText variant="caption" color="secondary">{t('quality:passed')}</AppText>
               <AppText
                 style={{
                   fontSize: 22,
@@ -164,7 +166,7 @@ export function QCDashboard() {
               </AppText>
             </View>
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <AppText variant="caption" color="secondary">Rework</AppText>
+              <AppText variant="caption" color="secondary">{t('quality:rework')}</AppText>
               <AppText
                 style={{
                   fontSize: 22,
@@ -178,7 +180,7 @@ export function QCDashboard() {
               </AppText>
             </View>
             <View style={{ flex: 1, alignItems: 'center' }}>
-              <AppText variant="caption" color="secondary">Rejected</AppText>
+              <AppText variant="caption" color="secondary">{t('quality:rejected')}</AppText>
               <AppText
                 style={{
                   fontSize: 22,
@@ -217,18 +219,18 @@ export function QCDashboard() {
                 bold
                 style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.primaryDeep }}
               >
-                Released to Packing: {releasedQty} pcs
+                {t('quality:releasedToPackingQty', { qty: releasedQty })}
               </AppText>
             </View>
             <AppText variant="caption" color="secondary" style={{ marginTop: 2, fontSize: 11 }}>
-              Strict Industrial Rule: 20 pcs (15 rework + 5 rejected) are quarantined and NOT released until re-inspected.
+              {t('quality:strictIndustrialRule')}
             </AppText>
           </View>
         </AppCard>
 
         {/* Rework Tracking */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Active Rework Tracking
+          {t('quality:activeReworkTracking')}
         </AppText>
         {REWORK_TASKS.map((rw) => (
           <AppCard key={rw.id} padding={spacing[3.5]} style={{ marginBottom: spacing[2] }}>
@@ -263,7 +265,7 @@ export function QCDashboard() {
 
       <BottomScanAction
         onPress={() => router.push('/(app)/(tabs)/scan')}
-        label="Scan Bundle for Inspection"
+        label={t('quality:scanBundleInspection')}
       />
     </View>
   );
@@ -274,6 +276,7 @@ export function QCWork() {
   const { bundles } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['quality', 'common']);
   const pending = bundles.filter((b) => b.status === 'qc-pending');
 
   return (
@@ -289,12 +292,12 @@ export function QCWork() {
         ]}
       >
         <AppText variant="h3" bold style={{ color: tokens.textPrimary }}>
-          Pending Inspection Queue
+          {t('quality:pendingInspectionQueue')}
         </AppText>
       </View>
       <ScrollView contentContainerStyle={styles.scroll}>
         {pending.length === 0 ? (
-          <EmptyState title="Queue Empty" message="All bundles have been inspected." />
+          <EmptyState title={t('quality:queueEmpty')} message={t('quality:allBundlesInspected')} />
         ) : (
           pending.map((b) => (
             <TouchableOpacity

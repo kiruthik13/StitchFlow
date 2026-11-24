@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
@@ -14,6 +15,7 @@ export default function ReinspectionScreen() {
   const { tokens } = useThemeStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['quality', 'common']);
 
   const totalReworkPieces = 15; // From standard equation: 180 passed, 15 rework, 5 rejected
   const [passedReworkQty, setPassedReworkQty] = useState(15);
@@ -29,7 +31,7 @@ export default function ReinspectionScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title="QC Rework Reinspection" subtitle="Bundle BND-00523 · Rectified Batch" showBack onBack={() => router.back()} />
+      <AppHeader title={t('quality:reinspection')} subtitle="Bundle BND-00523 · Rectified Batch" showBack onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
         <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>

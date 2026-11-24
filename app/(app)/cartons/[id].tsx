@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useDemoStore } from '../../../src/store/demoStore';
@@ -19,11 +20,12 @@ export default function CartonDetailScreen() {
   const { tokens } = useThemeStore();
   const { cartons, sealCarton, createCarton } = useDemoStore();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['packing', 'common']);
   const [showSealConfirm, setShowSealConfirm] = useState(false);
   const [sealed, setSealed] = useState(false);
 
   const carton = cartons.find((c) => c.id === id);
-  if (!carton) return <EmptyState title="Carton not found" />;
+  if (!carton) return <EmptyState title={t('common:noData')} />;
 
   const handleSeal = () => {
     sealCarton(carton.id);
@@ -51,7 +53,7 @@ export default function CartonDetailScreen() {
         {/* Carton label preview */}
         <AppCard padding={spacing[5]} style={{ marginBottom: spacing[3], borderWidth: 2, borderColor: isSealed ? tokens.success : tokens.border }}>
           <AppText variant="caption" color="secondary" uppercase center style={{ letterSpacing: 1, marginBottom: spacing[2] }}>
-            Carton Label
+            {t('packing:cartonLabel')}
           </AppText>
           <AppText variant="kpi" center style={{ color: tokens.textPrimary, marginBottom: spacing[1] }}>
             {carton.cartonCode}

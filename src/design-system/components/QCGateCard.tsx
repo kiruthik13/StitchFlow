@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { AppText } from './AppText';
@@ -27,6 +28,7 @@ export function QCGateCard({
   actionTitle = 'View QC Breakdown',
 }: QCGateCardProps) {
   const { tokens, mode } = useThemeStore();
+  const { t } = useTranslation(['quality', 'common']);
 
   const getStatusBadge = () => {
     switch (status) {
@@ -58,7 +60,7 @@ export function QCGateCard({
           </View>
           <View>
             <AppText variant="label" bold style={{ color: tokens.textPrimary }}>
-              QC Quality Gate
+              {t('quality:qcGateOverview')}
             </AppText>
             <AppText variant="caption" color="secondary">
               100% Endline Inspection Equation
@@ -70,19 +72,19 @@ export function QCGateCard({
 
       <View style={[styles.statsRow, { backgroundColor: tokens.surfaceSecondary }]}>
         <View style={styles.statBox}>
-          <AppText variant="caption" color="secondary">Inspected</AppText>
+          <AppText variant="caption" color="secondary">{t('quality:inspected')}</AppText>
           <AppText variant="label" bold mono>{inspectedQty}</AppText>
         </View>
         <View style={styles.statBox}>
-          <AppText variant="caption" color="secondary">Passed</AppText>
+          <AppText variant="caption" color="secondary">{t('quality:passed')}</AppText>
           <AppText variant="label" bold mono style={{ color: tokens.success }}>{passedQty}</AppText>
         </View>
         <View style={styles.statBox}>
-          <AppText variant="caption" color="secondary">Rework</AppText>
+          <AppText variant="caption" color="secondary">{t('quality:rework')}</AppText>
           <AppText variant="label" bold mono style={{ color: tokens.warning }}>{reworkQty}</AppText>
         </View>
         <View style={styles.statBox}>
-          <AppText variant="caption" color="secondary">Rejected</AppText>
+          <AppText variant="caption" color="secondary">{t('quality:rejected')}</AppText>
           <AppText variant="label" bold mono style={{ color: tokens.danger }}>{rejectedQty}</AppText>
         </View>
       </View>

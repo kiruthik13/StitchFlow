@@ -2,6 +2,7 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../../store/themeStore';
 import { useAuthStore } from '../../../store/authStore';
 import { BrandMark } from './BrandMark';
@@ -30,6 +31,7 @@ export function BrandHeader({
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { t } = useTranslation('common');
 
   const handleNotifPress = () => {
     if (onNotificationPress) {
@@ -38,6 +40,12 @@ export function BrandHeader({
       router.push('/(app)/approvals');
     }
   };
+
+  const roleLabel = user?.role
+    ? t(`roles.${user.role}`) || user.role.toUpperCase().replace('-', ' ')
+    : t('demoModeBadge');
+  const factoryLabel = user?.factoryName ?? 'Factory Unit 1';
+  const defaultSubtitle = `${factoryLabel} · ${roleLabel}`;
 
   return (
     <View
@@ -54,12 +62,17 @@ export function BrandHeader({
         <View style={styles.brandCol}>
           <BrandMark logoSize={28} fontSize={20} />
           <View style={styles.metaRow}>
-            <AppText variant="caption" color="secondary" numberOfLines={1}>
-              {subtitle || `${user?.factoryName ?? 'Factory Unit 1'} · ${user?.role ? user.role.toUpperCase().replace('-', ' ') : 'DEMO'}`}
+            <AppText
+              variant="caption"
+              color="secondary"
+              numberOfLines={1}
+              style={styles.subtitleText}
+            >
+              {subtitle || defaultSubtitle}
             </AppText>
             {/* Never display a fake LIVE status when in demo mode (Section 21) */}
             <View style={styles.statusPill}>
-              <StatusBadge label="DEMO MODE" variant="brand" size="sm" dot />
+              <StatusBadge label={t('demoModeBadge')} variant="brand" size="sm" dot />
             </View>
           </View>
         </View>
@@ -69,7 +82,7 @@ export function BrandHeader({
             <TouchableOpacity
               onPress={handleNotifPress}
               activeOpacity={0.7}
-              accessibilityLabel="Notifications"
+              accessibilityLabel={t('notifications')}
               style={[styles.iconButton, { backgroundColor: tokens.surfaceSecondary }]}
             >
               <Bell size={18} color={tokens.textPrimary} strokeWidth={2.2} />
@@ -83,12 +96,19 @@ export function BrandHeader({
             <TouchableOpacity
               activeOpacity={0.8}
               onPress={() => router.push('/(app)/(tabs)/settings')}
-              style={[styles.avatarCircle, { backgroundColor: mode === 'dark' ? '#203D2A' : '#E6F7AD' }]}
+              accessibilityLabel={t('profile')}
+              style={[
+                styles.avatarCircle,
+                { backgroundColor: mode === 'dark' ? '#203D2A' : '#E6F7AD' },
+              ]}
             >
               <AppText
                 variant="label"
                 bold
-                style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.primaryDeep, fontSize: 13 }}
+                style={{
+                  color: mode === 'dark' ? tokens.signatureLime : tokens.primaryDeep,
+                  fontSize: 13,
+                }}
               >
                 {user?.avatarInitials ?? 'SF'}
               </AppText>
@@ -113,6 +133,8 @@ const styles = StyleSheet.create({
   },
   brandCol: {
     flex: 1,
+    minWidth: 0,
+    marginRight: spacing[3],
   },
   metaRow: {
     flexDirection: 'row',
@@ -120,12 +142,17 @@ const styles = StyleSheet.create({
     gap: spacing[2],
     marginTop: spacing[1],
   },
+  subtitleText: {
+    flexShrink: 1,
+  },
   statusPill: {
+    flexShrink: 0,
     marginLeft: spacing[1],
   },
   actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
     gap: spacing[2],
   },
   iconButton: {

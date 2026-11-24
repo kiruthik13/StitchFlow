@@ -34,7 +34,7 @@ const LANGUAGES = [
 export default function LanguageSelectionScreen() {
   const { tokens, mode } = useThemeStore();
   const { language, setLanguage } = useLanguageStore();
-  const { t } = useTranslation('auth');
+  const { t } = useTranslation(['auth', 'common']);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -63,7 +63,7 @@ export default function LanguageSelectionScreen() {
             bold
             style={{ letterSpacing: 1.2, marginTop: spacing[1.5] }}
           >
-            Garment Production Intelligence
+            {t('common:tagline')}
           </AppText>
         </View>
 

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { CuttingEntryView } from '../../../src/features/operations/CuttingEntryView';
@@ -33,8 +34,29 @@ export default function OperationScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const router = useRouter();
   const { tokens } = useThemeStore();
+  const { t } = useTranslation(['production', 'inventory', 'common']);
 
-  const title = (slug && TITLES[slug]) ? TITLES[slug] : 'Operation Details';
+  const getTitle = (s?: string) => {
+    switch (s) {
+      case 'cutting-entry': return t('production:cuttingEntry');
+      case 'sewing-entry': return t('production:sewingEntry');
+      case 'kaja-entry': return t('production:kajaEntry');
+      case 'ironing-entry': return t('production:ironingEntry');
+      case 'completed-entry': return t('production:completedEntry');
+      case 'report-issue': return t('production:reportMachineStoppage');
+      case 'work-assignment': return t('production:workAssignment');
+      case 'tailor-mapping': return t('production:tailorMapping');
+      case 'sam-monitor': return t('production:samMonitor');
+      case 'input-in': return t('inventory:inputIn');
+      case 'input-out': return t('inventory:inputOut');
+      case 'output-in': return t('inventory:outputIn');
+      case 'output-out': return t('inventory:outputOut');
+      case 'tag-reprint': return t('production:tagReprints');
+      default: return (slug && TITLES[slug]) ? TITLES[slug] : t('common:details');
+    }
+  };
+
+  const title = getTitle(slug);
 
   const renderContent = () => {
     switch (slug) {

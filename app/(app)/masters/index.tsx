@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
@@ -40,11 +41,12 @@ export default function MastersScreen() {
   const { tokens } = useThemeStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['production', 'common']);
   const [activeTab, setActiveTab] = useState('buyers');
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title="Master Management" subtitle="Configuration & Standards" showBack onBack={() => router.back()} />
+      <AppHeader title={t('production:masters')} subtitle="Configuration & Standards" showBack onBack={() => router.back()} />
       <View style={{ padding: spacing[4], paddingBottom: spacing[2] }}>
         <FilterBar options={TABS} selected={activeTab} onSelect={setActiveTab} />
       </View>

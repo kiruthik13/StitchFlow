@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { AppText } from './AppText';
@@ -13,6 +14,7 @@ interface ShiftProgressCardProps {
 
 export function ShiftProgressCard({ shift }: ShiftProgressCardProps) {
   const { tokens, mode } = useThemeStore();
+  const { t } = useTranslation(['production', 'common']);
   const progress = shift.targetQty > 0 ? Math.min(shift.actualQty / shift.targetQty, 1) : 0;
   const pct = Math.round(progress * 100);
 
@@ -29,7 +31,7 @@ export function ShiftProgressCard({ shift }: ShiftProgressCardProps) {
       <View style={styles.headerRow}>
         <View>
           <AppText variant="caption" color="secondary" uppercase style={{ letterSpacing: 0.8, fontWeight: '600' }}>
-            Shift Output Progress
+            {t('production:floorOutputProgress')}
           </AppText>
           <View style={styles.pctRow}>
             <AppText style={[styles.pctText, { color: tokens.textPrimary }]}>
@@ -43,7 +45,7 @@ export function ShiftProgressCard({ shift }: ShiftProgressCardProps) {
           </View>
         </View>
         <View style={styles.rightCol}>
-          <AppText variant="caption" color="secondary">Target</AppText>
+          <AppText variant="caption" color="secondary">{t('common:target')}</AppText>
           <AppText variant="h3" mono bold>{shift.targetQty.toLocaleString()}</AppText>
         </View>
       </View>

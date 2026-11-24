@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, StyleSheet } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { AppText } from './AppText';
@@ -13,6 +14,7 @@ interface BarcodeResultCardProps {
 
 export function BarcodeResultCard({ result }: BarcodeResultCardProps) {
   const { tokens } = useThemeStore();
+  const { t } = useTranslation('common');
 
   const statusVariant =
     result.status === 'success' ? 'success' : result.status === 'duplicate' ? 'warning' : 'danger';
@@ -22,7 +24,7 @@ export function BarcodeResultCard({ result }: BarcodeResultCardProps) {
   return (
     <AppCard>
       <View style={styles.row}>
-        <AppText variant="caption" color="secondary">Code</AppText>
+        <AppText variant="caption" color="secondary">{t('scanBarcode')}</AppText>
         <StatusBadge label={statusLabel} variant={statusVariant} size="sm" />
       </View>
       <AppText variant="code" mono bold style={{ color: tokens.textPrimary, marginBottom: spacing[1] }}>
@@ -32,7 +34,7 @@ export function BarcodeResultCard({ result }: BarcodeResultCardProps) {
 
       {result.resolvedBundle && (
         <View style={[styles.bundleInfo, { borderTopColor: tokens.border }]}>
-          <AppText variant="label" color="secondary">Bundle</AppText>
+          <AppText variant="label" color="secondary">{t('bundle')}</AppText>
           <AppText variant="body" bold>{result.resolvedBundle.bundleCode}</AppText>
           <AppText variant="bodySmall" color="secondary">
             {result.resolvedBundle.styleName} · {result.resolvedBundle.color} · {result.resolvedBundle.size}

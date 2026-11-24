@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useDemoStore } from '../../../src/store/demoStore';
@@ -30,10 +31,11 @@ export default function JobDetailScreen() {
   const { jobs, bundles, updateJobStatus } = useDemoStore();
   const { user } = useAuthStore();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['production', 'common', 'errors']);
   const [pendingAction, setPendingAction] = useState<JobAction>(null);
 
   const job = jobs.find((j) => j.id === id);
-  if (!job) return <EmptyState title="Job not found" message={`ID: ${id}`} />;
+  if (!job) return <EmptyState title={t('errors:jobNotFound')} message={`ID: ${id}`} />;
 
   const jobBundles = bundles.filter((b) => b.jobId === id);
   const perms = getPermissions(user?.role ?? 'operator');

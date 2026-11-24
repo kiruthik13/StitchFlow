@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { AppHeader } from '../../design-system/components/AppHeader';
 import { AppText } from '../../design-system/components/AppText';
@@ -20,6 +21,7 @@ const ISSUE_CATEGORIES = [
 export function ReportIssueView() {
   const { tokens } = useThemeStore();
   const router = useRouter();
+  const { t } = useTranslation(['production', 'common']);
 
   const [category, setCategory] = useState(ISSUE_CATEGORIES[0].key);
   const [machineNo, setMachineNo] = useState('M-L1-08 (Juki DDL-9000)');

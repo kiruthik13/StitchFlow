@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
@@ -39,10 +40,11 @@ export default function BottleneckAnalyticsScreen() {
   const { tokens } = useThemeStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['production', 'common']);
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title="Bottleneck Analytics & Optimization" subtitle="Executive Line Balancing AI" showBack onBack={() => router.back()} />
+      <AppHeader title={t('production:bottleneckAnalytics')} subtitle={t('production:manufacturingGroupSummary')} showBack onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
         <View style={[styles.alertBanner, { backgroundColor: tokens.dangerLight, borderColor: tokens.danger }]}>

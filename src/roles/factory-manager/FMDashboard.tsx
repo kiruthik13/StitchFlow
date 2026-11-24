@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
@@ -41,61 +42,62 @@ export function FMDashboard() {
   const { jobs } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['production', 'common', 'quality', 'reports']);
 
   const ops: QuickOperation[] = [
     {
       id: 'create-job',
       icon: <Plus size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.4} />,
-      label: 'Create Job',
+      label: t('production:createJob'),
       onPress: () => router.push('/(app)/jobs/create'),
     },
     {
       id: 'view-jobs',
       icon: <ClipboardList size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Work Orders',
+      label: t('production:workOrders'),
       onPress: () => router.push('/(app)/jobs'),
     },
     {
       id: 'masters',
       icon: <FolderKanban size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Masters',
+      label: t('production:masters'),
       onPress: () => router.push('/(app)/masters'),
     },
     {
       id: 'planning',
       icon: <Timer size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'SAM Plan',
+      label: t('production:samPlan'),
       onPress: () => router.push('/(app)/planning/sam-entry'),
     },
     {
       id: 'workforce',
       icon: <Users size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Line Strength',
+      label: t('production:lineStrength'),
       onPress: () => router.push('/(app)/planning/workforce'),
     },
     {
       id: 'approvals',
       icon: <CheckCircle2 size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Approvals',
+      label: t('production:approvals'),
       badge: 2,
       onPress: () => router.push('/(app)/approvals'),
     },
     {
       id: 'users',
       icon: <UserCheck size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Floor Access',
+      label: t('production:floorAccess'),
       onPress: () => router.push('/(app)/management/users'),
     },
     {
       id: 'tags',
       icon: <Tag size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Tag Reprints',
+      label: t('production:tagReprints'),
       onPress: () => router.push('/(app)/management/tags'),
     },
     {
       id: 'reports',
       icon: <BarChart3 size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Analytics',
+      label: t('reports:reports'),
       onPress: () => router.push('/(app)/(tabs)/reports'),
     },
   ];
@@ -103,7 +105,7 @@ export function FMDashboard() {
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
       {/* 1. Premium StitchFlow Brand Header with Logo, Subtitle & Demo Status */}
-      <BrandHeader subtitle={`${user?.factoryName ?? 'Factory Unit 1'} · Shift A`} />
+      <BrandHeader subtitle={`${user?.factoryName ?? 'Factory Unit 1'} · ${t('common:shift')} A`} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}
@@ -112,30 +114,30 @@ export function FMDashboard() {
         {/* 2. Personalized Greeting & Shift Context */}
         <View style={styles.welcomeSection}>
           <AppText variant="h2" bold style={{ color: tokens.textPrimary, letterSpacing: -0.4 }}>
-            Good morning, {user?.name?.split(' ')[0] ?? 'Manager'}
+            {t('common:goodMorning', { name: user?.name?.split(' ')[0] ?? 'Manager' })}
           </AppText>
           <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
-            Shift A (06:00 - 14:00) · 6 active sewing lines operating
+            {t('production:shiftAActiveLines')}
           </AppText>
         </View>
 
         {/* 3. Production Output Hero Card */}
-        <SectionTitle title="Production Output" subtitle="Shift Output vs Target" />
+        <SectionTitle title={t('production:productionOutput')} subtitle={t('production:shiftOutputVsTarget')} />
         <ProductionOutputCard
           actualQty={TODAY_SHIFT.actualQty}
           targetQty={TODAY_SHIFT.targetQty}
           unit="pcs"
-          title="Floor Output Progress"
-          subtitle={`Line 1-6 · Target: ${TODAY_SHIFT.targetQty.toLocaleString()} pcs`}
+          title={t('production:floorOutputProgress')}
+          subtitle={t('production:lineTargetSummary', { target: TODAY_SHIFT.targetQty.toLocaleString() })}
           pacePerHour={TODAY_SHIFT.pacePerHour}
         />
 
         {/* 4. Compact 2x2 Floor Health Bento Grid */}
-        <SectionTitle title="Floor Health Metrics" subtitle="Real-time production balance" />
+        <SectionTitle title={t('production:floorHealthMetrics')} subtitle={t('production:realtimeBalance')} />
         <View style={styles.bentoGrid}>
           <View style={styles.bentoCol}>
             <MetricCard
-              label="Line Efficiency"
+              label={t('production:lineEfficiency')}
               value={`${Math.round(jobs.reduce((s, j) => s + j.efficiency, 0) / (jobs.length || 1))}%`}
               trend={{ value: '+4.2%', isPositive: true }}
               icon={<TrendingUp size={14} color={tokens.success} strokeWidth={2.4} />}
@@ -143,7 +145,7 @@ export function FMDashboard() {
               compact
             />
             <MetricCard
-              label="Defect Rate"
+              label={t('production:defectRate')}
               value={`${((jobs.reduce((s, j) => s + j.rejectedQty, 0) / (jobs.reduce((s, j) => s + j.cuttingQty, 0) || 1)) * 100).toFixed(1)}%`}
               trend={{ value: '-0.4%', isPositive: true }}
               icon={<AlertCircle size={14} color={tokens.warning} strokeWidth={2.4} />}
@@ -153,16 +155,16 @@ export function FMDashboard() {
           </View>
           <View style={styles.bentoCol}>
             <MetricCard
-              label="Work In Progress"
+              label={t('production:workInProgress')}
               value={jobs.reduce((s, j) => s + Math.max(0, j.cuttingQty - j.packingQty), 0).toLocaleString()}
               unit="pcs"
-              subLabel={`${jobs.filter((j) => j.status === 'active').length} active jobs`}
+              subLabel={t('common:activeJobsCount', { count: jobs.filter((j) => j.status === 'active').length })}
               icon={<Layers size={14} color={tokens.info} strokeWidth={2.4} />}
               variant="default"
               compact
             />
             <MetricCard
-              label="Rework Queue"
+              label={t('quality:reworkQueue')}
               value={jobs.reduce((s, j) => s + j.reworkQty, 0).toLocaleString()}
               unit="pcs"
               trend={{ value: `-${TODAY_SHIFT.reworkQty} shift`, isPositive: true }}
@@ -175,10 +177,10 @@ export function FMDashboard() {
 
         {/* 5. Production Line Status */}
         <View style={styles.titleRow}>
-          <SectionTitle title="Line Performance" subtitle="Active production stages" />
+          <SectionTitle title={t('production:linePerformance')} subtitle={t('production:activeStages')} />
           <TouchableOpacity onPress={() => router.push('/(app)/planning/workforce')}>
             <AppText variant="caption" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.brand }}>
-              View All ({jobs.length})
+              {t('common:viewAll')} ({jobs.length})
             </AppText>
           </TouchableOpacity>
         </View>
@@ -195,15 +197,15 @@ export function FMDashboard() {
         ))}
 
         {/* 6. Quick Operations Grid — Compact Industrial Action Tiles */}
-        <SectionTitle title="Factory Operations" subtitle="Management controls & masters" />
+        <SectionTitle title={t('production:factoryOperations')} subtitle={t('production:managementControls')} />
         <QuickOperationsGrid operations={ops} columns={3} />
 
         {/* 7. Active Work Orders — Garment Hang-Tag Ticket Styling */}
         <View style={styles.titleRow}>
-          <SectionTitle title="Active Work Orders" subtitle="Scheduled production jobs" />
+          <SectionTitle title={t('production:activeWorkOrders')} subtitle={t('production:scheduledJobs')} />
           <TouchableOpacity onPress={() => router.push('/(app)/jobs')}>
             <AppText variant="caption" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.brand }}>
-              View All ({jobs.length})
+              {t('common:viewAll')} ({jobs.length})
             </AppText>
           </TouchableOpacity>
         </View>
@@ -220,7 +222,7 @@ export function FMDashboard() {
           ))}
 
         {/* 8. Plant Alerts */}
-        <SectionTitle title="Plant Alerts" subtitle="Floor exceptions needing authorization" />
+        <SectionTitle title={t('production:plantAlerts')} subtitle={t('production:floorExceptions')} />
         {ALERTS.slice(0, 2).map((alert) => (
           <View
             key={alert.id}
@@ -253,13 +255,14 @@ export function FMWork() {
   const { jobs } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['production', 'common']);
   const [filter, setFilter] = useState('all');
 
   const JOB_FILTERS = [
-    { key: 'all', label: 'All' },
-    { key: 'active', label: 'Active' },
-    { key: 'on-hold', label: 'On Hold' },
-    { key: 'completed', label: 'Completed' },
+    { key: 'all', label: t('common:all') },
+    { key: 'active', label: t('common:active') },
+    { key: 'on-hold', label: t('common:onHold') },
+    { key: 'completed', label: t('common:completed') },
   ];
 
   const filtered = filter === 'all' ? jobs : jobs.filter((j) => j.status === filter);
@@ -277,10 +280,10 @@ export function FMWork() {
         ]}
       >
         <AppText variant="h3" bold style={{ flex: 1, color: tokens.textPrimary }}>
-          Work Orders & Jobs
+          {t('production:workOrdersAndJobs')}
         </AppText>
         <AppButton
-          title="+ Create"
+          title={'+ ' + t('common:create')}
           size="sm"
           onPress={() => router.push('/(app)/jobs/create')}
         />
@@ -292,7 +295,7 @@ export function FMWork() {
         data={filtered}
         keyExtractor={(j) => j.id}
         contentContainerStyle={[styles.scroll, { paddingTop: 0 }]}
-        ListEmptyComponent={<EmptyState title="No jobs found" />}
+        ListEmptyComponent={<EmptyState title={t('production:noJobsFound')} />}
         renderItem={({ item: job }) => (
           <JobTicketCard
             job={job}

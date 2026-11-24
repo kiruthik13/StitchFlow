@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
@@ -16,6 +17,7 @@ export default function FactoryDetailScreen() {
   const { tokens } = useThemeStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['production', 'common']);
 
   const factory = FACTORIES.find((f) => f.id === id) || FACTORIES[0];
   const eff = factory.id === 'factory-a' ? 82 : 68;
@@ -27,12 +29,12 @@ export default function FactoryDetailScreen() {
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
         {/* KPI Grid */}
         <View style={styles.grid2}>
-          <View style={{ flex: 1 }}><MetricCard label="Active Lines" value={`${factory.activeLines}/${factory.totalLines}`} compact /></View>
+          <View style={{ flex: 1 }}><MetricCard label={t('production:activeLines')} value={`${factory.activeLines}/${factory.totalLines}`} compact /></View>
           <View style={{ width: spacing[2] }} />
           <View style={{ flex: 1 }}><MetricCard label="Daily Capacity" value={`${factory.capacity} pcs`} compact /></View>
         </View>
         <View style={[styles.grid2, { marginTop: spacing[2] }]}>
-          <View style={{ flex: 1 }}><MetricCard label="Plant Efficiency" value={`${eff}%`} variant={eff >= 80 ? 'success' : 'warning'} compact /></View>
+          <View style={{ flex: 1 }}><MetricCard label={t('production:overallEfficiency')} value={`${eff}%`} variant={eff >= 80 ? 'success' : 'warning'} compact /></View>
           <View style={{ width: spacing[2] }} />
           <View style={{ flex: 1 }}><MetricCard label="On-Time Delivery" value="94%" variant="brand" compact /></View>
         </View>

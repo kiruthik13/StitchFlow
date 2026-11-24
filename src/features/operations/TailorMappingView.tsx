@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
@@ -18,6 +19,7 @@ const TAILOR_MAPPINGS = [
 export function TailorMappingView() {
   const { tokens } = useThemeStore();
   const router = useRouter();
+  const { t } = useTranslation(['production', 'common']);
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>

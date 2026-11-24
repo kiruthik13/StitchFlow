@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { AppText } from './AppText';
@@ -22,6 +23,7 @@ export function GarmentTicketCard({
   showPackAction = false,
 }: GarmentTicketCardProps) {
   const { tokens } = useThemeStore();
+  const { t } = useTranslation('common');
   const allSizes = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
   return (
@@ -43,7 +45,7 @@ export function GarmentTicketCard({
       <View style={styles.topSection}>
         <View style={styles.idBlock}>
           <AppText variant="caption" color="secondary" uppercase style={{ letterSpacing: 0.5 }}>
-            Bundle
+            {t('bundle')}
           </AppText>
           <AppText variant="code" mono bold style={{ color: tokens.textPrimary }}>
             {bundle.bundleCode}
@@ -61,14 +63,14 @@ export function GarmentTicketCard({
 
       {/* Middle section */}
       <View style={styles.middleSection}>
-        <InfoRow label="Job" value={bundle.jobCode} mono tokens={tokens} />
-        <InfoRow label="Style" value={bundle.styleName} tokens={tokens} />
-        <InfoRow label="Color" value={bundle.color} tokens={tokens} />
+        <InfoRow label={t('job')} value={bundle.jobCode} mono tokens={tokens} />
+        <InfoRow label={t('style')} value={bundle.styleName} tokens={tokens} />
+        <InfoRow label={t('color')} value={bundle.color} tokens={tokens} />
         <View style={styles.row}>
-          <InfoRow label="Qty" value={String(bundle.quantity)} mono tokens={tokens} />
-          <InfoRow label="Done" value={String(bundle.completedQty)} mono tokens={tokens} />
+          <InfoRow label={t('quantity')} value={String(bundle.quantity)} mono tokens={tokens} />
+          <InfoRow label={t('completed')} value={String(bundle.completedQty)} mono tokens={tokens} />
           {bundle.reworkQty > 0 && (
-            <InfoRow label="Rework" value={String(bundle.reworkQty)} mono tokens={tokens} valueColor={tokens.danger} />
+            <InfoRow label={t('quality:rework') || 'Rework'} value={String(bundle.reworkQty)} mono tokens={tokens} valueColor={tokens.danger} />
           )}
         </View>
       </View>

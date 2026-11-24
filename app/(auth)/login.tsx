@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../src/store/themeStore';
 import { useAuthStore } from '../../src/store/authStore';
+import { UserRole } from '../../src/core/types';
 import { AppText } from '../../src/design-system/components/AppText';
 import { AppButton } from '../../src/design-system/components/AppButton';
 import { AppInput } from '../../src/design-system/components/AppInput';
@@ -20,12 +21,9 @@ import { LanguageSwitcher } from '../../src/design-system/components/LanguageSwi
 import { StitchFlowLogo } from '../../src/design-system/components/branding/StitchFlowLogo';
 import { StitchFlowWordmark } from '../../src/design-system/components/branding/StitchFlowWordmark';
 import { spacing } from '../../src/design-system/tokens/spacing';
-import { radii } from '../../src/design-system/tokens/radii';
-import { UserRole } from '../../src/core/types';
-import { ROLE_DISPLAY_NAMES } from '../../src/core/permissions';
 import {
-  Mail,
   Lock,
+  Mail,
   Eye,
   EyeOff,
   Users,
@@ -50,16 +48,6 @@ const ROLE_ICONS: Record<UserRole, any> = {
   'packing-staff': PackageCheck,
 };
 
-const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
-  md: 'Multi-factory benchmark & executive analytics',
-  'factory-manager': 'Shift planning, floor lines & approvals',
-  supervisor: 'Line balancing, tailor map & bottlenecks',
-  operator: 'Station entries & barcode scan tasks',
-  'qc-inspector': 'AQL audits, defect logging & release gate',
-  'store-dispatch': 'Material movements, GRN & container dispatch',
-  'packing-staff': 'Carton creation, QC verification & handover',
-};
-
 const DEMO_ROLES: UserRole[] = [
   'md',
   'factory-manager',
@@ -73,7 +61,7 @@ const DEMO_ROLES: UserRole[] = [
 export default function LoginScreen() {
   const { tokens, mode } = useThemeStore();
   const { demoLogin } = useAuthStore();
-  const { t } = useTranslation('auth');
+  const { t } = useTranslation(['auth', 'common']);
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -121,7 +109,7 @@ export default function LoginScreen() {
               bold
               style={{ letterSpacing: 1.2, marginTop: spacing[1] }}
             >
-              Industrial Production OS
+              {t('common:industrialOS')}
             </AppText>
           </View>
 
@@ -131,7 +119,7 @@ export default function LoginScreen() {
               {t('login')}
             </AppText>
             <AppText variant="bodySmall" color="secondary" style={{ marginBottom: spacing[4] }}>
-              Enter your factory credentials or employee ID
+              {t('roleSelectionHint')}
             </AppText>
 
             <AppInput
@@ -166,7 +154,11 @@ export default function LoginScreen() {
               }
             />
 
-            <TouchableOpacity style={styles.forgotBtn} activeOpacity={0.7}>
+            <TouchableOpacity
+              style={styles.forgotBtn}
+              activeOpacity={0.7}
+              onPress={() => router.push('/(auth)/forgot-password')}
+            >
               <AppText variant="label" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.brand }}>
                 {t('forgotPassword')}
               </AppText>
@@ -178,7 +170,6 @@ export default function LoginScreen() {
               size="lg"
               fullWidth
               onPress={() => {
-                // Default fallback to Factory Manager demo login if email/pass pressed
                 handleDemoLogin('factory-manager');
               }}
               style={{ marginBottom: spacing[3] }}
@@ -191,7 +182,7 @@ export default function LoginScreen() {
               </AppText>
             </View>
 
-            {/* Professional Demo Login Button — Zero Emojis */}
+            {/* Demo Login Button */}
             <AppButton
               title={t('demoLogin')}
               variant="secondary"
@@ -207,8 +198,8 @@ export default function LoginScreen() {
             <View style={[styles.demoCard, { backgroundColor: tokens.surface, borderColor: mode === 'dark' ? tokens.signatureLime : tokens.brand }]}>
               <View style={[styles.demoBadge, { backgroundColor: tokens.warningLight }]}>
                 <AlertTriangle size={14} color={tokens.warning} strokeWidth={2.4} />
-                <AppText variant="caption" bold style={{ color: tokens.warning, marginLeft: 4 }}>
-                  DEMO MODE — Choose any floor role
+                <AppText variant="caption" bold style={{ color: tokens.warning, marginLeft: 4, flexShrink: 1 }}>
+                  {t('common:demoBadgeHint')}
                 </AppText>
               </View>
 
@@ -242,10 +233,10 @@ export default function LoginScreen() {
                       </View>
                       <View style={{ flex: 1, marginLeft: spacing[3] }}>
                         <AppText variant="label" bold style={{ color: tokens.textPrimary }}>
-                          {ROLE_DISPLAY_NAMES[role]}
+                          {t(`common:roles.${role}`)}
                         </AppText>
                         <AppText variant="caption" color="secondary" numberOfLines={1}>
-                          {ROLE_DESCRIPTIONS[role]}
+                          {t(`common:roleDescriptions.${role}`)}
                         </AppText>
                       </View>
                       <ChevronRight size={18} color={tokens.textSecondary} strokeWidth={2.2} />
@@ -299,17 +290,16 @@ const styles = StyleSheet.create({
   },
   demoCard: {
     borderWidth: 1.5,
-    borderRadius: radii.xl,
+    borderRadius: 14,
     padding: spacing[4],
     marginBottom: spacing[4],
   },
   demoBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: radii.xs,
-    paddingHorizontal: spacing[2],
-    paddingVertical: spacing[1],
-    alignSelf: 'flex-start',
+    paddingHorizontal: spacing[2.5],
+    paddingVertical: spacing[1.5],
+    borderRadius: 8,
     marginBottom: spacing[3],
   },
   roleList: {
@@ -318,15 +308,14 @@ const styles = StyleSheet.create({
   roleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[3],
-    borderRadius: radii.lg,
+    padding: spacing[3],
+    borderRadius: 10,
     borderWidth: 1,
   },
   roleIconWrap: {
     width: 36,
     height: 36,
-    borderRadius: radii.md,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },

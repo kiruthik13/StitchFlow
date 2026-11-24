@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { useDemoStore } from '../../store/demoStore';
 import { AppText } from '../../design-system/components/AppText';
@@ -13,6 +14,7 @@ export function KajaIroningEntryView({ type }: { type: 'kaja' | 'ironing' }) {
   const { tokens } = useThemeStore();
   const router = useRouter();
   const { bundles, submitProductionQty } = useDemoStore();
+  const { t } = useTranslation(['production', 'common']);
 
   const isKaja = type === 'kaja';
   const title = isKaja ? 'Kaja / Button Attachment' : 'Thread Trimming & Ironing';

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
@@ -15,6 +16,7 @@ export default function PhotoEvidenceScreen() {
   const { tokens } = useThemeStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['quality', 'common']);
 
   const [hasPhoto, setHasPhoto] = useState(false);
   const [defectCode, setDefectCode] = useState('D005 - Broken Stitch & Puckering');
@@ -35,7 +37,7 @@ export default function PhotoEvidenceScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title="Defect Photo Evidence" subtitle="Bundle BND-00523 · Rework Tagging" showBack onBack={() => router.back()} />
+      <AppHeader title={t('quality:photoEvidence')} subtitle="Bundle BND-00523 · Rework Tagging" showBack onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
         {/* Photo Viewport Simulation */}

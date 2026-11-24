@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
@@ -32,6 +33,7 @@ export function StoreDashboard() {
   const { user } = useAuthStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['inventory', 'common']);
 
   const lowStock = STOCK_ITEMS.filter((s) => s.currentStock < s.minimumStock);
 
@@ -39,55 +41,55 @@ export function StoreDashboard() {
     {
       id: 'input-in',
       icon: <ArrowDownLeft size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Input In',
+      label: t('inventory:inputIn'),
       onPress: () => router.push('/(app)/operations/input-in'),
     },
     {
       id: 'input-out',
       icon: <ArrowUpRight size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Input Out',
+      label: t('inventory:inputOut'),
       onPress: () => router.push('/(app)/operations/input-out'),
     },
     {
       id: 'output-in',
       icon: <PackageCheck size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Output In',
+      label: t('inventory:outputIn'),
       onPress: () => router.push('/(app)/operations/output-in'),
     },
     {
       id: 'output-out',
       icon: <Truck size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Output Out',
+      label: t('inventory:outputOut'),
       onPress: () => router.push('/(app)/operations/output-out'),
     },
     {
       id: 'grn',
       icon: <FileCheck2 size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Goods Receipt',
+      label: t('inventory:goodsReceipt'),
       onPress: () => router.push('/(app)/store/goods-receipt'),
     },
     {
       id: 'transfer',
       icon: <ArrowLeftRight size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Transfer',
+      label: t('inventory:transfer'),
       onPress: () => router.push('/(app)/store/inter-factory-transfer'),
     },
     {
       id: 'locations',
       icon: <Boxes size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Racks & Locs',
+      label: t('inventory:rackManagement'),
       onPress: () => router.push('/(app)/store/locations'),
     },
     {
       id: 'stock-count',
       icon: <ClipboardList size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Stock Count',
+      label: t('inventory:stockCount'),
       onPress: () => router.push('/(app)/store/stock-count'),
     },
     {
       id: 'dispatch',
       icon: <Plane size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Dispatch Manifest',
+      label: t('inventory:dispatchManifest'),
       onPress: () => router.push('/(app)/store/dispatch'),
     },
   ];
@@ -116,7 +118,7 @@ export function StoreDashboard() {
             </View>
             <View style={{ flex: 1 }}>
               <AppText variant="label" bold style={{ color: tokens.danger }}>
-                LOW STOCK ALERT: {s.name}
+                {t('inventory:lowStockAlertTitle', { name: s.name })}
               </AppText>
               <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
                 Current: {s.currentStock} {s.unit} / Min: {s.minimumStock} {s.unit} · Location: {s.locationName}
@@ -127,36 +129,36 @@ export function StoreDashboard() {
 
         {/* Movement Summary 2x2 */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Movement Summary (Today)
+          {t('inventory:movementSummary')}
         </AppText>
         <View style={styles.grid2}>
           <View style={{ flex: 1 }}>
-            <MetricCard label="Raw Input In" value="3" unit="batches" compact />
+            <MetricCard label={t('inventory:rawInputIn')} value="3" unit="batches" compact />
           </View>
           <View style={{ width: spacing[2] }} />
           <View style={{ flex: 1 }}>
-            <MetricCard label="Issued to Prod" value="2" unit="orders" compact />
+            <MetricCard label={t('inventory:issuedToProd')} value="2" unit="orders" compact />
           </View>
         </View>
         <View style={[styles.grid2, { marginTop: spacing[2] }]}>
           <View style={{ flex: 1 }}>
-            <MetricCard label="FG Cartons" value="48" unit="boxes" variant="brand" compact />
+            <MetricCard label={t('inventory:fgCartons')} value="48" unit="boxes" variant="brand" compact />
           </View>
           <View style={{ width: spacing[2] }} />
           <View style={{ flex: 1 }}>
-            <MetricCard label="Pending Dispatch" value="48" unit="boxes" variant="warning" compact />
+            <MetricCard label={t('inventory:pendingDispatch')} value="48" unit="boxes" variant="warning" compact />
           </View>
         </View>
 
         {/* Quick Operations Grid */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Store & Dispatch Workflows
+          {t('inventory:storeWorkflows')}
         </AppText>
         <QuickOperationsGrid operations={ops} columns={3} />
 
         {/* Finished Goods Store */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Finished Goods Cartons
+          {t('inventory:finishedGoodsCartons')}
         </AppText>
         {CARTONS.map((c) => (
           <TouchableOpacity
@@ -192,7 +194,7 @@ export function StoreDashboard() {
 
       <BottomScanAction
         onPress={() => router.push('/(app)/(tabs)/scan')}
-        label="Scan for Stock Movement"
+        label={t('inventory:scanStockMovement')}
       />
     </View>
   );
@@ -201,6 +203,7 @@ export function StoreDashboard() {
 export function StoreWork() {
   const { tokens } = useThemeStore();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['inventory', 'common']);
   const lowStock = STOCK_ITEMS.filter((s) => s.currentStock < s.minimumStock);
 
   return (
@@ -216,7 +219,7 @@ export function StoreWork() {
         ]}
       >
         <AppText variant="h3" bold style={{ color: tokens.textPrimary }}>
-          Stock & Inventory Items
+          {t('inventory:stockInventoryItems')}
         </AppText>
       </View>
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -237,7 +240,7 @@ export function StoreWork() {
           </View>
         ))}
         <AppText variant="caption" color="secondary" uppercase bold style={{ marginBottom: spacing[2] }}>
-          All Tracked Inventory
+          {t('inventory:allTrackedInventory')}
         </AppText>
         {STOCK_ITEMS.map((s) => (
           <AppCard key={s.id} padding={spacing[3.5]} style={{ marginBottom: spacing[2] }}>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useDemoStore } from '../../../src/store/demoStore';
@@ -17,6 +18,7 @@ export default function EndlineQCScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { bundles } = useDemoStore();
+  const { t } = useTranslation(['quality', 'common']);
 
   const bundle = bundles[0];
   const totalInspected = 200;
@@ -41,7 +43,7 @@ export default function EndlineQCScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title="Endline 100% Inspection" subtitle={`${bundle.bundleCode} · ${bundle.styleName}`} showBack onBack={() => router.back()} />
+      <AppHeader title={t('quality:endlineQC')} subtitle={`${bundle.bundleCode} · ${bundle.styleName}`} showBack onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
         <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>

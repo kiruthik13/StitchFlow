@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
@@ -35,6 +36,7 @@ export function OperatorDashboard() {
   const { bundles, recentScans } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['production', 'common', 'quality']);
 
   const myBundle = bundles.find((b) => b.operatorId === user?.id) ?? bundles[0];
 
@@ -42,25 +44,25 @@ export function OperatorDashboard() {
     {
       id: 'cutting',
       icon: <Scissors size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Cutting Entry',
+      label: t('production:cuttingEntry'),
       onPress: () => router.push('/(app)/operations/cutting-entry'),
     },
     {
       id: 'sewing',
       icon: <Cpu size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Sewing Out',
+      label: t('production:sewingEntry'),
       onPress: () => router.push('/(app)/operations/sewing-entry'),
     },
     {
       id: 'kaja',
       icon: <CircleDot size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Kaja / Button',
+      label: t('production:kajaEntry'),
       onPress: () => router.push('/(app)/operations/kaja-entry'),
     },
     {
       id: 'ironing',
       icon: <Flame size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: 'Ironing Entry',
+      label: t('production:ironingEntry'),
       onPress: () => router.push('/(app)/operations/ironing-entry'),
     },
   ];
@@ -68,7 +70,7 @@ export function OperatorDashboard() {
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
       <BrandHeader
-        subtitle={`Operator · ${user?.lineName ?? 'Line 1'} (Morning Shift)`}
+        subtitle={`${t('common:roles.operator')} · ${user?.lineName ?? 'Line 1'} (${t('common:morning')} ${t('common:shift')})`}
       />
 
       <ScrollView
@@ -77,12 +79,12 @@ export function OperatorDashboard() {
       >
         {/* Output Today */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          My Output Today
+          {t('production:myOutputToday')}
         </AppText>
         <View style={styles.grid2}>
           <View style={{ flex: 1 }}>
             <MetricCard
-              label="Completed"
+              label={t('common:completed')}
               value="267"
               unit="pcs"
               variant="lime"
@@ -94,10 +96,10 @@ export function OperatorDashboard() {
           <View style={{ width: spacing[2] }} />
           <View style={{ flex: 1 }}>
             <MetricCard
-              label="Shift Target"
+              label={t('production:shiftTarget')}
               value="320"
               unit="pcs"
-              subLabel="53 pcs remaining"
+              subLabel={t('production:pcsRemaining', { count: 53 })}
               icon={<Clock size={14} color={tokens.textSecondary} strokeWidth={2.4} />}
               compact
             />
@@ -108,7 +110,7 @@ export function OperatorDashboard() {
         {myBundle && (
           <>
             <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-              Current Assignment Ticket
+              {t('production:currentAssignment')}
             </AppText>
             <GarmentTicketCard bundle={myBundle} />
           </>
@@ -116,7 +118,7 @@ export function OperatorDashboard() {
 
         {/* Operator Quick Operations — Station Entries */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          Station Operations
+          {t('production:stationOperations')}
         </AppText>
         <QuickOperationsGrid operations={operatorOps} columns={2} />
 
@@ -129,17 +131,17 @@ export function OperatorDashboard() {
           <AlertTriangle size={18} color={tokens.danger} strokeWidth={2.2} />
           <View style={{ flex: 1, marginLeft: spacing[2] }}>
             <AppText variant="label" bold style={{ color: tokens.danger }}>
-              Report Machine Stoppage / Needle Break
+              {t('production:reportMachineStoppage')}
             </AppText>
             <AppText variant="caption" color="secondary" style={{ marginTop: 1 }}>
-              Alert line supervisor immediately
+              {t('production:alertSupervisorImmediately')}
             </AppText>
           </View>
         </TouchableOpacity>
 
         {/* Rework Tasks */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          My Rework Tasks
+          {t('production:myReworkTasks')}
         </AppText>
         {REWORK_TASKS.slice(0, 2).map((rw) => (
           <AppCard key={rw.id} padding={spacing[3.5]} style={{ marginBottom: spacing[2] }}>
@@ -152,7 +154,7 @@ export function OperatorDashboard() {
                   {rw.defectDescription}
                 </AppText>
                 <AppText variant="caption" color="secondary">
-                  Qty: {rw.quantity} pcs · Due: {rw.dueDate}
+                  {t('common:quantity')}: {rw.quantity} {t('common:pieces')} · {t('common:date')}: {rw.dueDate}
                 </AppText>
               </View>
               <StatusBadge

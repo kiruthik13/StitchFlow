@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
@@ -15,6 +16,7 @@ export default function InterFactoryTransferScreen() {
   const { tokens } = useThemeStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation(['inventory', 'common']);
 
   const [transferState, setTransferState] = useState<'pending_sender' | 'in_transit' | 'received'>('in_transit');
   const [senderConfirmed, setSenderConfirmed] = useState(true);
@@ -32,7 +34,7 @@ export default function InterFactoryTransferScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title="Inter-Factory Stock Transfer" subtitle="TRF-2026-0042 · Separate Confirmations" showBack onBack={() => router.back()} />
+      <AppHeader title={t('inventory:interFactoryTransfer')} subtitle="TRF-2026-0042 · Separate Confirmations" showBack onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
         {/* Origin and Destination Card */}
