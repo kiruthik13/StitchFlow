@@ -1,52 +1,79 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
-import { AppText } from '../../../src/design-system/components/AppText';
-import { AppCard } from '../../../src/design-system/components/AppCard';
-import { spacing } from '../../../src/design-system/tokens/spacing';
+import { CuttingEntryView } from '../../../src/features/operations/CuttingEntryView';
+import { SewingEntryView } from '../../../src/features/operations/SewingEntryView';
+import { KajaIroningEntryView } from '../../../src/features/operations/KajaIroningEntryView';
+import { ReportIssueView } from '../../../src/features/operations/ReportIssueView';
+import { WorkAssignmentView } from '../../../src/features/operations/WorkAssignmentView';
+import { TailorMappingView } from '../../../src/features/operations/TailorMappingView';
+import { SamMonitorView } from '../../../src/features/operations/SamMonitorView';
+import { StockMovementView } from '../../../src/features/operations/StockMovementView';
 
-const OPERATIONS: Record<string, { title: string; desc: string; icon: string }> = {
-  'cutting-entry': { title: 'Cutting Entry', desc: 'Record manually cut pieces', icon: '✂️' },
-  'sewing-entry': { title: 'Sewing Out Entry', desc: 'Record sewing output by bundle', icon: '🧵' },
-  'kaja-entry': { title: 'Kaja/Button Entry', desc: 'Record kaja and button attachment', icon: '🔘' },
-  'ironing-entry': { title: 'Ironing Entry', desc: 'Record ironed pieces', icon: '🔥' },
-  'completed-entry': { title: 'Completed Qty Entry', desc: 'Record final completed quantity', icon: '✅' },
-  'rework-tasks': { title: 'Rework Tasks', desc: 'View and update rework assignments', icon: '🔄' },
-  'report-issue': { title: 'Report Issue', desc: 'Report a production issue', icon: '⚠️' },
-  'work-assignment': { title: 'Work Assignment', desc: 'Assign bundles to operators', icon: '📋' },
-  'tailor-mapping': { title: 'Tailor Mapping', desc: 'Map tailors to operations', icon: '👷' },
-  'sam-monitor': { title: 'SAM Monitor', desc: 'Monitor Standard Allowed Minutes', icon: '⏱️' },
-  'input-in': { title: 'Input In', desc: 'Record incoming raw materials', icon: '📥' },
-  'input-out': { title: 'Input Out', desc: 'Record outgoing inputs to production', icon: '📤' },
-  'output-in': { title: 'Output In', desc: 'Receive production output in store', icon: '📦' },
-  'output-out': { title: 'Output Out', desc: 'Send finished goods out', icon: '🚚' },
+const TITLES: Record<string, string> = {
+  'cutting-entry': 'Cutting Entry',
+  'sewing-entry': 'Sewing Out Entry',
+  'kaja-entry': 'Kaja / Button Entry',
+  'ironing-entry': 'Ironing & Thread Trimming',
+  'completed-entry': 'Completed Quantity Entry',
+  'report-issue': 'Report Production Issue',
+  'work-assignment': 'Work Assignment',
+  'tailor-mapping': 'Tailor Mapping',
+  'sam-monitor': 'SAM Monitoring',
+  'input-in': 'Goods Inward (Input In)',
+  'input-out': 'Issue to Production (Input Out)',
+  'output-in': 'Receive Store (Output In)',
+  'output-out': 'Dispatch Freight (Output Out)',
+  'tag-reprint': 'Tag Reprint Request',
 };
 
 export default function OperationScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  const router = useRouter();
   const { tokens } = useThemeStore();
 
-  const op = OPERATIONS[slug ?? ''] ?? { title: slug ?? 'Operation', desc: 'Operation details', icon: '⚙️' };
+  const title = (slug && TITLES[slug]) ? TITLES[slug] : 'Operation Details';
+
+  const renderContent = () => {
+    switch (slug) {
+      case 'cutting-entry':
+        return <CuttingEntryView />;
+      case 'sewing-entry':
+        return <SewingEntryView />;
+      case 'kaja-entry':
+        return <KajaIroningEntryView type="kaja" />;
+      case 'ironing-entry':
+        return <KajaIroningEntryView type="ironing" />;
+      case 'completed-entry':
+        return <SewingEntryView />;
+      case 'report-issue':
+        return <ReportIssueView />;
+      case 'work-assignment':
+        return <WorkAssignmentView />;
+      case 'tailor-mapping':
+        return <TailorMappingView />;
+      case 'sam-monitor':
+        return <SamMonitorView />;
+      case 'input-in':
+        return <StockMovementView mode="input-in" />;
+      case 'input-out':
+        return <StockMovementView mode="input-out" />;
+      case 'output-in':
+        return <StockMovementView mode="output-in" />;
+      case 'output-out':
+        return <StockMovementView mode="output-out" />;
+      default:
+        return <CuttingEntryView />;
+    }
+  };
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title={op.title} showBack />
-      <View style={styles.content}>
-        <AppCard padding={spacing[6]} style={{ alignItems: 'center', marginBottom: spacing[3] }}>
-          <AppText style={{ fontSize: 56, marginBottom: spacing[3] }}>{op.icon}</AppText>
-          <AppText variant="h3" bold center style={{ marginBottom: spacing[2] }}>{op.title}</AppText>
-          <AppText variant="body" color="secondary" center style={{ marginBottom: spacing[4] }}>{op.desc}</AppText>
-          <View style={[styles.demoBadge, { backgroundColor: tokens.warningLight }]}>
-            <AppText variant="caption" style={{ color: tokens.warning }} center>
-              🛠 This operation screen is planned for a future implementation phase.
-            </AppText>
-            <AppText variant="caption" color="secondary" center style={{ marginTop: 4 }}>
-              The full workflow will include role-specific forms, barcode scanning, quantity entry, and confirmation steps.
-            </AppText>
-          </View>
-        </AppCard>
+      <AppHeader title={title} showBack onBack={() => router.back()} />
+      <View style={styles.flex}>
+        {renderContent()}
       </View>
     </View>
   );
@@ -54,6 +81,4 @@ export default function OperationScreen() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { flex: 1, padding: spacing[4], justifyContent: 'center' },
-  demoBadge: { borderRadius: 8, padding: spacing[3], width: '100%' },
 });

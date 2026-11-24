@@ -10,7 +10,7 @@ export default function RootIndex() {
   }
 
   if (isAuthenticated) {
-    return <Redirect href="/(app)/(tabs)/" />;
+    return <Redirect href="/(app)/(tabs)" />;
   }
 
   return <Redirect href="/(auth)/language-selection" />;

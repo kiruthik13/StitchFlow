@@ -15,10 +15,50 @@ import { useAuthStore } from '../../src/store/authStore';
 import { AppText } from '../../src/design-system/components/AppText';
 import { AppButton } from '../../src/design-system/components/AppButton';
 import { AppInput } from '../../src/design-system/components/AppInput';
+import { AppCard } from '../../src/design-system/components/AppCard';
 import { LanguageSwitcher } from '../../src/design-system/components/LanguageSwitcher';
+import { StitchFlowLogo } from '../../src/design-system/components/branding/StitchFlowLogo';
+import { StitchFlowWordmark } from '../../src/design-system/components/branding/StitchFlowWordmark';
 import { spacing } from '../../src/design-system/tokens/spacing';
+import { radii } from '../../src/design-system/tokens/radii';
 import { UserRole } from '../../src/core/types';
 import { ROLE_DISPLAY_NAMES } from '../../src/core/permissions';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Users,
+  ChevronRight,
+  Building2,
+  Factory,
+  UserCheck,
+  Scissors,
+  ShieldCheck,
+  Warehouse,
+  PackageCheck,
+  AlertTriangle,
+} from 'lucide-react-native';
+
+const ROLE_ICONS: Record<UserRole, any> = {
+  md: Building2,
+  'factory-manager': Factory,
+  supervisor: UserCheck,
+  operator: Scissors,
+  'qc-inspector': ShieldCheck,
+  'store-dispatch': Warehouse,
+  'packing-staff': PackageCheck,
+};
+
+const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
+  md: 'Multi-factory benchmark & executive analytics',
+  'factory-manager': 'Shift planning, floor lines & approvals',
+  supervisor: 'Line balancing, tailor map & bottlenecks',
+  operator: 'Station entries & barcode scan tasks',
+  'qc-inspector': 'AQL audits, defect logging & release gate',
+  'store-dispatch': 'Material movements, GRN & container dispatch',
+  'packing-staff': 'Carton creation, QC verification & handover',
+};
 
 const DEMO_ROLES: UserRole[] = [
   'md',
@@ -31,7 +71,7 @@ const DEMO_ROLES: UserRole[] = [
 ];
 
 export default function LoginScreen() {
-  const { tokens } = useThemeStore();
+  const { tokens, mode } = useThemeStore();
   const { demoLogin } = useAuthStore();
   const { t } = useTranslation('auth');
   const router = useRouter();
@@ -39,6 +79,7 @@ export default function LoginScreen() {
 
   const [showDemo, setShowDemo] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -46,7 +87,7 @@ export default function LoginScreen() {
     setLoading(true);
     await demoLogin(role);
     setLoading(false);
-    router.replace('/(app)/(tabs)/');
+    router.replace('/(app)/(tabs)');
   };
 
   return (
@@ -58,30 +99,39 @@ export default function LoginScreen() {
         <ScrollView
           contentContainerStyle={[
             styles.scroll,
-            { paddingTop: insets.top + spacing[6], paddingBottom: insets.bottom + spacing[4] },
+            { paddingTop: insets.top + spacing[4], paddingBottom: insets.bottom + spacing[6] },
           ]}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <View style={styles.langRow}>
-              <LanguageSwitcher compact />
+          {/* Top Bar with Language Switcher */}
+          <View style={styles.topBar}>
+            <LanguageSwitcher compact />
+          </View>
+
+          {/* Brand Header */}
+          <View style={styles.brandHeader}>
+            <StitchFlowLogo size={46} withBackground />
+            <View style={{ marginTop: spacing[3] }}>
+              <StitchFlowWordmark fontSize={26} />
             </View>
-            <View style={[styles.logoBox, { backgroundColor: tokens.brand }]}>
-              <AppText variant="h2" color="inverse" bold>SF</AppText>
-            </View>
-            <AppText variant="h2" bold style={{ color: tokens.textPrimary, marginTop: spacing[3] }}>
-              StitchFlow
-            </AppText>
-            <AppText variant="bodySmall" color="secondary" center>
-              Garment Production Intelligence
+            <AppText
+              variant="caption"
+              color="secondary"
+              uppercase
+              bold
+              style={{ letterSpacing: 1.2, marginTop: spacing[1] }}
+            >
+              Industrial Production OS
             </AppText>
           </View>
 
-          {/* Login form */}
-          <View style={[styles.card, { backgroundColor: tokens.surface, borderColor: tokens.border }]}>
-            <AppText variant="h4" style={{ marginBottom: spacing[4] }}>
+          {/* Authentication Card */}
+          <AppCard padding={spacing[5]} style={styles.authCard}>
+            <AppText variant="h3" bold style={{ color: tokens.textPrimary, marginBottom: spacing[1] }}>
               {t('login')}
+            </AppText>
+            <AppText variant="bodySmall" color="secondary" style={{ marginBottom: spacing[4] }}>
+              Enter your factory credentials or employee ID
             </AppText>
 
             <AppInput
@@ -91,77 +141,130 @@ export default function LoginScreen() {
               placeholder="employee@stitchflow.com"
               autoCapitalize="none"
               keyboardType="email-address"
+              leftIcon={<Mail size={18} color={tokens.textSecondary} strokeWidth={2} />}
             />
+
             <AppInput
               label={t('password')}
               value={password}
               onChangeText={setPassword}
               placeholder="••••••••"
-              secureTextEntry
+              secureTextEntry={!showPassword}
+              leftIcon={<Lock size={18} color={tokens.textSecondary} strokeWidth={2} />}
+              rightIcon={
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  activeOpacity={0.7}
+                  style={{ padding: 4 }}
+                >
+                  {showPassword ? (
+                    <EyeOff size={18} color={tokens.textSecondary} strokeWidth={2} />
+                  ) : (
+                    <Eye size={18} color={tokens.textSecondary} strokeWidth={2} />
+                  )}
+                </TouchableOpacity>
+              }
             />
 
-            <TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: spacing[4] }}>
-              <AppText variant="label" color="brand">
+            <TouchableOpacity style={styles.forgotBtn} activeOpacity={0.7}>
+              <AppText variant="label" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.brand }}>
                 {t('forgotPassword')}
               </AppText>
             </TouchableOpacity>
 
             <AppButton
               title={t('loginButton')}
+              variant="primary"
               size="lg"
               fullWidth
-              onPress={() => {/* Real auth will go here */}}
+              onPress={() => {
+                // Default fallback to Factory Manager demo login if email/pass pressed
+                handleDemoLogin('factory-manager');
+              }}
               style={{ marginBottom: spacing[3] }}
             />
 
+            {/* Divider */}
             <View style={[styles.divider, { borderTopColor: tokens.border }]}>
               <AppText variant="caption" color="secondary">
                 {t('orContinueWith')}
               </AppText>
             </View>
 
-            {/* Demo login button */}
+            {/* Professional Demo Login Button — Zero Emojis */}
             <AppButton
-              title={`🎭 ${t('demoLogin')}`}
-              variant="outline"
+              title={t('demoLogin')}
+              variant="secondary"
               size="lg"
               fullWidth
-              onPress={() => setShowDemo(true)}
+              leftIcon={<Users size={18} color={tokens.textPrimary} strokeWidth={2.2} />}
+              onPress={() => setShowDemo(!showDemo)}
             />
-          </View>
+          </AppCard>
 
-          {/* Demo role selector */}
+          {/* Demo Role Selector Modal / Container */}
           {showDemo && (
-            <View style={[styles.card, { backgroundColor: tokens.surface, borderColor: tokens.brand, borderWidth: 1.5 }]}>
+            <View style={[styles.demoCard, { backgroundColor: tokens.surface, borderColor: mode === 'dark' ? tokens.signatureLime : tokens.brand }]}>
               <View style={[styles.demoBadge, { backgroundColor: tokens.warningLight }]}>
-                <AppText variant="caption" style={{ color: tokens.warning }}>
-                  ⚠️ DEMO MODE — No real server connection
+                <AlertTriangle size={14} color={tokens.warning} strokeWidth={2.4} />
+                <AppText variant="caption" bold style={{ color: tokens.warning, marginLeft: 4 }}>
+                  DEMO MODE — Choose any floor role
                 </AppText>
               </View>
-              <AppText variant="h4" style={{ marginBottom: spacing[3] }}>
+
+              <AppText variant="h4" bold style={{ color: tokens.textPrimary, marginBottom: spacing[3] }}>
                 {t('selectDemoRole')}
               </AppText>
-              {DEMO_ROLES.map((role) => (
-                <TouchableOpacity
-                  key={role}
-                  onPress={() => handleDemoLogin(role)}
-                  disabled={loading}
-                  style={[styles.roleRow, { borderColor: tokens.border, backgroundColor: tokens.surfaceSecondary }]}
-                >
-                  <AppText variant="body" style={{ flex: 1 }}>
-                    {ROLE_DISPLAY_NAMES[role]}
-                  </AppText>
-                  <AppText variant="caption" color="secondary">→</AppText>
-                </TouchableOpacity>
-              ))}
+
+              <View style={styles.roleList}>
+                {DEMO_ROLES.map((role) => {
+                  const IconComponent = ROLE_ICONS[role];
+                  return (
+                    <TouchableOpacity
+                      key={role}
+                      onPress={() => handleDemoLogin(role)}
+                      disabled={loading}
+                      activeOpacity={0.7}
+                      style={[
+                        styles.roleRow,
+                        {
+                          borderColor: tokens.border,
+                          backgroundColor: tokens.surfaceSecondary,
+                        },
+                      ]}
+                    >
+                      <View style={[styles.roleIconWrap, { backgroundColor: mode === 'dark' ? '#203D2A' : '#E6F7AD' }]}>
+                        <IconComponent
+                          size={18}
+                          color={mode === 'dark' ? tokens.signatureLime : tokens.primaryDeep}
+                          strokeWidth={2.2}
+                        />
+                      </View>
+                      <View style={{ flex: 1, marginLeft: spacing[3] }}>
+                        <AppText variant="label" bold style={{ color: tokens.textPrimary }}>
+                          {ROLE_DISPLAY_NAMES[role]}
+                        </AppText>
+                        <AppText variant="caption" color="secondary" numberOfLines={1}>
+                          {ROLE_DESCRIPTIONS[role]}
+                        </AppText>
+                      </View>
+                      <ChevronRight size={18} color={tokens.textSecondary} strokeWidth={2.2} />
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
           )}
 
-          {/* Register link */}
+          {/* Register Link */}
           <View style={styles.registerRow}>
-            <AppText variant="body" color="secondary">{t('noAccount')} </AppText>
-            <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-              <AppText variant="body" color="brand" bold>{t('register')}</AppText>
+            <AppText variant="bodySmall" color="secondary">
+              {t('noAccount')}{' '}
+            </AppText>
+            <TouchableOpacity onPress={() => router.push('/(auth)/register')} activeOpacity={0.7}>
+              <AppText variant="bodySmall" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.brand }}>
+                {t('register')}
+              </AppText>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -173,20 +276,20 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scroll: { paddingHorizontal: spacing[5], flexGrow: 1 },
-  header: { alignItems: 'center', marginBottom: spacing[6] },
-  langRow: { alignSelf: 'flex-end', marginBottom: spacing[4] },
-  logoBox: {
-    width: 60,
-    height: 60,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+  topBar: {
+    alignItems: 'flex-end',
+    marginBottom: spacing[2],
   },
-  card: {
-    borderWidth: 1,
-    borderRadius: 12,
-    padding: spacing[5],
+  brandHeader: {
+    alignItems: 'center',
+    marginBottom: spacing[5],
+  },
+  authCard: {
     marginBottom: spacing[4],
+  },
+  forgotBtn: {
+    alignSelf: 'flex-end',
+    marginBottom: spacing[3.5],
   },
   divider: {
     borderTopWidth: 1,
@@ -194,24 +297,43 @@ const styles = StyleSheet.create({
     paddingTop: spacing[3],
     marginBottom: spacing[3],
   },
+  demoCard: {
+    borderWidth: 1.5,
+    borderRadius: radii.xl,
+    padding: spacing[4],
+    marginBottom: spacing[4],
+  },
   demoBadge: {
-    borderRadius: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: radii.xs,
     paddingHorizontal: spacing[2],
     paddingVertical: spacing[1],
     alignSelf: 'flex-start',
     marginBottom: spacing[3],
   },
+  roleList: {
+    gap: spacing[2],
+  },
   roleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing[3],
-    borderRadius: 8,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[3],
+    borderRadius: radii.lg,
     borderWidth: 1,
-    marginBottom: spacing[2],
+  },
+  roleIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: radii.md,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   registerRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: spacing[2],
+    marginBottom: spacing[4],
   },
 });

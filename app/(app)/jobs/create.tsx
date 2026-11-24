@@ -141,7 +141,7 @@ export default function CreateJobScreen() {
             label="Standard Allowed Minutes (SAM)"
             value={sam}
             onChangeText={setSam}
-            keyboardType="decimal-pad"
+            keyboardType="numeric"
             style={styles.input}
           />
 

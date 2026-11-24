@@ -3,7 +3,6 @@ import {
   View,
   TextInput,
   TextInputProps,
-  TouchableOpacity,
   StyleSheet,
 } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
@@ -12,8 +11,10 @@ import { spacing } from '../tokens/spacing';
 import { radii } from '../tokens/radii';
 import { typography } from '../tokens/typography';
 
-interface AppInputProps extends TextInputProps {
+export interface AppInputProps extends TextInputProps {
   label?: string;
+  value?: string;
+  onChangeText?: (text: string) => void;
   error?: string;
   hint?: string;
   leftIcon?: React.ReactNode;
@@ -49,8 +50,8 @@ export function AppInput({
             borderColor: error
               ? tokens.danger
               : focused
-              ? tokens.brand
-              : tokens.border,
+                ? tokens.brand
+                : tokens.border,
             borderWidth: focused || error ? 1.5 : 1,
           },
         ]}
@@ -93,26 +94,27 @@ const styles = StyleSheet.create({
     marginBottom: spacing[3],
   },
   label: {
-    marginBottom: spacing[1],
+    marginBottom: spacing[1.5],
+    letterSpacing: 0.2,
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: radii.md,
-    paddingHorizontal: spacing[3],
-    minHeight: 48,
+    borderRadius: radii.xl,
+    paddingHorizontal: spacing[3.5],
+    minHeight: 52,
   },
   input: {
-    paddingVertical: spacing[2.5],
+    paddingVertical: spacing[3],
   },
   leftIcon: {
-    marginRight: spacing[2],
+    marginRight: spacing[2.5],
   },
   rightIcon: {
-    marginLeft: spacing[2],
+    marginLeft: spacing[2.5],
   },
   hint: {
-    marginTop: spacing[0.5],
+    marginTop: spacing[1],
     marginLeft: spacing[1],
   },
 });

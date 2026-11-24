@@ -1,15 +1,17 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Check } from 'lucide-react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { useLanguageStore } from '../../store/languageStore';
 import { AppText } from './AppText';
 import { spacing } from '../tokens/spacing';
+import { radii } from '../tokens/radii';
 import { Language } from '../../core/types';
 
-const LANGUAGES: { key: Language; label: string; native: string }[] = [
-  { key: 'en', label: 'English', native: 'English' },
-  { key: 'ta', label: 'Tamil', native: 'தமிழ்' },
-  { key: 'hi', label: 'Hindi', native: 'हिन्दी' },
+const LANGUAGES: { key: Language; label: string; native: string; sub: string }[] = [
+  { key: 'en', label: 'English', native: 'English', sub: 'Primary floor language' },
+  { key: 'ta', label: 'Tamil', native: 'தமிழ்', sub: 'தமிழ்நாடு ஆடை உற்பத்தி' },
+  { key: 'hi', label: 'Hindi', native: 'हिन्दी', sub: 'गारमेंट फ्लोर निर्देश' },
 ];
 
 interface LanguageSwitcherProps {
@@ -21,76 +23,110 @@ export function LanguageSwitcher({ compact = false }: LanguageSwitcherProps) {
   const { language, setLanguage } = useLanguageStore();
 
   if (compact) {
-    // Inline toggle
     return (
-      <View style={styles.row}>
-        {LANGUAGES.map((lang) => (
-          <TouchableOpacity
-            key={lang.key}
-            onPress={() => setLanguage(lang.key)}
-            style={[
-              styles.chip,
-              {
-                backgroundColor: lang.key === language ? tokens.brand : tokens.surface,
-                borderColor: lang.key === language ? tokens.brand : tokens.border,
-              },
-            ]}
-          >
-            <AppText
-              variant="label"
-              style={{ color: lang.key === language ? tokens.textInverse : tokens.textSecondary }}
+      <View style={styles.chipRow}>
+        {LANGUAGES.map((lang) => {
+          const isSelected = lang.key === language;
+          return (
+            <TouchableOpacity
+              key={lang.key}
+              onPress={() => setLanguage(lang.key)}
+              activeOpacity={0.8}
+              style={[
+                styles.chip,
+                {
+                  backgroundColor: isSelected ? tokens.brand : tokens.surfaceSecondary,
+                  borderColor: isSelected ? tokens.brand : tokens.border,
+                },
+              ]}
             >
-              {lang.native}
-            </AppText>
-          </TouchableOpacity>
-        ))}
+              <AppText
+                variant="label"
+                bold={isSelected}
+                style={{ color: isSelected ? tokens.textInverse : tokens.textSecondary }}
+              >
+                {lang.native}
+              </AppText>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     );
   }
 
   return (
-    <View>
-      {LANGUAGES.map((lang) => (
-        <TouchableOpacity
-          key={lang.key}
-          onPress={() => setLanguage(lang.key)}
-          style={[
-            styles.row,
-            styles.fullRow,
-            {
-              backgroundColor: lang.key === language ? tokens.brandLight : 'transparent',
-              borderRadius: 8,
-            },
-          ]}
-        >
-          <View style={{ flex: 1 }}>
-            <AppText variant="body">{lang.native}</AppText>
-            <AppText variant="caption" color="secondary">{lang.label}</AppText>
-          </View>
-          {lang.key === language && (
-            <AppText variant="body" color="brand">✓</AppText>
-          )}
-        </TouchableOpacity>
-      ))}
+    <View style={styles.container}>
+      {LANGUAGES.map((lang) => {
+        const isSelected = lang.key === language;
+        return (
+          <TouchableOpacity
+            key={lang.key}
+            onPress={() => setLanguage(lang.key)}
+            activeOpacity={0.8}
+            style={[
+              styles.fullRow,
+              {
+                backgroundColor: isSelected ? tokens.brandLight : tokens.surfaceSecondary,
+                borderColor: isSelected ? tokens.brand : tokens.border,
+                borderWidth: isSelected ? 1.5 : 1,
+              },
+            ]}
+          >
+            <View style={{ flex: 1 }}>
+              <View style={styles.nameRow}>
+                <AppText variant="body" bold style={{ color: tokens.textPrimary }}>
+                  {lang.native}
+                </AppText>
+                <AppText variant="caption" color="secondary" style={{ marginLeft: spacing[2] }}>
+                  ({lang.label})
+                </AppText>
+              </View>
+              <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
+                {lang.sub}
+              </AppText>
+            </View>
+            {isSelected && (
+              <View style={[styles.checkCircle, { backgroundColor: tokens.brand }]}>
+                <Check size={14} color={tokens.textInverse} strokeWidth={2.5} />
+              </View>
+            )}
+          </TouchableOpacity>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
+  chipRow: {
     flexDirection: 'row',
     gap: spacing[1.5],
   },
   chip: {
-    paddingHorizontal: spacing[2.5],
-    paddingVertical: spacing[1],
-    borderRadius: 20,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1.5],
+    borderRadius: radii.full,
     borderWidth: 1,
   },
+  container: {
+    gap: spacing[2],
+  },
   fullRow: {
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[3],
-    marginBottom: spacing[1],
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[3.5],
+    borderRadius: radii.md,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

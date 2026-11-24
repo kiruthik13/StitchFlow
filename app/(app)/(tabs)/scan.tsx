@@ -9,6 +9,21 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import {
+  Camera,
+  Flashlight,
+  ScanLine,
+  CheckCircle2,
+  Barcode as BarcodeIcon,
+  Search,
+  RotateCcw,
+  AlertTriangle,
+  History,
+  Tag,
+  ArrowRight,
+  ShieldCheck,
+  Package,
+} from 'lucide-react-native';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useDemoStore } from '../../../src/store/demoStore';
@@ -48,7 +63,9 @@ export default function ScanTabScreen() {
     if (!trimmed) return;
 
     const isDuplicate = recentScans.includes(trimmed);
-    const bundle = getBundleByCode(trimmed) ?? BUNDLES.find((b) => b.bundleCode.includes(trimmed.replace('BND-', '')));
+    const bundle =
+      getBundleByCode(trimmed) ??
+      BUNDLES.find((b) => b.bundleCode.includes(trimmed.replace('BND-', '')));
 
     const result: ScanResult = {
       code: trimmed,
@@ -75,7 +92,11 @@ export default function ScanTabScreen() {
 
   const handleConfirmQuantity = () => {
     if (!scanResult?.resolvedBundle) return;
-    const success = submitProductionQty(scanResult.resolvedBundle.id, quantity, scanResult.resolvedBundle.currentStage);
+    const success = submitProductionQty(
+      scanResult.resolvedBundle.id,
+      quantity,
+      scanResult.resolvedBundle.currentStage
+    );
     setShowConfirm(false);
     if (success) setPhase('confirmed');
   };
@@ -89,11 +110,11 @@ export default function ScanTabScreen() {
 
   const getActionLabel = (): string => {
     const role = user?.role;
-    if (role === 'operator') return 'Enter Quantity';
-    if (role === 'qc-inspector') return 'Start Inspection';
-    if (role === 'packing-staff') return 'Pack Bundle';
-    if (role === 'store-dispatch') return 'Record Movement';
-    return 'View Details';
+    if (role === 'operator') return 'Enter Output Quantity';
+    if (role === 'qc-inspector') return 'Start Quality Inspection';
+    if (role === 'packing-staff') return 'Pack Verified Bundle';
+    if (role === 'store-dispatch') return 'Record Dispatch Movement';
+    return 'View Bundle Details';
   };
 
   const handlePrimaryAction = () => {
@@ -112,100 +133,230 @@ export default function ScanTabScreen() {
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: tokens.surface, borderBottomColor: tokens.border, paddingTop: insets.top + spacing[3] }]}>
-        <AppText variant="h3" bold style={{ color: tokens.textPrimary }}>Scanner</AppText>
-        <View style={[styles.netBadge, { backgroundColor: tokens.warningLight }]}>
-          <AppText variant="caption" style={{ color: tokens.warning }}>Demo — Offline</AppText>
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: tokens.surface,
+            borderBottomColor: tokens.border,
+            paddingTop: insets.top + spacing[3],
+          },
+        ]}
+      >
+        <View style={styles.headerRow}>
+          <View>
+            <AppText variant="h3" bold style={{ color: tokens.textPrimary }}>
+              Barcode Scanner
+            </AppText>
+            <AppText variant="caption" color="secondary">
+              Optical QR / 1D & HID Scanner
+            </AppText>
+          </View>
+          <StatusBadge label="DEMO SCANNER" variant="warning" size="sm" />
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]} showsVerticalScrollIndicator={false}>
-
-        {/* Camera viewport placeholder */}
-        <View style={[styles.viewport, { borderColor: tokens.border, backgroundColor: tokens.surfaceSecondary }]}>
-          {/* Scan brackets */}
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: insets.bottom + spacing[8] },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Optical Viewport / Industrial HUD */}
+        <View
+          style={[
+            styles.viewport,
+            {
+              borderColor: tokens.border,
+              backgroundColor: tokens.surfaceSecondary,
+            },
+          ]}
+        >
+          {/* Laser Corner Reticles */}
           <View style={[styles.bracketTL, { borderColor: tokens.brand }]} />
           <View style={[styles.bracketTR, { borderColor: tokens.brand }]} />
           <View style={[styles.bracketBL, { borderColor: tokens.brand }]} />
           <View style={[styles.bracketBR, { borderColor: tokens.brand }]} />
 
+          {/* Central Target Reticle */}
           <View style={styles.viewportContent}>
-            <AppText style={{ fontSize: 48 }}>📷</AppText>
-            <AppText variant="body" color="secondary" center style={{ marginTop: spacing[2] }}>
-              Camera scanner
+            <View style={[styles.iconAura, { backgroundColor: tokens.brandLight }]}>
+              <ScanLine size={44} color={tokens.brand} strokeWidth={1.75} />
+            </View>
+
+            <AppText variant="label" bold center style={{ color: tokens.textPrimary, marginTop: spacing[3] }}>
+              POINT AT BUNDLE BARCODE
             </AppText>
-            <AppText variant="caption" color="secondary" center>
-              Point camera at barcode or QR code
+            <AppText variant="caption" color="secondary" center style={{ marginTop: 2, paddingHorizontal: spacing[4] }}>
+              QR codes and Code-128 industrial tags are decoded instantly.
             </AppText>
+
+            {/* Torch Control Button */}
             <TouchableOpacity
+              activeOpacity={0.8}
               onPress={() => setTorchOn(!torchOn)}
-              style={[styles.torchBtn, { backgroundColor: torchOn ? tokens.warning : tokens.surface, borderColor: tokens.border }]}
+              style={[
+                styles.torchBtn,
+                {
+                  backgroundColor: torchOn ? tokens.warning : tokens.surface,
+                  borderColor: torchOn ? tokens.warning : tokens.border,
+                },
+              ]}
             >
-              <AppText style={{ fontSize: 16 }}>🔦</AppText>
-              <AppText variant="caption" style={{ color: torchOn ? tokens.warning : tokens.textSecondary, marginLeft: 4 }}>
-                {torchOn ? 'ON' : 'OFF'}
+              <Flashlight
+                size={16}
+                color={torchOn ? tokens.textInverse : tokens.textSecondary}
+                strokeWidth={2}
+              />
+              <AppText
+                variant="caption"
+                bold
+                style={{
+                  color: torchOn ? tokens.textInverse : tokens.textSecondary,
+                  marginLeft: spacing[1.5],
+                }}
+              >
+                TORCH: {torchOn ? 'ON' : 'OFF'}
               </AppText>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Demo scan hint chips */}
-        <AppText variant="caption" color="secondary" style={{ marginBottom: spacing[1.5] }}>
-          Demo: Tap to scan a bundle code
-        </AppText>
-        <View style={styles.hintRow}>
-          {DEMO_CODES.map((code) => (
-            <TouchableOpacity
-              key={code}
-              onPress={() => handleDemoScan(code)}
-              style={[styles.hintChip, { backgroundColor: tokens.brandLight, borderColor: tokens.brand }]}
+        {/* Quick Demo Scan Chips */}
+        <View style={styles.demoSection}>
+          <View style={styles.demoSectionHeader}>
+            <Tag size={13} color={tokens.textSecondary} />
+            <AppText
+              variant="caption"
+              color="secondary"
+              uppercase
+              bold
+              style={{ marginLeft: spacing[1.5], letterSpacing: 0.6 }}
             >
-              <AppText variant="codeSmall" mono style={{ color: tokens.brand }}>{code}</AppText>
-            </TouchableOpacity>
-          ))}
+              Quick Test Bundles (Tap to Simulate Scan)
+            </AppText>
+          </View>
+          <View style={styles.hintRow}>
+            {DEMO_CODES.map((code) => (
+              <TouchableOpacity
+                key={code}
+                onPress={() => handleDemoScan(code)}
+                activeOpacity={0.7}
+                style={[
+                  styles.hintChip,
+                  {
+                    backgroundColor: tokens.surfaceSecondary,
+                    borderColor: tokens.border,
+                  },
+                ]}
+              >
+                <BarcodeIcon size={12} color={tokens.brand} />
+                <AppText variant="codeSmall" mono bold style={{ color: tokens.textPrimary, marginLeft: 4 }}>
+                  {code}
+                </AppText>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
-        {/* Manual input */}
-        <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
-          <AppText variant="label" bold style={{ marginBottom: spacing[2] }}>Manual Barcode Entry</AppText>
-          <View style={[styles.inputRow, { borderColor: phase === 'idle' ? tokens.border : tokens.brand, backgroundColor: tokens.surface }]}>
+        {/* Manual Input Card */}
+        <AppCard padding={spacing[3.5]} style={{ marginBottom: spacing[3] }}>
+          <AppText variant="caption" color="secondary" uppercase bold style={{ letterSpacing: 0.6, marginBottom: spacing[2] }}>
+            Manual Barcode Entry
+          </AppText>
+          <View
+            style={[
+              styles.inputRow,
+              {
+                borderColor: tokens.border,
+                backgroundColor: tokens.surfaceSecondary,
+              },
+            ]}
+          >
+            <View style={{ paddingLeft: spacing[3] }}>
+              <Search size={18} color={tokens.textSecondary} />
+            </View>
             <TextInput
               value={manualCode}
               onChangeText={setManualCode}
               placeholder="e.g. BND-00521"
               placeholderTextColor={tokens.textDisabled}
               autoCapitalize="characters"
-              style={[styles.textInput, { color: tokens.textPrimary, fontFamily: typography.fontFamily.mono, fontSize: typography.fontSize.base }]}
+              style={[
+                styles.textInput,
+                {
+                  color: tokens.textPrimary,
+                  fontFamily: typography.fontFamily.mono,
+                  fontSize: typography.fontSize.base,
+                },
+              ]}
               onSubmitEditing={handleManualLookup}
               returnKeyType="search"
             />
             <TouchableOpacity
               onPress={handleManualLookup}
+              activeOpacity={0.8}
               style={[styles.lookupBtn, { backgroundColor: tokens.brand }]}
             >
-              <AppText variant="label" color="inverse" bold>Look up</AppText>
+              <AppText variant="label" color="inverse" bold>
+                Lookup
+              </AppText>
             </TouchableOpacity>
           </View>
         </AppCard>
 
-        {/* Scan result */}
+        {/* Scan Result Notice */}
         {scanResult && phase !== 'idle' && (
           <View style={{ marginBottom: spacing[3] }}>
             {scanResult.status === 'duplicate' && (
-              <View style={[styles.warningBox, { backgroundColor: tokens.warningLight, borderColor: tokens.warning }]}>
-                <AppText variant="label" bold style={{ color: tokens.warning }}>⚠ Duplicate Scan</AppText>
-                <AppText variant="caption" color="secondary">This code was already scanned in this session.</AppText>
+              <View
+                style={[
+                  styles.warningBox,
+                  {
+                    backgroundColor: tokens.warningLight,
+                    borderColor: tokens.warning,
+                  },
+                ]}
+              >
+                <AlertTriangle size={18} color={tokens.warning} />
+                <View style={{ flex: 1, marginLeft: spacing[2.5] }}>
+                  <AppText variant="label" bold style={{ color: tokens.warning }}>
+                    Duplicate Scan Warning
+                  </AppText>
+                  <AppText variant="caption" color="secondary">
+                    This barcode was already registered during this active shift session.
+                  </AppText>
+                </View>
               </View>
             )}
             <BarcodeResultCard result={scanResult} />
           </View>
         )}
 
-        {/* Bundle details + action */}
+        {/* Bundle Details & Primary Action */}
         {scanResult?.resolvedBundle && phase === 'resolved' && (
           <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
-            <AppText variant="h4" bold style={{ marginBottom: spacing[3] }}>Bundle Details</AppText>
+            <View style={styles.cardHeaderRow}>
+              <View>
+                <AppText variant="h4" bold style={{ color: tokens.textPrimary }}>
+                  Bundle Specification
+                </AppText>
+                <AppText variant="caption" color="secondary">
+                  Ready for station processing
+                </AppText>
+              </View>
+              <StatusBadge
+                label={scanResult.resolvedBundle.currentStage.toUpperCase()}
+                variant="brand"
+                size="sm"
+              />
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: tokens.border }]} />
+
             <BundleDetail bundle={scanResult.resolvedBundle} tokens={tokens} />
+
             <AppButton
               title={getActionLabel()}
               fullWidth
@@ -216,13 +367,16 @@ export default function ScanTabScreen() {
           </AppCard>
         )}
 
-        {/* Quantity entry for operator */}
+        {/* Operator Output Quantity Entry */}
         {phase === 'quantity-entry' && scanResult?.resolvedBundle && (
           <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
-            <AppText variant="h4" bold style={{ marginBottom: spacing[1] }}>Enter Completed Quantity</AppText>
-            <AppText variant="caption" color="secondary" style={{ marginBottom: spacing[4] }}>
-              Bundle: {scanResult.resolvedBundle.bundleCode} · Max: {scanResult.resolvedBundle.quantity} pcs
+            <AppText variant="h4" bold style={{ color: tokens.textPrimary, marginBottom: 2 }}>
+              Enter Completed Units
             </AppText>
+            <AppText variant="caption" color="secondary" style={{ marginBottom: spacing[4] }}>
+              Bundle: {scanResult.resolvedBundle.bundleCode} · Max Batch Size: {scanResult.resolvedBundle.quantity} pcs
+            </AppText>
+
             <View style={{ alignItems: 'center', marginBottom: spacing[4] }}>
               <QuantityStepper
                 value={quantity}
@@ -231,8 +385,9 @@ export default function ScanTabScreen() {
                 max={scanResult.resolvedBundle.quantity}
               />
             </View>
+
             <AppButton
-              title={`Confirm ${quantity} pcs`}
+              title={`Confirm ${quantity} pcs Completed`}
               fullWidth
               size="lg"
               onPress={() => setShowConfirm(true)}
@@ -241,47 +396,78 @@ export default function ScanTabScreen() {
           </AppCard>
         )}
 
-        {/* Success state */}
+        {/* Success Confirmation State */}
         {phase === 'confirmed' && (
-          <AppCard padding={spacing[5]} style={{ marginBottom: spacing[3], alignItems: 'center' }}>
-            <AppText style={{ fontSize: 48, marginBottom: spacing[2] }}>✅</AppText>
-            <AppText variant="h3" bold center style={{ marginBottom: spacing[1] }}>Submitted!</AppText>
-            <AppText variant="body" color="secondary" center style={{ marginBottom: spacing[4] }}>
-              {quantity} pcs recorded for {scanResult?.code}
+          <AppCard
+            padding={spacing[5]}
+            style={[styles.confirmedCard, { marginBottom: spacing[3] }]}
+          >
+            <View style={[styles.successIconCircle, { backgroundColor: tokens.successLight }]}>
+              <CheckCircle2 size={44} color={tokens.success} strokeWidth={2.2} />
+            </View>
+            <AppText variant="h3" bold center style={{ color: tokens.textPrimary, marginTop: spacing[3] }}>
+              Production Recorded
             </AppText>
-            <AppText variant="caption" style={{ color: tokens.warning, marginBottom: spacing[4] }}>
-              Demo mode — not saved to server
+            <AppText variant="body" color="secondary" center style={{ marginTop: 2 }}>
+              {quantity} units registered for bundle {scanResult?.code}
             </AppText>
-            <AppButton title="Scan Next Bundle" fullWidth onPress={handleReset} />
+            <View style={[styles.demoStamp, { backgroundColor: tokens.surfaceSecondary }]}>
+              <AppText variant="caption" color="secondary" mono>
+                SESSION SYNCED · MOCK STORE
+              </AppText>
+            </View>
+            <AppButton
+              title="Scan Next Bundle"
+              fullWidth
+              size="lg"
+              style={{ marginTop: spacing[4] }}
+              onPress={handleReset}
+            />
           </AppCard>
         )}
 
-        {/* Scan history */}
+        {/* Recent Session Scan History */}
         {recentScans.length > 0 && (
-          <AppCard padding={spacing[3]}>
-            <AppText variant="label" bold style={{ marginBottom: spacing[2] }}>Recent Scans ({recentScans.length})</AppText>
+          <AppCard padding={spacing[3.5]}>
+            <View style={styles.historyHeader}>
+              <History size={16} color={tokens.textSecondary} />
+              <AppText variant="label" bold style={{ marginLeft: spacing[2], color: tokens.textPrimary }}>
+                Session Scan Log ({recentScans.length})
+              </AppText>
+            </View>
             {recentScans.slice(0, 5).map((code, i) => (
-              <View key={i} style={[styles.historyRow, { borderBottomColor: tokens.border }]}>
-                <AppText variant="codeSmall" mono style={{ color: tokens.textPrimary }}>{code}</AppText>
-                <AppText variant="caption" color="secondary">Session</AppText>
+              <View
+                key={i}
+                style={[
+                  styles.historyRow,
+                  { borderBottomColor: tokens.border },
+                  i === recentScans.slice(0, 5).length - 1 && { borderBottomWidth: 0 },
+                ]}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <BarcodeIcon size={14} color={tokens.textSecondary} />
+                  <AppText variant="codeSmall" mono bold style={{ color: tokens.textPrimary, marginLeft: spacing[2] }}>
+                    {code}
+                  </AppText>
+                </View>
+                <StatusBadge label="VERIFIED" variant="neutral" size="sm" />
               </View>
             ))}
           </AppCard>
         )}
-
       </ScrollView>
 
-      {/* Confirm sheet */}
+      {/* Confirm Action Sheet */}
       <ConfirmSheet
         visible={showConfirm}
-        title="Confirm Action"
+        title="Confirm Floor Update"
         message={
           user?.role === 'operator'
-            ? `Record ${quantity} pcs for bundle ${scanResult?.code}? This will update the bundle status.`
-            : `Pack bundle ${scanResult?.code}? Confirm QC-released quantity only.`
+            ? `Submit ${quantity} completed pcs for bundle ${scanResult?.code}? This updates WIP and stage progress.`
+            : `Pack bundle ${scanResult?.code}? Confirm carton allocation and QC release compliance.`
         }
-        confirmLabel="Yes, Confirm"
-        cancelLabel="Cancel"
+        confirmLabel="Confirm Update"
+        cancelLabel="Review"
         onConfirm={handleConfirmQuantity}
         onCancel={() => setShowConfirm(false)}
       />
@@ -291,21 +477,38 @@ export default function ScanTabScreen() {
 
 function BundleDetail({ bundle, tokens }: { bundle: Bundle; tokens: any }) {
   const rows = [
-    ['Bundle', bundle.bundleCode],
-    ['Job', bundle.jobCode],
-    ['Style', bundle.styleName],
-    ['Color', bundle.color],
-    ['Size', bundle.size],
-    ['Qty', String(bundle.quantity)],
-    ['Stage', bundle.currentStage],
-    ['Operator', bundle.operatorName ?? '—'],
+    { label: 'Bundle Code', value: bundle.bundleCode, mono: true },
+    { label: 'Job Order', value: bundle.jobCode, mono: true },
+    { label: 'Style Name', value: bundle.styleName, mono: false },
+    { label: 'Color / Wash', value: bundle.color, mono: false },
+    { label: 'Size', value: bundle.size, mono: true },
+    { label: 'Batch Qty', value: `${bundle.quantity} pcs`, mono: true },
+    { label: 'Current Stage', value: bundle.currentStage, mono: false },
+    { label: 'Assigned Operator', value: bundle.operatorName ?? 'Unassigned', mono: false },
   ];
+
   return (
-    <View>
-      {rows.map(([label, value]) => (
-        <View key={label} style={[styles.detailRow, { borderBottomColor: tokens.border }]}>
-          <AppText variant="caption" color="secondary" style={{ width: 70 }}>{label}</AppText>
-          <AppText variant="label" mono style={{ color: tokens.textPrimary }}>{value}</AppText>
+    <View style={styles.detailContainer}>
+      {rows.map((r, i) => (
+        <View
+          key={r.label}
+          style={[
+            styles.detailRow,
+            { borderBottomColor: tokens.border },
+            i === rows.length - 1 && { borderBottomWidth: 0 },
+          ]}
+        >
+          <AppText variant="caption" color="secondary" style={{ width: 110 }}>
+            {r.label}
+          </AppText>
+          <AppText
+            variant="label"
+            mono={r.mono}
+            bold={r.mono}
+            style={{ color: tokens.textPrimary, flex: 1, textAlign: 'right' }}
+          >
+            {r.value}
+          </AppText>
         </View>
       ))}
     </View>
@@ -314,13 +517,23 @@ function BundleDetail({ bundle, tokens }: { bundle: Bundle; tokens: any }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing[4], paddingBottom: spacing[3], borderBottomWidth: 1, justifyContent: 'space-between' },
-  netBadge: { paddingHorizontal: spacing[2], paddingVertical: spacing[0.5], borderRadius: radii.full },
-  scroll: { padding: spacing[4] },
+  header: {
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[3],
+    borderBottomWidth: 1,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  scroll: {
+    padding: spacing[4],
+  },
   viewport: {
     width: '100%',
-    height: 260,
-    borderWidth: 1,
+    height: 250,
+    borderWidth: 1.5,
     borderRadius: radii.xl,
     marginBottom: spacing[3],
     position: 'relative',
@@ -328,18 +541,160 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  viewportContent: { alignItems: 'center' },
-  bracketTL: { position: 'absolute', top: 20, left: 20, width: 32, height: 32, borderTopWidth: 3, borderLeftWidth: 3 },
-  bracketTR: { position: 'absolute', top: 20, right: 20, width: 32, height: 32, borderTopWidth: 3, borderRightWidth: 3 },
-  bracketBL: { position: 'absolute', bottom: 20, left: 20, width: 32, height: 32, borderBottomWidth: 3, borderLeftWidth: 3 },
-  bracketBR: { position: 'absolute', bottom: 20, right: 20, width: 32, height: 32, borderBottomWidth: 3, borderRightWidth: 3 },
-  torchBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing[3], paddingVertical: spacing[1], borderRadius: radii.full, borderWidth: 1, marginTop: spacing[3] },
-  hintRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[1.5], marginBottom: spacing[3] },
-  hintChip: { paddingHorizontal: spacing[2], paddingVertical: spacing[1], borderRadius: radii.full, borderWidth: 1 },
-  inputRow: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderRadius: radii.md, overflow: 'hidden' },
-  textInput: { flex: 1, paddingHorizontal: spacing[3], paddingVertical: spacing[2.5] },
-  lookupBtn: { paddingHorizontal: spacing[3], paddingVertical: spacing[2.5] },
-  warningBox: { borderWidth: 1, borderRadius: 8, padding: spacing[3], marginBottom: spacing[2] },
-  historyRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing[1.5], borderBottomWidth: 1 },
-  detailRow: { flexDirection: 'row', paddingVertical: spacing[1.5], borderBottomWidth: 1 },
+  viewportContent: {
+    alignItems: 'center',
+  },
+  iconAura: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bracketTL: {
+    position: 'absolute',
+    top: 16,
+    left: 16,
+    width: 28,
+    height: 28,
+    borderTopWidth: 3,
+    borderLeftWidth: 3,
+    borderRadius: 2,
+  },
+  bracketTR: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 28,
+    height: 28,
+    borderTopWidth: 3,
+    borderRightWidth: 3,
+    borderRadius: 2,
+  },
+  bracketBL: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    width: 28,
+    height: 28,
+    borderBottomWidth: 3,
+    borderLeftWidth: 3,
+    borderRadius: 2,
+  },
+  bracketBR: {
+    position: 'absolute',
+    bottom: 16,
+    right: 16,
+    width: 28,
+    height: 28,
+    borderBottomWidth: 3,
+    borderRightWidth: 3,
+    borderRadius: 2,
+  },
+  torchBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[3.5],
+    paddingVertical: spacing[1.5],
+    borderRadius: radii.full,
+    borderWidth: 1,
+    marginTop: spacing[3],
+    minHeight: 36,
+  },
+  demoSection: {
+    marginBottom: spacing[3],
+  },
+  demoSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing[1.5],
+  },
+  hintRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[1.5],
+  },
+  hintChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[2.5],
+    paddingVertical: spacing[1.5],
+    borderRadius: radii.md,
+    borderWidth: 1,
+    minHeight: 32,
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: radii.md,
+    overflow: 'hidden',
+  },
+  textInput: {
+    flex: 1,
+    paddingHorizontal: spacing[2.5],
+    paddingVertical: spacing[2.5],
+    minHeight: 48,
+  },
+  lookupBtn: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2.5],
+    minHeight: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  warningBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: radii.md,
+    padding: spacing[3],
+    marginBottom: spacing[2],
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  divider: {
+    height: 1,
+    marginVertical: spacing[3],
+  },
+  detailContainer: {
+    gap: 0,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing[2],
+    borderBottomWidth: 1,
+  },
+  confirmedCard: {
+    alignItems: 'center',
+  },
+  successIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  demoStamp: {
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1],
+    borderRadius: radii.full,
+    marginTop: spacing[3],
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing[2.5],
+  },
+  historyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing[2],
+    borderBottomWidth: 1,
+  },
 });

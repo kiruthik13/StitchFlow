@@ -1,0 +1,23 @@
+export const APP_CONFIG = {
+  appName: 'StitchFlow',
+  version: '1.0.0',
+  buildNumber: 1,
+  apiTimeoutMs: 10000,
+  defaultLanguage: 'en' as const,
+  defaultTheme: 'light' as const,
+  supportedLanguages: ['en', 'ta', 'hi'] as const,
+  isDemoMode: true,
+  cameraSupportedFormats: [
+    'qr',
+    'code128',
+    'code39',
+    'ean13',
+    'ean8',
+    'upc_a',
+    'upc_e',
+    'itf14',
+    'datamatrix',
+    'pdf417',
+    'aztec',
+  ] as const,
+};

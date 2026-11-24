@@ -19,8 +19,8 @@ interface QuickOperationsGridProps {
   columns?: 2 | 3 | 4;
 }
 
-export function QuickOperationsGrid({ operations, columns = 2 }: QuickOperationsGridProps) {
-  const { tokens } = useThemeStore();
+export function QuickOperationsGrid({ operations, columns = 3 }: QuickOperationsGridProps) {
+  const { tokens, mode } = useThemeStore();
   const rows: QuickOperation[][] = [];
   for (let i = 0; i < operations.length; i += columns) {
     rows.push(operations.slice(i, i + columns));
@@ -35,7 +35,7 @@ export function QuickOperationsGrid({ operations, columns = 2 }: QuickOperations
               key={op.id}
               onPress={op.onPress}
               disabled={op.disabled}
-              activeOpacity={0.75}
+              activeOpacity={0.7}
               style={[
                 styles.cell,
                 {
@@ -46,17 +46,29 @@ export function QuickOperationsGrid({ operations, columns = 2 }: QuickOperations
                 },
               ]}
             >
-              <View style={[styles.iconWrap, { backgroundColor: tokens.brandLight }]}>
+              <View
+                style={[
+                  styles.iconWrap,
+                  {
+                    backgroundColor: mode === 'dark' ? '#203D2A' : '#E6F7AD',
+                  },
+                ]}
+              >
                 {op.icon}
                 {op.badge !== undefined && op.badge > 0 && (
                   <View style={[styles.badge, { backgroundColor: tokens.danger }]}>
-                    <AppText variant="caption" color="inverse" style={{ fontSize: 9 }}>
+                    <AppText variant="caption" color="inverse" style={{ fontSize: 9, fontWeight: '800' }}>
                       {op.badge > 99 ? '99+' : op.badge}
                     </AppText>
                   </View>
                 )}
               </View>
-              <AppText variant="label" color="primary" center style={styles.label}>
+              <AppText
+                variant="caption"
+                bold
+                style={[styles.label, { color: tokens.textPrimary }]}
+                numberOfLines={1}
+              >
                 {op.label}
               </AppText>
             </TouchableOpacity>
@@ -80,19 +92,20 @@ const styles = StyleSheet.create({
   },
   cell: {
     borderWidth: 1,
-    borderRadius: radii.lg,
-    padding: spacing[3],
+    borderRadius: radii.xl,
+    paddingVertical: spacing[2.5],
+    paddingHorizontal: spacing[1.5],
     alignItems: 'center',
-    minHeight: 96,
+    minHeight: 74,
     justifyContent: 'center',
   },
   iconWrap: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
     borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing[2],
+    marginBottom: spacing[1],
     position: 'relative',
   },
   badge: {
@@ -104,10 +117,11 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 2,
+    paddingHorizontal: 3,
   },
   label: {
     textAlign: 'center',
-    fontSize: 12,
+    fontSize: 11,
+    letterSpacing: 0.1,
   },
 });

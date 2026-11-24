@@ -11,11 +11,12 @@ import { AppText } from './AppText';
 import { spacing } from '../tokens/spacing';
 import { radii } from '../tokens/radii';
 
-type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline';
+type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost' | 'outline' | 'lime';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
-interface AppButtonProps extends TouchableOpacityProps {
+export interface AppButtonProps extends TouchableOpacityProps {
   title: string;
+  onPress?: (event?: any) => void;
   variant?: ButtonVariant;
   size?: ButtonSize;
   loading?: boolean;
@@ -36,50 +37,57 @@ export function AppButton({
   style,
   ...props
 }: AppButtonProps) {
-  const { tokens } = useThemeStore();
+  const { tokens, mode } = useThemeStore();
 
   const isDisabled = disabled || loading;
 
   const bgMap: Record<ButtonVariant, string> = {
-    primary: tokens.brand,
+    primary: mode === 'dark' ? tokens.signatureLime : tokens.brand,
     secondary: tokens.surfaceSecondary,
     danger: tokens.danger,
     ghost: 'transparent',
     outline: 'transparent',
+    lime: tokens.signatureLime,
   };
 
-  const textColorMap: Record<ButtonVariant, 'primary' | 'secondary' | 'brand' | 'inverse' | 'danger'> = {
-    primary: 'inverse',
-    secondary: 'primary',
-    danger: 'inverse',
-    ghost: 'brand',
-    outline: 'brand',
+  const getTextColor = (): 'primary' | 'secondary' | 'brand' | 'inverse' | 'danger' => {
+    if (variant === 'lime') return 'inverse'; // Dark forest text
+    if (variant === 'primary') return mode === 'dark' ? 'inverse' : 'inverse';
+    if (variant === 'secondary') return 'primary';
+    if (variant === 'danger') return 'inverse';
+    if (variant === 'ghost' || variant === 'outline') return 'brand';
+    return 'primary';
   };
 
-  const paddingMap: Record<ButtonSize, { paddingVertical: number; paddingHorizontal: number }> = {
-    sm: { paddingVertical: spacing[1.5], paddingHorizontal: spacing[3] },
-    md: { paddingVertical: spacing[2.5], paddingHorizontal: spacing[4] },
-    lg: { paddingVertical: spacing[3.5], paddingHorizontal: spacing[6] },
+  const paddingMap: Record<ButtonSize, { paddingVertical: number; paddingHorizontal: number; minHeight: number }> = {
+    sm: { paddingVertical: spacing[2], paddingHorizontal: spacing[3], minHeight: 40 },
+    md: { paddingVertical: spacing[3], paddingHorizontal: spacing[4], minHeight: 48 },
+    lg: { paddingVertical: spacing[3.5], paddingHorizontal: spacing[6], minHeight: 54 },
   };
 
   const fontSizeMap: Record<ButtonSize, 'bodySmall' | 'body' | 'md'> = {
     sm: 'bodySmall',
     md: 'body',
-    lg: 'md',
+    lg: 'body',
   };
+
+  // Contrast override for lime surface
+  const customTextColor = (variant === 'lime' || (variant === 'primary' && mode === 'dark'))
+    ? '#0D2B20'
+    : undefined;
 
   return (
     <TouchableOpacity
-      activeOpacity={0.75}
+      activeOpacity={0.8}
       disabled={isDisabled}
       style={[
         styles.base,
         {
           backgroundColor: bgMap[variant],
-          borderRadius: radii.md,
-          borderWidth: variant === 'outline' ? 1 : 0,
-          borderColor: variant === 'outline' ? tokens.brand : 'transparent',
-          opacity: isDisabled ? 0.5 : 1,
+          borderRadius: radii.xl,
+          borderWidth: variant === 'outline' ? 1.5 : 0,
+          borderColor: variant === 'outline' ? tokens.borderStrong : 'transparent',
+          opacity: isDisabled ? 0.45 : 1,
           ...paddingMap[size],
         },
         fullWidth && styles.fullWidth,
@@ -90,19 +98,20 @@ export function AppButton({
       {loading ? (
         <ActivityIndicator
           size="small"
-          color={variant === 'primary' || variant === 'danger' ? tokens.textInverse : tokens.brand}
+          color={customTextColor || tokens.textInverse}
         />
       ) : (
         <View style={styles.content}>
-          {leftIcon && <View style={{ marginRight: spacing[1.5] }}>{leftIcon}</View>}
+          {leftIcon && <View style={{ marginRight: spacing[2] }}>{leftIcon}</View>}
           <AppText
             variant={fontSizeMap[size] as 'bodySmall' | 'body'}
-            color={textColorMap[variant]}
+            color={customTextColor ? undefined : getTextColor()}
             bold
+            style={customTextColor ? { color: customTextColor, letterSpacing: 0.3 } : { letterSpacing: 0.3 }}
           >
             {title}
           </AppText>
-          {rightIcon && <View style={{ marginLeft: spacing[1.5] }}>{rightIcon}</View>}
+          {rightIcon && <View style={{ marginLeft: spacing[2] }}>{rightIcon}</View>}
         </View>
       )}
     </TouchableOpacity>

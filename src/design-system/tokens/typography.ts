@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 
 export const typography = {
-  // Font families with system fallbacks
+  // Font families with system fallbacks (Inter / Manrope / JetBrains Mono)
   fontFamily: {
     sansRegular: Platform.select({ ios: 'System', android: 'sans-serif', default: 'System' }),
     sansMedium: Platform.select({ ios: 'System', android: 'sans-serif-medium', default: 'System' }),
@@ -12,35 +12,35 @@ export const typography = {
     sans: Platform.select({ ios: 'System', android: 'sans-serif', default: 'System' }),
   },
 
-  // Font sizes — 4pt base scale
+  // Font sizes — Scale strictly aligned with mobile ergonomic requirements
   fontSize: {
-    xs: 11,
-    sm: 12,
-    base: 14,
+    xs: 11,      // Status badges: 11-12sp
+    sm: 12,      // Supporting labels: 12-13sp
+    base: 14,    // Body text: 14-16sp
     md: 15,
     lg: 16,
-    xl: 18,
+    xl: 18,      // Section headings: 18-20sp
     '2xl': 20,
-    '3xl': 24,
+    '3xl': 24,    // Screen titles: 24-28sp / KPI values: 24-28sp
     '4xl': 28,
-    '5xl': 32,
-    '6xl': 40,
+    '5xl': 36,    // Hero production numbers: 34-38sp
+    '6xl': 42,
   },
 
   // Line heights
   lineHeight: {
-    tight: 1.2,
-    snug: 1.35,
-    normal: 1.5,
-    relaxed: 1.65,
+    tight: 1.15,
+    snug: 1.3,
+    normal: 1.45,
+    relaxed: 1.6,
   },
 
-  // Letter spacing — only for Latin/English
+  // Letter spacing
   letterSpacing: {
     tight: -0.5,
     normal: 0,
-    wide: 0.5,
-    wider: 1,
-    widest: 2,
+    wide: 0.4,
+    wider: 0.8,
+    widest: 1.5,
   },
 } as const;
