@@ -4,27 +4,26 @@
     "slug": "stitchflow",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/icons/app-icon.png",
     "scheme": "stitchflow",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#102D23"
-    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.stitchflow.app"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#022e1b"
+        "foregroundImage": "./assets/icons/adaptive-icon-foreground.png",
+        "backgroundImage": "./assets/icons/adaptive-icon-background.png",
+        "monochromeImage": "./assets/icons/monochrome-icon.png",
+        "backgroundColor": "#FFFFFF"
       },
       "package": "com.stitchflow.app",
       "permissions": [
         "CAMERA",
-        "VIBRATE"
+        "VIBRATE",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -42,10 +41,11 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash.png",
-          "backgroundColor": "#102D23",
+          "image": "./assets/splash/splash-icon.png",
+          "backgroundColor": "#FFFFFF",
           "dark": {
-            "backgroundColor": "#102D23"
+            "image": "./assets/splash/splash-icon-dark.png",
+            "backgroundColor": "#11161E"
           }
         }
       ]
@@ -53,6 +53,16 @@
     "experiments": {
       "typedRoutes": true
     },
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "2df35e37-7a91-4844-b66a-cc9549f80838"
+      }
+    }
   }
 }

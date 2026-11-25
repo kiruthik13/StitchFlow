@@ -8,12 +8,12 @@ import { useAuthStore } from '../../store/authStore';
 import { useDemoStore } from '../../store/demoStore';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
-import { MetricCard } from '../../design-system/components/MetricCard';
 import { GarmentTicketCard } from '../../design-system/components/GarmentTicketCard';
 import { BottomScanAction } from '../../design-system/components/BottomScanAction';
 import { StatusBadge } from '../../design-system/components/StatusBadge';
 import { FilterBar } from '../../design-system/components/FilterBar';
 import { EmptyState } from '../../design-system/components/EmptyState';
+import { PressableScale } from '../../design-system/components/PressableScale';
 import { BrandHeader } from '../../design-system/components/branding/BrandHeader';
 import { QuickOperationsGrid, QuickOperation } from '../../design-system/components/QuickOperationsGrid';
 import { spacing } from '../../design-system/tokens/spacing';
@@ -77,34 +77,58 @@ export function OperatorDashboard() {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Output Today */}
+        {/* Output Today — High-Contrast Forest Workstation Strip */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
           {t('production:myOutputToday')}
         </AppText>
-        <View style={styles.grid2}>
-          <View style={{ flex: 1 }}>
-            <MetricCard
-              label={t('common:completed')}
-              value="267"
-              unit="pcs"
-              variant="lime"
-              trend={{ value: '83% pace', isPositive: true }}
-              icon={<CheckCircle2 size={14} color={tokens.success} strokeWidth={2.4} />}
-              compact
-            />
+        <AppCard variant="forest" padding={spacing[4]}>
+          <View style={styles.opHeroTop}>
+            <View>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>
+                {t('common:completed')}
+              </AppText>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                <AppText
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: 40,
+                    lineHeight: 50,
+                    fontWeight: '800',
+                    includeFontPadding: false,
+                    fontVariant: ['tabular-nums'],
+                  }}
+                >
+                  267
+                </AppText>
+                <AppText variant="bodySmall" style={{ color: 'rgba(255, 255, 255, 0.76)', marginLeft: 6 }}>
+                  / 320 pcs
+                </AppText>
+              </View>
+            </View>
+            <View style={[styles.pacePill, { backgroundColor: 'rgba(52, 199, 101, 0.20)' }]}>
+              <CheckCircle2 size={14} color="#34C765" strokeWidth={2.4} />
+              <AppText variant="caption" bold style={{ color: '#FFFFFF', marginLeft: 4 }}>
+                83% pace
+              </AppText>
+            </View>
           </View>
-          <View style={{ width: spacing[2] }} />
-          <View style={{ flex: 1 }}>
-            <MetricCard
-              label={t('production:shiftTarget')}
-              value="320"
-              unit="pcs"
-              subLabel={t('production:pcsRemaining', { count: 53 })}
-              icon={<Clock size={14} color={tokens.textSecondary} strokeWidth={2.4} />}
-              compact
-            />
+
+          <View style={styles.opTrack}>
+            <View style={[styles.opFill, { width: '83%', backgroundColor: '#34C765' }]} />
           </View>
-        </View>
+
+          <View style={styles.opMetaRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Clock size={13} color="rgba(255, 255, 255, 0.76)" />
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.88)' }}>
+                {t('production:pcsRemaining', { count: 53 })}
+              </AppText>
+            </View>
+            <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>
+              {t('production:shiftTarget')}: 320 pcs
+            </AppText>
+          </View>
+        </AppCard>
 
         {/* Current Active Assignment */}
         {myBundle && (
@@ -123,10 +147,11 @@ export function OperatorDashboard() {
         <QuickOperationsGrid operations={operatorOps} columns={2} />
 
         {/* Report Issue Action */}
-        <TouchableOpacity
+        <PressableScale
+          scaleTo={0.98}
+          haptic="medium"
           style={[styles.issueCard, { backgroundColor: tokens.dangerLight, borderColor: tokens.danger }]}
           onPress={() => router.push('/(app)/operations/report-issue')}
-          activeOpacity={0.8}
         >
           <AlertTriangle size={18} color={tokens.danger} strokeWidth={2.2} />
           <View style={{ flex: 1, marginLeft: spacing[2] }}>
@@ -137,7 +162,7 @@ export function OperatorDashboard() {
               {t('production:alertSupervisorImmediately')}
             </AppText>
           </View>
-        </TouchableOpacity>
+        </PressableScale>
 
         {/* Rework Tasks */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
@@ -302,6 +327,35 @@ const styles = StyleSheet.create({
   },
   grid2: {
     flexDirection: 'row',
+  },
+  opHeroTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing[3],
+  },
+  pacePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[2.5],
+    paddingVertical: spacing[1],
+    borderRadius: radii.full,
+  },
+  opTrack: {
+    height: 7,
+    borderRadius: radii.full,
+    backgroundColor: 'rgba(252, 251, 248, 0.16)',
+    overflow: 'hidden',
+    marginBottom: spacing[2.5],
+  },
+  opFill: {
+    height: '100%',
+    borderRadius: radii.full,
+  },
+  opMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   issueCard: {
     flexDirection: 'row',

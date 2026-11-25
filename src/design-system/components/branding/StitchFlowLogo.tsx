@@ -1,84 +1,60 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import Svg, { Path, Rect, Circle, G } from 'react-native-svg';
+import { View, StyleSheet, ViewStyle } from 'react-native';
+import { Image } from 'expo-image';
 import { useThemeStore } from '../../../store/themeStore';
-import { radii } from '../../tokens/radii';
+import { StitchFlowSymbol } from './StitchFlowSymbol';
+
+const FULL_LOGO_LIGHT = require('../../../../assets/branding/stitchflow-logo.png');
+const FULL_LOGO_DARK = require('../../../../assets/branding/stitchflow-logo-dark.png');
 
 export interface StitchFlowLogoProps {
   size?: number;
+  variant?: 'symbol' | 'full';
   color?: string;
   accentColor?: string;
   withBackground?: boolean;
+  style?: ViewStyle;
 }
 
+/**
+ * Official StitchFlow Brand Logo.
+ * Defaults to the standalone symbol for compact/header usage, or renders the
+ * full horizontal logo (with PRODUCTION INTELLIGENCE tagline) when variant="full".
+ */
 export function StitchFlowLogo({
   size = 36,
-  color,
-  accentColor,
+  variant = 'symbol',
   withBackground = false,
+  style,
 }: StitchFlowLogoProps) {
-  const { tokens, mode } = useThemeStore();
+  const { mode } = useThemeStore();
 
-  const primaryColor =
-    color || (mode === 'dark' ? tokens.signatureLime : tokens.brand);
-  const stitchAccent = accentColor || tokens.signatureLime;
-  const bgColor = mode === 'dark' ? tokens.surface : '#E6F7AD';
-
-  const svgContent = (
-    <Svg width={size} height={size} viewBox="0 0 48 48" fill="none">
-      {/* Garment Seam Inspired Geometric Stitch S */}
-      {/* Top horizontal stitch with rounded terminal */}
-      <Path
-        d="M14 12H34C37.3137 12 40 14.6863 40 18C40 21.3137 37.3137 24 34 24H20C16.6863 24 14 26.6863 14 30C14 33.3137 16.6863 36 20 36H34"
-        stroke={primaryColor}
-        strokeWidth="5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {/* Diagonal needle-thread cross stitch accent */}
-      <Path
-        d="M28 8L36 16"
-        stroke={stitchAccent}
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
-      <Path
-        d="M12 32L20 40"
-        stroke={stitchAccent}
-        strokeWidth="3.5"
-        strokeLinecap="round"
-      />
-      {/* Center thread lock dot */}
-      <Circle cx="24" cy="24" r="2.5" fill={primaryColor} />
-    </Svg>
-  );
-
-  if (withBackground) {
-    const containerSize = size * 1.35;
+  if (variant === 'full') {
+    const width = Math.round(size * 3.15);
+    const height = size;
     return (
-      <View
-        style={[
-          styles.container,
-          {
-            width: containerSize,
-            height: containerSize,
-            borderRadius: radii.xl,
-            backgroundColor: bgColor,
-            borderColor: tokens.border,
-            borderWidth: 1,
-          },
-        ]}
-      >
-        {svgContent}
+      <View style={[styles.fullWrap, style]}>
+        <Image
+          source={mode === 'dark' ? FULL_LOGO_DARK : FULL_LOGO_LIGHT}
+          style={{ width, height }}
+          contentFit="contain"
+          accessibilityLabel="StitchFlow Production Intelligence"
+        />
       </View>
     );
   }
 
-  return svgContent;
+  return (
+    <StitchFlowSymbol
+      size={size}
+      withBackground={withBackground}
+      style={style}
+    />
+  );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  fullWrap: {
     alignItems: 'center',
     justifyContent: 'center',
   },

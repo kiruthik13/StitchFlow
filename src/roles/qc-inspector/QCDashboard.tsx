@@ -97,14 +97,14 @@ export function QCDashboard() {
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
           Inspection Queue
         </AppText>
-        <AppCard variant="hero" padding={spacing[4]} style={{ marginBottom: spacing[2] }}>
+        <AppCard variant="forest" padding={spacing[4]} style={{ marginBottom: spacing[2] }}>
           <View style={styles.qcQueueHeader}>
-            <View>
+            <View style={{ flex: 1, marginRight: spacing[3] }}>
               <AppText
                 style={{
-                  fontSize: 40,
+                  fontSize: 42,
                   fontWeight: '800',
-                  color: pendingBundles.length > 0 ? tokens.warning : tokens.success,
+                  color: pendingBundles.length > 0 ? '#FBB315' : '#34C765',
                   fontFamily: 'sans-serif-black',
                   lineHeight: 52,
                   letterSpacing: 0,
@@ -114,14 +114,14 @@ export function QCDashboard() {
               >
                 {pendingBundles.length}
               </AppText>
-              <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.78)', marginTop: 2 }}>
                 {t('quality:bundlesAwaitingVerification')}
               </AppText>
             </View>
             <AppButton
               title={t('quality:startScan')}
               size="md"
-              variant="primary"
+              variant="secondary"
               onPress={() => router.push('/(app)/(tabs)/scan')}
             />
           </View>

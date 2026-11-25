@@ -7,6 +7,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { useTranslation } from 'react-i18next';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,6 +16,7 @@ import Animated, {
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
+import { useThemeStore } from '../../../store/themeStore';
 import { StitchFlowAnimatedLogo } from '../branding/StitchFlowAnimatedLogo';
 import { BrandLoadingIndicator } from '../feedback/BrandLoadingIndicator';
 
@@ -23,24 +25,29 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export interface AnimatedBrandSplashProps {
   isReady?: boolean;
   onAnimationComplete?: () => void;
-  minDuration?: number; // target duration, default 2400ms
+  minDuration?: number; // target 2.2-2.4s choreography
 }
 
+/**
+ * "From Stitch to Intelligence" — Signature StitchFlow Startup Experience.
+ * Matches native splash background (#FFFFFF light / #11161E dark) for zero flash.
+ */
 export function AnimatedBrandSplash({
   isReady = false,
   onAnimationComplete,
-  minDuration = 2400,
+  minDuration = 2350,
 }: AnimatedBrandSplashProps) {
+  const { tokens, mode } = useThemeStore();
+  const { t } = useTranslation('common');
   const [animationFinished, setAnimationFinished] = useState(false);
   const [hasReducedMotion, setHasReducedMotion] = useState(false);
   const completionCalledRef = useRef(false);
 
-  // Reanimated shared values
   const splashOpacity = useSharedValue(1);
   const wordmarkOpacity = useSharedValue(0);
-  const wordmarkTranslateY = useSharedValue(12);
+  const wordmarkTranslateY = useSharedValue(10);
   const taglineOpacity = useSharedValue(0);
-  const taglineTranslateY = useSharedValue(8);
+  const taglineTranslateY = useSharedValue(6);
   const loaderOpacity = useSharedValue(0);
 
   useEffect(() => {
@@ -59,33 +66,30 @@ export function AnimatedBrandSplash({
         return;
       }
 
-      // 1. Reveal Wordmark with smooth vertical translation at 1.45s
+      // Stage 6 (1900-2200ms): Reveal official StitchFlow wordmark + PRODUCTION INTELLIGENCE tagline
       wordmarkOpacity.value = withDelay(
-        1450,
-        withTiming(1, { duration: 450, easing: Easing.out(Easing.cubic) })
+        1850,
+        withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) })
       );
       wordmarkTranslateY.value = withDelay(
-        1450,
-        withTiming(0, { duration: 450, easing: Easing.out(Easing.cubic) })
+        1850,
+        withTiming(0, { duration: 320, easing: Easing.out(Easing.cubic) })
       );
 
-      // 2. Reveal Tagline at 1.70s
       taglineOpacity.value = withDelay(
-        1700,
-        withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) })
+        1980,
+        withTiming(1, { duration: 260, easing: Easing.out(Easing.quad) })
       );
       taglineTranslateY.value = withDelay(
-        1700,
-        withTiming(0, { duration: 400, easing: Easing.out(Easing.quad) })
+        1980,
+        withTiming(0, { duration: 260, easing: Easing.out(Easing.quad) })
       );
 
-      // 3. Reveal Signature-Lime Loader at 1.80s
       loaderOpacity.value = withDelay(
-        1800,
-        withTiming(1, { duration: 350, easing: Easing.out(Easing.quad) })
+        2050,
+        withTiming(1, { duration: 240, easing: Easing.out(Easing.quad) })
       );
 
-      // 4. Mark minimum splash sequence completed at target duration (~2.4s)
       const timer = setTimeout(() => {
         if (isMounted) {
           setAnimationFinished(true);
@@ -102,23 +106,20 @@ export function AnimatedBrandSplash({
     };
   }, [minDuration]);
 
-  // When both the animated sequence has finished AND the app is ready:
+  // Stage 7 (~2200-2400ms): Seamless transition when app initialization is ready
   useEffect(() => {
     if (animationFinished && isReady && !completionCalledRef.current) {
       completionCalledRef.current = true;
 
       if (hasReducedMotion) {
-        if (onAnimationComplete) {
-          onAnimationComplete();
-        }
+        onAnimationComplete?.();
         return;
       }
 
-      // Smooth cinematic fade-out transition to the main app screen
       splashOpacity.value = withTiming(
         0,
         {
-          duration: 380,
+          duration: 300,
           easing: Easing.inOut(Easing.quad),
         },
         (finished) => {
@@ -130,61 +131,61 @@ export function AnimatedBrandSplash({
     }
   }, [animationFinished, isReady, hasReducedMotion]);
 
-  const containerAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: splashOpacity.value,
-    };
-  });
+  const containerAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: splashOpacity.value,
+  }));
 
-  const wordmarkAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: wordmarkOpacity.value,
-      transform: [{ translateY: wordmarkTranslateY.value }],
-    };
-  });
+  const wordmarkAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: wordmarkOpacity.value,
+    transform: [{ translateY: wordmarkTranslateY.value }],
+  }));
 
-  const taglineAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: taglineOpacity.value,
-      transform: [{ translateY: taglineTranslateY.value }],
-    };
-  });
+  const taglineAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: taglineOpacity.value,
+    transform: [{ translateY: taglineTranslateY.value }],
+  }));
 
-  const loaderAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      opacity: loaderOpacity.value,
-    };
-  });
+  const loaderAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: loaderOpacity.value,
+  }));
+
+  const bgColor = mode === 'dark' ? '#11161E' : '#FFFFFF';
+  const stitchColor = mode === 'dark' ? '#F1F4F8' : '#0C234B';
+  const flowColor = mode === 'dark' ? '#7899D8' : '#0B5EC7';
+  const taglineColor = mode === 'dark' ? '#A9A9A9' : '#626D7B';
 
   return (
-    <Animated.View style={[styles.container, containerAnimatedStyle]}>
-      <StatusBar style="light" />
+    <Animated.View style={[styles.container, { backgroundColor: bgColor }, containerAnimatedStyle]}>
+      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
 
-      {/* Main Brand Assembly Stage */}
       <View style={styles.stage}>
-        {/* Animated StitchFlow Ribbon Emblem */}
-        <StitchFlowAnimatedLogo size={150} autoPlay={!hasReducedMotion} />
+        {/* Stages 2-5: From Stitch to Intelligence Symbol Reveal */}
+        <StitchFlowAnimatedLogo size={148} autoPlay={!hasReducedMotion} />
 
-        {/* Wordmark: Stitch (Warm Ivory) + Flow (Signature Lime) */}
+        {/* Stage 6: Wordmark + Official Tagline (no colored bars below) */}
         <Animated.View style={[styles.wordmarkRow, wordmarkAnimatedStyle]}>
-          <Text style={styles.stitchText}>Stitch</Text>
-          <Text style={styles.flowText}>Flow</Text>
+          <Text style={[styles.stitchText, { color: stitchColor }]}>Stitch</Text>
+          <Text style={[styles.flowText, { color: flowColor }]}>Flow</Text>
+          <Text style={[styles.tmText, { color: stitchColor }]}>TM</Text>
         </Animated.View>
 
-        {/* Tagline: Industrial Production Intelligence */}
         <Animated.View style={taglineAnimatedStyle}>
-          <Text style={styles.taglineText}>GARMENT PRODUCTION INTELLIGENCE</Text>
+          <Text style={[styles.taglineText, { color: taglineColor }]}>
+            PRODUCTION INTELLIGENCE
+          </Text>
         </Animated.View>
 
-        {/* Signature-Lime Industrial Loading Indicator */}
         <Animated.View style={[styles.loaderWrapper, loaderAnimatedStyle]}>
           <BrandLoadingIndicator
             variant="bar"
-            width={100}
+            width={96}
             height={3}
-            trackColor="#3B5146"
-            indicatorColor="#C9EF45"
+            trackColor={tokens.surfaceSecondary}
+            indicatorColor={tokens.brand}
           />
+          <Text style={[styles.statusText, { color: taglineColor }]}>
+            {t('loading')}
+          </Text>
         </Animated.View>
       </View>
     </Animated.View>
@@ -200,7 +201,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT,
-    backgroundColor: '#102D23',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 9999,
@@ -211,32 +211,43 @@ const styles = StyleSheet.create({
   },
   wordmarkRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 18,
+    alignItems: 'flex-start',
+    marginTop: 14,
   },
   stitchText: {
     fontSize: 34,
     fontWeight: '800',
-    letterSpacing: -1.4,
-    color: '#F4F3EE',
+    fontStyle: 'italic',
+    letterSpacing: -1.0,
     fontFamily: 'sans-serif-bold',
   },
   flowText: {
     fontSize: 34,
     fontWeight: '800',
-    letterSpacing: -1.4,
-    color: '#C9EF45',
+    fontStyle: 'italic',
+    letterSpacing: -1.0,
     fontFamily: 'sans-serif-bold',
   },
-  taglineText: {
-    fontSize: 9,
+  tmText: {
+    fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 2.2,
-    marginTop: 10,
-    color: '#B9C9BD',
+    marginLeft: 3,
+    marginTop: 4,
+  },
+  taglineText: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 2.4,
+    marginTop: 6,
     textTransform: 'uppercase',
   },
   loaderWrapper: {
-    marginTop: 34,
+    marginTop: 32,
+    alignItems: 'center',
+  },
+  statusText: {
+    fontSize: 11,
+    marginTop: 10,
+    fontWeight: '500',
   },
 });

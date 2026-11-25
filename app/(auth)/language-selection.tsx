@@ -129,7 +129,7 @@ export default function LanguageSelectionScreen() {
                   ]}
                 >
                   {isSelected && (
-                    <Check size={14} color="#0D2B20" strokeWidth={3} />
+                    <Check size={14} color={tokens.textInverse} strokeWidth={3} />
                   )}
                 </View>
               </TouchableOpacity>

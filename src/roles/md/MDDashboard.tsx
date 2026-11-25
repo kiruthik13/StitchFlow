@@ -39,74 +39,88 @@ export function MDDashboard() {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Group Summary Bento */}
+        {/* Executive Intelligence Hero — Deep Forest Summary */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
           {t('production:manufacturingGroupSummary')}
         </AppText>
-        <View style={styles.grid2}>
-          <View style={{ flex: 1 }}>
-            <MetricCard
-              label={t('production:operatingPlants')}
-              value="2"
-              unit={t('common:factories')}
-              icon={<Building2 size={14} color={tokens.brand} strokeWidth={2.4} />}
-              compact
-            />
+        <AppCard variant="forest" padding={spacing[5]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing[4] }}>
+            <View style={{ flex: 1 }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>
+                {t('production:overallEfficiency')}
+              </AppText>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing[2] }}>
+                <AppText
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: 42,
+                    lineHeight: 52,
+                    fontWeight: '800',
+                    includeFontPadding: false,
+                    fontVariant: ['tabular-nums'],
+                  }}
+                >
+                  77%
+                </AppText>
+                <View style={{ backgroundColor: 'rgba(52, 199, 101, 0.22)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                  <AppText variant="caption" bold style={{ color: '#34C765', fontSize: 11 }}>
+                    ▲ +3.4%
+                  </AppText>
+                </View>
+              </View>
+            </View>
+
+            <View style={{ alignItems: 'flex-end' }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>
+                {t('production:totalPacked')}
+              </AppText>
+              <AppText
+                style={{
+                  color: '#34C765',
+                  fontSize: 28,
+                  lineHeight: 36,
+                  fontWeight: '800',
+                  includeFontPadding: false,
+                  fontVariant: ['tabular-nums'],
+                }}
+              >
+                1,476
+              </AppText>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)', fontSize: 11 }}>
+                {t('common:pieces')} (+12%)
+              </AppText>
+            </View>
           </View>
-          <View style={{ width: spacing[2] }} />
-          <View style={{ flex: 1 }}>
-            <MetricCard
-              label={t('production:activeJobs')}
-              value="4"
-              unit={t('common:orders')}
-              variant="brand"
-              compact
-            />
+
+          <View
+            style={{
+              flexDirection: 'row',
+              borderTopWidth: 1,
+              borderTopColor: 'rgba(255, 255, 255, 0.16)',
+              paddingTop: spacing[3],
+            }}
+          >
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>{t('production:operatingPlants')}</AppText>
+              <AppText variant="label" bold style={{ color: '#FFFFFF', fontVariant: ['tabular-nums'] }}>2</AppText>
+            </View>
+            <View style={{ width: 1, backgroundColor: 'rgba(255, 255, 255, 0.16)' }} />
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>{t('production:activeJobs')}</AppText>
+              <AppText variant="label" bold style={{ color: '#FFFFFF', fontVariant: ['tabular-nums'] }}>4</AppText>
+            </View>
+            <View style={{ width: 1, backgroundColor: 'rgba(255, 255, 255, 0.16)' }} />
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>{t('production:pendingQC')}</AppText>
+              <AppText variant="label" bold style={{ color: '#FBB315', fontVariant: ['tabular-nums'] }}>380</AppText>
+            </View>
+            <View style={{ width: 1, backgroundColor: 'rgba(255, 255, 255, 0.16)' }} />
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>{t('production:totalRework')}</AppText>
+              <AppText variant="label" bold style={{ color: '#FF7E75', fontVariant: ['tabular-nums'] }}>77</AppText>
+            </View>
           </View>
-        </View>
-        <View style={[styles.grid2, { marginTop: spacing[2] }]}>
-          <View style={{ flex: 1 }}>
-            <MetricCard
-              label={t('production:overallEfficiency')}
-              value="77%"
-              trend={{ value: '+3.4%', isPositive: true }}
-              variant="warning"
-              compact
-            />
-          </View>
-          <View style={{ width: spacing[2] }} />
-          <View style={{ flex: 1 }}>
-            <MetricCard
-              label={t('production:pendingQC')}
-              value="380"
-              unit={t('common:pieces')}
-              variant="warning"
-              compact
-            />
-          </View>
-        </View>
-        <View style={[styles.grid2, { marginTop: spacing[2] }]}>
-          <View style={{ flex: 1 }}>
-            <MetricCard
-              label={t('production:totalPacked')}
-              value="1,476"
-              unit={t('common:pieces')}
-              variant="lime"
-              trend={{ value: '+12%', isPositive: true }}
-              compact
-            />
-          </View>
-          <View style={{ width: spacing[2] }} />
-          <View style={{ flex: 1 }}>
-            <MetricCard
-              label={t('production:totalRework')}
-              value="77"
-              unit={t('common:pieces')}
-              variant="danger"
-              compact
-            />
-          </View>
-        </View>
+        </AppCard>
 
         {/* Quick Executive Navigation */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
@@ -134,8 +148,8 @@ export function MDDashboard() {
             onPress={() => router.push('/(app)/md/sam-efficiency')}
             activeOpacity={0.8}
           >
-            <View style={[styles.execIconCircle, { backgroundColor: mode === 'dark' ? '#203D2A' : '#E6F7AD' }]}>
-              <TrendingUp size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.primaryDeep} strokeWidth={2.2} />
+            <View style={[styles.execIconCircle, { backgroundColor: tokens.brandLight }]}>
+              <TrendingUp size={20} color={tokens.brand} strokeWidth={2.2} />
             </View>
             <AppText variant="label" bold style={{ color: tokens.textPrimary, marginTop: spacing[1] }}>
               {t('production:samEfficiency')}

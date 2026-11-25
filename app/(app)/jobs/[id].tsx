@@ -79,48 +79,54 @@ export default function JobDetailScreen() {
         />
 
         {/* 2. Work Order Details Card (Garment Product Hang-Tag Style) */}
-        <AppCard variant="hero" padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
+        <AppCard variant="forest" padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
           <View style={styles.garmentHeaderRow}>
-            <View style={[styles.garmentThumbnail, { backgroundColor: mode === 'dark' ? '#203D2A' : '#E6F7AD' }]}>
-              <Shirt size={28} color={mode === 'dark' ? tokens.signatureLime : tokens.primaryDeep} strokeWidth={2} />
+            <View style={[styles.garmentThumbnail, { backgroundColor: 'rgba(255, 255, 255, 0.14)' }]}>
+              <Shirt size={28} color="#FFFFFF" strokeWidth={2} />
             </View>
             <View style={{ flex: 1, marginLeft: spacing[3] }}>
-              <AppText variant="caption" color="secondary" uppercase style={{ letterSpacing: 0.6 }}>
+              <AppText variant="caption" uppercase style={{ color: 'rgba(255, 255, 255, 0.78)', letterSpacing: 0.6, fontWeight: '700' }}>
                 Work Order #{job.jobCode}
               </AppText>
-              <AppText variant="h3" bold style={{ color: tokens.textPrimary, letterSpacing: -0.3 }}>
+              <AppText variant="h3" bold style={{ color: '#FFFFFF', letterSpacing: -0.2 }}>
                 {job.styleName}
               </AppText>
-              <AppText variant="caption" color="secondary">
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.74)' }}>
                 Buyer: {job.buyerName} · {job.factoryName} ({job.lineName})
               </AppText>
             </View>
           </View>
 
           {/* Quantity Balance Strip */}
-          <View style={[styles.balanceStrip, { backgroundColor: tokens.surfaceSecondary }]}>
+          <View style={[styles.balanceStrip, { backgroundColor: 'rgba(255, 255, 255, 0.10)' }]}>
             <View style={styles.balanceItem}>
-              <AppText variant="caption" color="secondary">Planned</AppText>
-              <AppText variant="label" bold mono>{job.orderQuantity.toLocaleString()}</AppText>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>Planned</AppText>
+              <AppText variant="label" bold style={{ color: '#FFFFFF', fontVariant: ['tabular-nums'] }}>
+                {job.orderQuantity.toLocaleString()}
+              </AppText>
             </View>
-            <View style={[styles.stripDivider, { backgroundColor: tokens.border }]} />
+            <View style={[styles.stripDivider, { backgroundColor: 'rgba(255, 255, 255, 0.18)' }]} />
             <View style={styles.balanceItem}>
-              <AppText variant="caption" color="secondary">Packed</AppText>
-              <AppText variant="label" bold mono style={{ color: tokens.success }}>{job.packingQty.toLocaleString()}</AppText>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>Packed</AppText>
+              <AppText variant="label" bold style={{ color: '#34C765', fontVariant: ['tabular-nums'] }}>
+                {job.packingQty.toLocaleString()}
+              </AppText>
             </View>
-            <View style={[styles.stripDivider, { backgroundColor: tokens.border }]} />
+            <View style={[styles.stripDivider, { backgroundColor: 'rgba(255, 255, 255, 0.18)' }]} />
             <View style={styles.balanceItem}>
-              <AppText variant="caption" color="secondary">Balance</AppText>
-              <AppText variant="label" bold mono style={{ color: tokens.warning }}>{balanceQty.toLocaleString()}</AppText>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>Balance</AppText>
+              <AppText variant="label" bold style={{ color: '#FBB315', fontVariant: ['tabular-nums'] }}>
+                {balanceQty.toLocaleString()}
+              </AppText>
             </View>
           </View>
 
           {/* Key Attributes */}
           <View style={styles.attrList}>
-            <DetailRow label="Colors" value={job.colors.join(', ')} />
-            <DetailRow label="Sizes" value={job.sizes.join(', ')} />
-            <DetailRow label="SAM" value={`${job.samValue} min / pc`} />
-            <DetailRow label="Target Date" value={job.targetDate} isLast />
+            <DetailRow label="Colors" value={job.colors.join(', ')} onDark />
+            <DetailRow label="Sizes" value={job.sizes.join(', ')} onDark />
+            <DetailRow label="SAM" value={`${job.samValue} min / pc`} onDark />
+            <DetailRow label="Target Date" value={job.targetDate} isLast onDark />
           </View>
         </AppCard>
 
@@ -152,22 +158,38 @@ export default function JobDetailScreen() {
         {/* 5. Production Output & Stage Breakdown */}
         <SectionLabel label="Stage Output Breakdown" />
         <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
-          {PRODUCTION_STAGES.map((s, i) => (
-            <View
-              key={s.stageCode}
-              style={[
-                styles.stageRow,
-                i < PRODUCTION_STAGES.length - 1 && { borderBottomWidth: 1, borderBottomColor: tokens.border },
-              ]}
-            >
-              <AppText variant="label" bold style={{ width: 95 }}>{s.stageName}</AppText>
-              <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: spacing[3] }}>
-                <LabeledNum label="Total" value={s.quantity} />
-                <LabeledNum label="WIP" value={s.wip} color={s.wip > 0 ? tokens.warning : undefined} />
-                <LabeledNum label="Done" value={s.completed} color={tokens.success} />
+          {PRODUCTION_STAGES.map((s, i) => {
+            const pct = s.quantity > 0 ? Math.min(100, Math.round((s.completed / s.quantity) * 100)) : 0;
+            return (
+              <View
+                key={s.stageCode}
+                style={[
+                  styles.stageRowWrap,
+                  i < PRODUCTION_STAGES.length - 1 && { borderBottomWidth: 1, borderBottomColor: tokens.border },
+                ]}
+              >
+                <View style={styles.stageRow}>
+                  <AppText variant="label" bold style={{ width: 95 }}>{s.stageName}</AppText>
+                  <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: spacing[3] }}>
+                    <LabeledNum label="Total" value={s.quantity} />
+                    <LabeledNum label="WIP" value={s.wip} color={s.wip > 0 ? tokens.warning : undefined} />
+                    <LabeledNum label="Done" value={s.completed} color={tokens.success} />
+                  </View>
+                </View>
+                <View style={[styles.stageBarTrack, { backgroundColor: tokens.surfaceSecondary }]}>
+                  <View
+                    style={[
+                      styles.stageBarFill,
+                      {
+                        width: `${pct}%`,
+                        backgroundColor: pct >= 90 ? tokens.success : tokens.signatureLime,
+                      },
+                    ]}
+                  />
+                </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </AppCard>
 
         {/* 6. Bundles List */}
@@ -269,12 +291,31 @@ export default function JobDetailScreen() {
   );
 }
 
-function DetailRow({ label, value, isLast = false }: { label: string; value: string; isLast?: boolean }) {
+function DetailRow({ label, value, isLast = false, onDark = false }: { label: string; value: string; isLast?: boolean; onDark?: boolean }) {
   const { tokens } = useThemeStore();
   return (
-    <View style={[styles.detailRow, !isLast && { borderBottomWidth: 1, borderBottomColor: tokens.border }]}>
-      <AppText variant="caption" color="secondary" style={{ width: 100 }}>{label}</AppText>
-      <AppText variant="bodySmall" bold style={{ flex: 1, color: tokens.textPrimary }}>{value}</AppText>
+    <View
+      style={[
+        styles.detailRow,
+        !isLast && {
+          borderBottomWidth: 1,
+          borderBottomColor: onDark ? 'rgba(252, 251, 248, 0.12)' : tokens.border,
+        },
+      ]}
+    >
+      <AppText
+        variant="caption"
+        style={{ width: 100, color: onDark ? 'rgba(252, 251, 248, 0.68)' : tokens.textSecondary }}
+      >
+        {label}
+      </AppText>
+      <AppText
+        variant="bodySmall"
+        bold
+        style={{ flex: 1, color: onDark ? '#FCFBF8' : tokens.textPrimary }}
+      >
+        {value}
+      </AppText>
     </View>
   );
 }
@@ -343,10 +384,22 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[2.5],
     alignItems: 'center',
   },
+  stageRowWrap: {
+    paddingVertical: spacing[2.5],
+  },
   stageRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing[2.5],
+  },
+  stageBarTrack: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginTop: spacing[1.5],
+  },
+  stageBarFill: {
+    height: '100%',
+    borderRadius: 2,
   },
   bundleRow: {
     flexDirection: 'row',

@@ -26,8 +26,8 @@ export function BrandLoadingIndicator({
   width = 110,
   height = 3.5,
   size = 32,
-  trackColor = '#3B5146',
-  indicatorColor = '#C9EF45',
+  trackColor = '#E8EBEF',
+  indicatorColor = '#4469B1',
   style,
   progress,
 }: BrandLoadingIndicatorProps) {

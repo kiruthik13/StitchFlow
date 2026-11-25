@@ -1,9 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { AppText } from './AppText';
 import { StatusBadge, jobStatusBadge } from './StatusBadge';
+import { PressableScale } from './PressableScale';
 import { spacing } from '../tokens/spacing';
 import { radii } from '../tokens/radii';
 import { Job } from '../../core/types';
@@ -21,8 +22,9 @@ export function JobTicketCard({ job, onPress }: JobTicketCardProps) {
   const effColor = eff >= 80 ? tokens.success : eff >= 70 ? tokens.warning : tokens.danger;
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.75}
+    <PressableScale
+      scaleTo={0.98}
+      haptic={onPress ? 'light' : 'none'}
       onPress={onPress}
       disabled={!onPress}
       style={[
@@ -101,7 +103,7 @@ export function JobTicketCard({ job, onPress }: JobTicketCardProps) {
           </AppText>
         </View>
       </View>
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 

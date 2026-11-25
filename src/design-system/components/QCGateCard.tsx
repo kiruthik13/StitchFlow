@@ -70,22 +70,49 @@ export function QCGateCard({
         {getStatusBadge()}
       </View>
 
+      {/* Segmented Quality Distribution Bar */}
+      {inspectedQty > 0 && (
+        <View style={[styles.distBar, { backgroundColor: tokens.surfaceSecondary }]}>
+          <View
+            style={{
+              flex: Math.max(passedQty, 0),
+              backgroundColor: tokens.success,
+              height: '100%',
+            }}
+          />
+          <View
+            style={{
+              flex: Math.max(reworkQty, 0),
+              backgroundColor: tokens.warning,
+              height: '100%',
+            }}
+          />
+          <View
+            style={{
+              flex: Math.max(rejectedQty, 0),
+              backgroundColor: tokens.danger,
+              height: '100%',
+            }}
+          />
+        </View>
+      )}
+
       <View style={[styles.statsRow, { backgroundColor: tokens.surfaceSecondary }]}>
         <View style={styles.statBox}>
           <AppText variant="caption" color="secondary">{t('quality:inspected')}</AppText>
-          <AppText variant="label" bold mono>{inspectedQty}</AppText>
+          <AppText variant="label" bold style={{ fontVariant: ['tabular-nums'] }}>{inspectedQty}</AppText>
         </View>
         <View style={styles.statBox}>
           <AppText variant="caption" color="secondary">{t('quality:passed')}</AppText>
-          <AppText variant="label" bold mono style={{ color: tokens.success }}>{passedQty}</AppText>
+          <AppText variant="label" bold style={{ color: tokens.success, fontVariant: ['tabular-nums'] }}>{passedQty}</AppText>
         </View>
         <View style={styles.statBox}>
           <AppText variant="caption" color="secondary">{t('quality:rework')}</AppText>
-          <AppText variant="label" bold mono style={{ color: tokens.warning }}>{reworkQty}</AppText>
+          <AppText variant="label" bold style={{ color: tokens.warning, fontVariant: ['tabular-nums'] }}>{reworkQty}</AppText>
         </View>
         <View style={styles.statBox}>
           <AppText variant="caption" color="secondary">{t('quality:rejected')}</AppText>
-          <AppText variant="label" bold mono style={{ color: tokens.danger }}>{rejectedQty}</AppText>
+          <AppText variant="label" bold style={{ color: tokens.danger, fontVariant: ['tabular-nums'] }}>{rejectedQty}</AppText>
         </View>
       </View>
 
@@ -129,6 +156,14 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  distBar: {
+    flexDirection: 'row',
+    height: 6,
+    borderRadius: radii.full,
+    overflow: 'hidden',
+    gap: 2,
+    marginBottom: spacing[2.5],
   },
   statsRow: {
     flexDirection: 'row',

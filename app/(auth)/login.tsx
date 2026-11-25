@@ -98,19 +98,7 @@ export default function LoginScreen() {
 
           {/* Brand Header */}
           <View style={styles.brandHeader}>
-            <StitchFlowLogo size={46} withBackground />
-            <View style={{ marginTop: spacing[3] }}>
-              <StitchFlowWordmark fontSize={26} />
-            </View>
-            <AppText
-              variant="caption"
-              color="secondary"
-              uppercase
-              bold
-              style={{ letterSpacing: 1.2, marginTop: spacing[1] }}
-            >
-              {t('common:industrialOS')}
-            </AppText>
+            <StitchFlowLogo variant="full" size={58} />
           </View>
 
           {/* Authentication Card */}

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import {
   Camera,
   Flashlight,
@@ -80,6 +81,13 @@ export default function ScanTabScreen() {
     setScanResult(result);
     if (bundle) {
       setQuantity(bundle.quantity);
+    }
+    if (result.status === 'success') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    } else if (result.status === 'duplicate') {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
     }
     addScan(trimmed);
     setPhase('resolved');

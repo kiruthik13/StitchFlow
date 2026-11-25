@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { AppText } from './AppText';
+import { PressableScale } from './PressableScale';
 import { spacing } from '../tokens/spacing';
 import { radii } from '../tokens/radii';
 
@@ -31,11 +32,12 @@ export function QuickOperationsGrid({ operations, columns = 3 }: QuickOperations
       {rows.map((row, ri) => (
         <View key={ri} style={[styles.row, { gap: spacing[2] }]}>
           {row.map((op) => (
-            <TouchableOpacity
+            <PressableScale
               key={op.id}
+              scaleTo={0.96}
+              haptic="light"
               onPress={op.onPress}
               disabled={op.disabled}
-              activeOpacity={0.7}
               style={[
                 styles.cell,
                 {
@@ -50,7 +52,7 @@ export function QuickOperationsGrid({ operations, columns = 3 }: QuickOperations
                 style={[
                   styles.iconWrap,
                   {
-                    backgroundColor: mode === 'dark' ? '#203D2A' : '#E6F7AD',
+                    backgroundColor: tokens.brandLight,
                   },
                 ]}
               >
@@ -67,11 +69,11 @@ export function QuickOperationsGrid({ operations, columns = 3 }: QuickOperations
                 variant="caption"
                 bold
                 style={[styles.label, { color: tokens.textPrimary }]}
-                numberOfLines={1}
+                numberOfLines={2}
               >
                 {op.label}
               </AppText>
-            </TouchableOpacity>
+            </PressableScale>
           ))}
           {row.length < columns &&
             Array.from({ length: columns - row.length }).map((_, i) => (

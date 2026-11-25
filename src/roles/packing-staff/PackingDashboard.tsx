@@ -55,57 +55,76 @@ export function PackingDashboard() {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Packing KPIs Bento Grid */}
+        {/* Packing Fulfilment Hero Strip */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
           {t('packing:todayOutput')}
         </AppText>
-        <View style={styles.grid2}>
-          <View style={{ flex: 1 }}>
-            <MetricCard
-              label={t('packing:packedTotal')}
-              value="196"
-              unit="pcs"
-              variant="lime"
-              trend={{ value: '+16 pcs', isPositive: true }}
-              icon={<CheckCircle2 size={14} color={tokens.success} strokeWidth={2.4} />}
-              compact
-            />
+        <AppCard variant="forest" padding={spacing[4]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing[3] }}>
+            <View>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>
+                {t('packing:packedTotal')}
+              </AppText>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                <AppText
+                  style={{
+                    color: '#FFFFFF',
+                    fontSize: 40,
+                    lineHeight: 50,
+                    fontWeight: '800',
+                    includeFontPadding: false,
+                    fontVariant: ['tabular-nums'],
+                  }}
+                >
+                  196
+                </AppText>
+                <AppText variant="bodySmall" style={{ color: 'rgba(255, 255, 255, 0.76)', marginLeft: 6 }}>
+                  pcs (+16)
+                </AppText>
+              </View>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>
+                {t('packing:qcReleased')}
+              </AppText>
+              <AppText
+                style={{
+                  color: '#34C765',
+                  fontSize: 26,
+                  lineHeight: 34,
+                  fontWeight: '800',
+                  includeFontPadding: false,
+                  fontVariant: ['tabular-nums'],
+                }}
+              >
+                180 pcs
+              </AppText>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)', fontSize: 11 }}>
+                {t('packing:authorizedLimit')}
+              </AppText>
+            </View>
           </View>
-          <View style={{ width: spacing[2] }} />
-          <View style={{ flex: 1 }}>
-            <MetricCard
-              label={t('packing:qcReleased')}
-              value="180"
-              unit="pcs"
-              variant="brand"
-              subLabel={t('packing:authorizedLimit')}
-              icon={<ShieldCheck size={14} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.4} />}
-              compact
-            />
+
+          <View
+            style={{
+              flexDirection: 'row',
+              borderTopWidth: 1,
+              borderTopColor: 'rgba(255, 255, 255, 0.16)',
+              paddingTop: spacing[2.5],
+              justifyContent: 'space-around',
+            }}
+          >
+            <View style={{ alignItems: 'center' }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>{t('packing:totalCartons')}</AppText>
+              <AppText variant="label" bold style={{ color: '#FFFFFF', fontVariant: ['tabular-nums'] }}>3 boxes</AppText>
+            </View>
+            <View style={{ width: 1, backgroundColor: 'rgba(255, 255, 255, 0.16)' }} />
+            <View style={{ alignItems: 'center' }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>{t('packing:sealedCartons')}</AppText>
+              <AppText variant="label" bold style={{ color: '#34C765', fontVariant: ['tabular-nums'] }}>2 boxes</AppText>
+            </View>
           </View>
-        </View>
-        <View style={[styles.grid2, { marginTop: spacing[2] }]}>
-          <View style={{ flex: 1 }}>
-            <MetricCard
-              label={t('packing:totalCartons')}
-              value="3"
-              unit="boxes"
-              compact
-              icon={<Box size={14} color={tokens.textSecondary} strokeWidth={2.4} />}
-            />
-          </View>
-          <View style={{ width: spacing[2] }} />
-          <View style={{ flex: 1 }}>
-            <MetricCard
-              label={t('packing:sealedCartons')}
-              value="2"
-              unit="boxes"
-              variant="success"
-              subLabel={t('packing:readyForFGStore')}
-              compact
-            />
-          </View>
-        </View>
+        </AppCard>
 
         {/* {t('packing:qcSafeguardTitle')} */}
         <View
@@ -113,14 +132,14 @@ export function PackingDashboard() {
             styles.releaseNote,
             {
               marginTop: spacing[3],
-              backgroundColor: mode === 'dark' ? '#203D2A' : '#E6F7AD',
+              backgroundColor: tokens.brandLight,
               borderColor: tokens.border,
             },
           ]}
         >
           <View style={styles.releaseHeader}>
-            <ShieldCheck size={18} color={mode === 'dark' ? tokens.signatureLime : tokens.primaryDeep} strokeWidth={2.4} />
-            <AppText variant="label" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.primaryDeep }}>
+            <ShieldCheck size={18} color={tokens.brand} strokeWidth={2.4} />
+            <AppText variant="label" bold style={{ color: mode === 'dark' ? tokens.brand : tokens.primaryDeep }}>
               QC Release Verification Safeguard
             </AppText>
           </View>

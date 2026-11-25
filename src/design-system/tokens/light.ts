@@ -1,4 +1,4 @@
-// StitchFlow — Signature Industrial Edition: Light Theme (Warm Ivory)
+// StitchFlow — Industrial Spectrum Design System: Light Theme
 export interface ThemeTokens {
   background: string;
   surface: string;
@@ -13,7 +13,7 @@ export interface ThemeTokens {
   brand: string;
   brandLight: string;
   brandDark: string;
-  signatureLime: string;
+  signatureLime: string; // Backward-compatible alias for primary accent (Corporate Blue)
   limeSoft: string;
   primaryDeep: string;
   success: string;
@@ -30,31 +30,31 @@ export interface ThemeTokens {
 }
 
 export const lightTokens: ThemeTokens = {
-  background: '#F4F3EE',
-  surface: '#FCFBF8',
-  surfaceSecondary: '#EBEDE6',
+  background: '#F1F2F3',
+  surface: '#FFFFFF',
+  surfaceSecondary: '#E8EBEF',
   surfaceElevated: '#FFFFFF',
-  border: '#DDE2D8',
-  borderStrong: '#B8C0B2',
-  textPrimary: '#111914',
-  textSecondary: '#69736B',
-  textDisabled: '#899188',
-  textInverse: '#FCFBF8',
-  brand: '#153D2D',
-  brandLight: '#E6F7AD',
-  brandDark: '#0D2B20',
-  signatureLime: '#C9EF45',
-  limeSoft: '#E6F7AD',
-  primaryDeep: '#0D2B20',
-  success: '#327A41',
-  successLight: '#E5F1DE',
-  warning: '#A87918',
-  warningLight: '#FBF0D5',
-  danger: '#B83B36',
-  dangerLight: '#FBE7E4',
-  info: '#39798B',
-  infoLight: '#E1EFF2',
-  overlay: 'rgba(17, 25, 20, 0.45)',
-  shimmer1: '#EBEDE6',
-  shimmer2: '#F4F3EE',
+  border: '#D5D9DF',
+  borderStrong: '#BCBCBC',
+  textPrimary: '#172333',
+  textSecondary: '#626D7B',
+  textDisabled: '#A9A9A9',
+  textInverse: '#FFFFFF',
+  brand: '#4469B1',
+  brandLight: '#E6ECF7',
+  brandDark: '#284578',
+  signatureLime: '#4469B1',
+  limeSoft: '#E6ECF7',
+  primaryDeep: '#284578',
+  success: '#1CA64A',
+  successLight: '#E5F4E9',
+  warning: '#FBB315',
+  warningLight: '#FFF3D8',
+  danger: '#EC3327',
+  dangerLight: '#FCEAE8',
+  info: '#4469B1',
+  infoLight: '#E6ECF7',
+  overlay: 'rgba(23, 35, 51, 0.48)',
+  shimmer1: '#E8EBEF',
+  shimmer2: '#F1F2F3',
 };

@@ -127,28 +127,46 @@ export function StoreDashboard() {
           </View>
         ))}
 
-        {/* Movement Summary 2x2 */}
+        {/* Movement Summary — Deep Forest Logistics Strip */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
           {t('inventory:movementSummary')}
         </AppText>
-        <View style={styles.grid2}>
-          <View style={{ flex: 1 }}>
-            <MetricCard label={t('inventory:rawInputIn')} value="3" unit="batches" compact />
+        <AppCard variant="forest" padding={spacing[4]}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: spacing[3] }}>
+            <View style={{ flex: 1 }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>
+                {t('inventory:fgCartons')}
+              </AppText>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                <AppText style={{ color: '#FFFFFF', fontSize: 36, lineHeight: 46, fontWeight: '800', includeFontPadding: false, fontVariant: ['tabular-nums'] }}>
+                  48
+                </AppText>
+                <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)', marginLeft: 4 }}>
+                  boxes
+                </AppText>
+              </View>
+            </View>
+            <View style={{ alignItems: 'flex-end' }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>
+                {t('inventory:pendingDispatch')}
+              </AppText>
+              <AppText style={{ color: '#FBB315', fontSize: 28, lineHeight: 36, fontWeight: '800', includeFontPadding: false, fontVariant: ['tabular-nums'] }}>
+                48 boxes
+              </AppText>
+            </View>
           </View>
-          <View style={{ width: spacing[2] }} />
-          <View style={{ flex: 1 }}>
-            <MetricCard label={t('inventory:issuedToProd')} value="2" unit="orders" compact />
+          <View style={{ flexDirection: 'row', borderTopWidth: 1, borderTopColor: 'rgba(255, 255, 255, 0.16)', paddingTop: spacing[2.5] }}>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>{t('inventory:rawInputIn')}</AppText>
+              <AppText variant="label" bold style={{ color: '#FFFFFF', fontVariant: ['tabular-nums'] }}>3 batches</AppText>
+            </View>
+            <View style={{ width: 1, backgroundColor: 'rgba(255, 255, 255, 0.16)' }} />
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>{t('inventory:issuedToProd')}</AppText>
+              <AppText variant="label" bold style={{ color: '#34C765', fontVariant: ['tabular-nums'] }}>2 orders</AppText>
+            </View>
           </View>
-        </View>
-        <View style={[styles.grid2, { marginTop: spacing[2] }]}>
-          <View style={{ flex: 1 }}>
-            <MetricCard label={t('inventory:fgCartons')} value="48" unit="boxes" variant="brand" compact />
-          </View>
-          <View style={{ width: spacing[2] }} />
-          <View style={{ flex: 1 }}>
-            <MetricCard label={t('inventory:pendingDispatch')} value="48" unit="boxes" variant="warning" compact />
-          </View>
-        </View>
+        </AppCard>
 
         {/* Quick Operations Grid */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>

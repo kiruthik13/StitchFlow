@@ -1,18 +1,18 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet, ViewStyle, AccessibilityInfo } from 'react-native';
-import Svg, { Path, G, Rect } from 'react-native-svg';
+import Svg, { Path, Rect, G, Defs, LinearGradient, Stop } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedProps,
   useAnimatedStyle,
   withTiming,
   withDelay,
-  withSequence,
   Easing,
   runOnJS,
 } from 'react-native-reanimated';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedRect = Animated.createAnimatedComponent(Rect);
 const AnimatedG = Animated.createAnimatedComponent(G);
 
 export interface StitchFlowAnimatedLogoProps {
@@ -24,243 +24,221 @@ export interface StitchFlowAnimatedLogoProps {
   loop?: boolean;
 }
 
-const THREAD_PATH_D = 'M119 29 C64 11 27 41 43 64 C54 80 115 78 119 104 C123 132 71 146 34 125';
-const LIME_ACCENT_1 = 'M107 26 L128 32';
-const LIME_ACCENT_2 = 'M26 122 L44 130';
-const PATH_LENGTH = 400;
+// Faithful vector geometry matching the approved StitchFlow symbol:
+// 1) Upper & lower blue S-shaped garment ribbons
+// 2) White dashed centerline stitches
+// 3) Silver/gray inner ribbon folds
+// 4) Three ascending production bars (Red, Amber, Green)
+// 5) Upward blue growth arrow
+const UPPER_RIBBON_D =
+  'M26 70 C18 46 38 18 96 18 L128 18 L116 40 L76 40 C50 40 36 52 34 72 Z';
+const LOWER_RIBBON_D =
+  'M134 90 C142 114 122 142 64 142 L26 142 L42 120 L84 120 C110 120 124 108 126 88 Z';
+const UPPER_STITCH_D = 'M30 62 C32 40 50 29 82 29 L118 29';
+const LOWER_STITCH_D = 'M130 98 C128 120 110 131 78 131 L40 131';
+const UPPER_FOLD_D = 'M36 66 C42 52 54 44 68 48 L96 56 L92 68 L58 64 C46 64 38 74 44 86 Z';
+const LOWER_FOLD_D = 'M124 94 C118 108 106 116 92 112 L68 104 L74 92 L102 96 C114 96 122 86 116 74 Z';
+const ARROW_SHAFT_D = 'M34 114 C64 106 94 84 116 54';
+const ARROW_HEAD_D = 'M105 54 L121 48 L119 65 Z';
 
 export function StitchFlowAnimatedLogo({
-  size = 145,
+  size = 148,
   autoPlay = true,
   onAnimationComplete,
   style,
   compact = false,
-  loop = false,
 }: StitchFlowAnimatedLogoProps) {
-  const drawProgress = useSharedValue(0);
-  const seamOpacity = useSharedValue(0);
-  const detailsOpacity = useSharedValue(0);
-  const accentsOpacity = useSharedValue(0);
-  const glowScale = useSharedValue(1);
+  const ribbonOpacity = useSharedValue(compact ? 1 : 0);
+  const stitchProgress = useSharedValue(compact ? 1 : 0);
+  const foldOpacity = useSharedValue(compact ? 1 : 0);
+  const bar1Scale = useSharedValue(compact ? 1 : 0);
+  const bar2Scale = useSharedValue(compact ? 1 : 0);
+  const bar3Scale = useSharedValue(compact ? 1 : 0);
+  const arrowProgress = useSharedValue(compact ? 1 : 0);
+  const arrowHeadOpacity = useSharedValue(compact ? 1 : 0);
 
   useEffect(() => {
     let isMounted = true;
+
+    if (compact) return;
 
     AccessibilityInfo.isReduceMotionEnabled().then((reduced) => {
       if (!isMounted) return;
 
       if (reduced) {
-        drawProgress.value = 1;
-        seamOpacity.value = 1;
-        detailsOpacity.value = 1;
-        accentsOpacity.value = 1;
-        if (onAnimationComplete) {
-          onAnimationComplete();
-        }
+        ribbonOpacity.value = 1;
+        stitchProgress.value = 1;
+        foldOpacity.value = 1;
+        bar1Scale.value = 1;
+        bar2Scale.value = 1;
+        bar3Scale.value = 1;
+        arrowProgress.value = 1;
+        arrowHeadOpacity.value = 1;
+        onAnimationComplete?.();
         return;
       }
 
       if (autoPlay) {
-        startAnimation();
+        startChoreography();
       }
     });
 
     return () => {
       isMounted = false;
     };
-  }, [autoPlay]);
+  }, [autoPlay, compact]);
 
-  const startAnimation = () => {
-    drawProgress.value = 0;
-    seamOpacity.value = 0;
-    detailsOpacity.value = 0;
-    accentsOpacity.value = 0;
-    glowScale.value = 1;
-
-    // 1. Thread draws smoothly along the S-curve (0.1s to 1.45s)
-    drawProgress.value = withDelay(
-      100,
-      withTiming(1, {
-        duration: 1350,
-        easing: Easing.bezier(0.4, 0, 0.2, 1),
-      })
+  const startChoreography = () => {
+    // Stage 2 (400-900ms): Blue S-shaped ribbon formation
+    ribbonOpacity.value = withDelay(
+      350,
+      withTiming(1, { duration: 480, easing: Easing.out(Easing.cubic) })
     );
 
-    // 2. Lime accents reveal (at ~0.9s)
-    accentsOpacity.value = withDelay(
-      900,
-      withTiming(1, { duration: 400, easing: Easing.out(Easing.quad) })
+    // Stage 3 (900-1200ms): White dashed stitching + silver folds
+    stitchProgress.value = withDelay(
+      820,
+      withTiming(1, { duration: 380, easing: Easing.out(Easing.quad) })
+    );
+    foldOpacity.value = withDelay(
+      880,
+      withTiming(1, { duration: 320, easing: Easing.out(Easing.quad) })
     );
 
-    // 3. Garment stitching seam appears (at ~1.2s)
-    seamOpacity.value = withDelay(
-      1200,
-      withTiming(1, { duration: 450, easing: Easing.out(Easing.quad) })
+    // Stage 4 (1200-1600ms): Red, Amber, Green production bars grow bottom-to-top sequentially
+    bar1Scale.value = withDelay(
+      1180,
+      withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) })
+    );
+    bar2Scale.value = withDelay(
+      1310,
+      withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) })
+    );
+    bar3Scale.value = withDelay(
+      1440,
+      withTiming(1, { duration: 180, easing: Easing.out(Easing.cubic) })
     );
 
-    // 4. Factory, sewing machine, and t-shirt elements reveal (at ~1.4s)
-    detailsOpacity.value = withDelay(
-      1400,
-      withTiming(1, { duration: 550, easing: Easing.out(Easing.cubic) }, (finished) => {
+    // Stage 5 (1600-1900ms): Upward blue growth arrow sweeps along path
+    arrowProgress.value = withDelay(
+      1580,
+      withTiming(1, { duration: 280, easing: Easing.out(Easing.cubic) })
+    );
+    arrowHeadOpacity.value = withDelay(
+      1780,
+      withTiming(1, { duration: 150, easing: Easing.out(Easing.quad) }, (finished) => {
         if (finished && onAnimationComplete) {
           runOnJS(onAnimationComplete)();
         }
       })
     );
-
-    // 5. Subtle assembly pulse
-    glowScale.value = withDelay(
-      1800,
-      withSequence(
-        withTiming(1.035, { duration: 250, easing: Easing.out(Easing.quad) }),
-        withTiming(1.0, { duration: 250, easing: Easing.inOut(Easing.quad) })
-      )
-    );
   };
 
-  const animatedThreadProps = useAnimatedProps(() => {
-    'worklet';
-    const offset = PATH_LENGTH * (1 - drawProgress.value);
-    return {
-      strokeDashoffset: offset,
-    };
-  });
+  const ribbonProps = useAnimatedProps(() => ({
+    opacity: ribbonOpacity.value,
+  }));
 
-  const animatedSeamProps = useAnimatedProps(() => {
-    'worklet';
-    return {
-      opacity: seamOpacity.value,
-    };
-  });
+  const foldProps = useAnimatedProps(() => ({
+    opacity: foldOpacity.value,
+  }));
 
-  const animatedAccentsProps = useAnimatedProps(() => {
-    'worklet';
-    return {
-      opacity: accentsOpacity.value,
-    };
-  });
+  const stitchProps = useAnimatedProps(() => ({
+    opacity: stitchProgress.value,
+    strokeDashoffset: 140 * (1 - stitchProgress.value),
+  }));
 
-  const animatedDetailsProps = useAnimatedProps(() => {
-    'worklet';
-    return {
-      opacity: detailsOpacity.value,
-    };
-  });
+  const bar1Props = useAnimatedProps(() => ({
+    height: 22 * bar1Scale.value,
+    y: 94 - 22 * bar1Scale.value,
+  }));
 
-  const containerAnimatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ scale: glowScale.value }],
-    };
-  });
+  const bar2Props = useAnimatedProps(() => ({
+    height: 30 * bar2Scale.value,
+    y: 90 - 30 * bar2Scale.value,
+  }));
 
-  if (compact) {
-    return (
-      <View style={[{ width: size, height: size }, styles.center, style]}>
-        <Svg width={size} height={size} viewBox="0 0 160 160">
-          {/* Compact static/instant or simplified stitch emblem */}
-          <Path
-            d={THREAD_PATH_D}
-            fill="none"
-            stroke="#F4F3EE"
-            strokeWidth="24"
-            strokeLinecap="round"
-          />
-          <Path
-            d={THREAD_PATH_D}
-            fill="none"
-            stroke="#153D2D"
-            strokeWidth="2.5"
-            strokeDasharray="5 8"
-            strokeLinecap="round"
-          />
-          <Path
-            d={`${LIME_ACCENT_1} ${LIME_ACCENT_2}`}
-            fill="none"
-            stroke="#C9EF45"
-            strokeWidth="12"
-            strokeLinecap="round"
-          />
-        </Svg>
-      </View>
-    );
-  }
+  const bar3Props = useAnimatedProps(() => ({
+    height: 38 * bar3Scale.value,
+    y: 86 - 38 * bar3Scale.value,
+  }));
+
+  const arrowShaftProps = useAnimatedProps(() => ({
+    strokeDashoffset: 120 * (1 - arrowProgress.value),
+    opacity: arrowProgress.value > 0.02 ? 1 : 0,
+  }));
+
+  const arrowHeadProps = useAnimatedProps(() => ({
+    opacity: arrowHeadOpacity.value,
+  }));
 
   return (
-    <Animated.View
-      style={[{ width: size, height: size }, styles.center, containerAnimatedStyle, style]}
-    >
+    <View style={[{ width: size, height: size }, styles.center, style]}>
       <Svg width={size} height={size} viewBox="0 0 160 160">
-        {/* Layer 1: Animated Electric Lime Ribbon Terminals */}
-        <AnimatedPath
-          d={`${LIME_ACCENT_1} ${LIME_ACCENT_2}`}
-          fill="none"
-          stroke="#C9EF45"
-          strokeWidth="12"
-          strokeLinecap="round"
-          animatedProps={animatedAccentsProps}
-        />
+        <Defs>
+          <LinearGradient id="sfBlueGrad" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor="#0B5EC7" />
+            <Stop offset="1" stopColor="#284578" />
+          </LinearGradient>
+          <LinearGradient id="sfSilverGrad" x1="0" y1="0" x2="1" y2="0">
+            <Stop offset="0" stopColor="#A9A9A9" />
+            <Stop offset="1" stopColor="#D5D9DF" />
+          </LinearGradient>
+        </Defs>
 
-        {/* Layer 2: Animated S-shaped Warm Ivory Thread Ribbon */}
-        <AnimatedPath
-          d={THREAD_PATH_D}
-          fill="none"
-          stroke="#F4F3EE"
-          strokeWidth="24"
-          strokeLinecap="round"
-          strokeDasharray={PATH_LENGTH}
-          animatedProps={animatedThreadProps}
-        />
-
-        {/* Layer 3: Industrial Garment Seam Dash Stitching */}
-        <AnimatedPath
-          d={THREAD_PATH_D}
-          fill="none"
-          stroke="#153D2D"
-          strokeWidth="2.5"
-          strokeDasharray="5 8"
-          strokeLinecap="round"
-          animatedProps={animatedSeamProps}
-        />
-
-        {/* Layer 4: Manufacturing Silhouettes Revealed within S-Curve Loops */}
-        <AnimatedG animatedProps={animatedDetailsProps}>
-          {/* Top-Right Loop: Industrial Sawtooth Factory */}
-          <Path
-            d="M86 49 L86 44 L91 40 L91 44 L96 40 L96 44 L101 40 L101 49 Z"
-            fill="#153D2D"
-          />
-          <Rect x="88" y="46" width="1.8" height="2" fill="#C9EF45" />
-          <Rect x="93" y="46" width="1.8" height="2" fill="#C9EF45" />
-          <Rect x="98" y="46" width="1.8" height="2" fill="#C9EF45" />
-
-          {/* Center Loop: Industrial Sewing Machine on Ribbon */}
-          {/* Machine Body */}
-          <Path
-            d="M71 83 L91 83 L91 81 L87 81 L87 73 L74 73 L74 76 L84 76 L84 81 L71 81 Z"
-            fill="#153D2D"
-          />
-          {/* Needle & Thread Lock */}
-          <Path d="M75 76 L75 80" stroke="#153D2D" strokeWidth="1.2" strokeLinecap="round" />
-          <Path d="M87 75 L89 75" stroke="#C9EF45" strokeWidth="1.2" strokeLinecap="round" />
-
-          {/* Bottom-Left Loop: Garment / T-Shirt on Hanger */}
-          {/* Hanger Hook */}
-          <Path
-            d="M59 98 C59 96 61 96 61 98 L61 100 L54 103 L66 103 Z"
-            fill="none"
-            stroke="#153D2D"
-            strokeWidth="1.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          {/* T-Shirt Outline */}
-          <Path
-            d="M54 103 L51 106 L53 108 L55 106 L55 115 L65 115 L65 106 L67 108 L69 106 L66 103 Z"
-            fill="#153D2D"
-          />
+        {/* Stage 3: Silver / Gray Inner Folds */}
+        <AnimatedG animatedProps={foldProps}>
+          <Path d={UPPER_FOLD_D} fill="url(#sfSilverGrad)" />
+          <Path d={LOWER_FOLD_D} fill="url(#sfSilverGrad)" />
         </AnimatedG>
+
+        {/* Stage 2: Blue S-Shaped Garment Ribbon */}
+        <AnimatedG animatedProps={ribbonProps}>
+          <Path d={UPPER_RIBBON_D} fill="url(#sfBlueGrad)" />
+          <Path d={LOWER_RIBBON_D} fill="url(#sfBlueGrad)" />
+        </AnimatedG>
+
+        {/* Stage 3: White Dashed Garment Stitching */}
+        <AnimatedPath
+          d={UPPER_STITCH_D}
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="2.8"
+          strokeDasharray="6 5"
+          strokeLinecap="round"
+          animatedProps={stitchProps}
+        />
+        <AnimatedPath
+          d={LOWER_STITCH_D}
+          fill="none"
+          stroke="#FFFFFF"
+          strokeWidth="2.8"
+          strokeDasharray="6 5"
+          strokeLinecap="round"
+          animatedProps={stitchProps}
+        />
+
+        {/* Stage 4: Three Ascending Production Bars (Red, Amber, Green) */}
+        <AnimatedRect x="48" width="13" rx="3" fill="#EC3327" animatedProps={bar1Props} />
+        <AnimatedRect x="67" width="13" rx="3" fill="#FBB315" animatedProps={bar2Props} />
+        <AnimatedRect x="86" width="13" rx="3" fill="#1CA64A" animatedProps={bar3Props} />
+
+        {/* Stage 5: Upward Corporate Blue Growth Arrow */}
+        <AnimatedPath
+          d={ARROW_SHAFT_D}
+          fill="none"
+          stroke="#0B5EC7"
+          strokeWidth="5"
+          strokeLinecap="round"
+          strokeDasharray="120"
+          animatedProps={arrowShaftProps}
+        />
+        <AnimatedPath
+          d={ARROW_HEAD_D}
+          fill="#0B5EC7"
+          animatedProps={arrowHeadProps}
+        />
       </Svg>
-    </Animated.View>
+    </View>
   );
 }
 

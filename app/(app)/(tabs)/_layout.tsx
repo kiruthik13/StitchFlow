@@ -5,6 +5,7 @@ import { useThemeStore } from '../../../src/store/themeStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
+import * as Haptics from 'expo-haptics';
 import {
   LayoutDashboard,
   Layers,
@@ -80,7 +81,10 @@ export default function TabsLayout() {
                 tabBarButton: (props) => (
                   <TouchableOpacity
                     activeOpacity={0.85}
-                    onPress={props.onPress}
+                    onPress={(e) => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+                      props.onPress?.(e);
+                    }}
                     accessibilityLabel={t('scanBarcodeOrQR')}
                     accessibilityRole="button"
                     style={styles.scannerWrapper}
@@ -89,15 +93,14 @@ export default function TabsLayout() {
                       style={[
                         styles.scannerCircle,
                         {
-                          backgroundColor:
-                            mode === 'dark' ? tokens.signatureLime : tokens.primaryDeep,
-                          shadowColor: mode === 'dark' ? tokens.signatureLime : '#0D2B20',
+                          backgroundColor: tokens.brand,
+                          shadowColor: tokens.primaryDeep,
                         },
                       ]}
                     >
                       <ScanLine
                         size={26}
-                        color={mode === 'dark' ? '#0D2B20' : tokens.signatureLime}
+                        color={mode === 'dark' ? '#11161E' : '#FFFFFF'}
                         strokeWidth={2.4}
                       />
                     </View>

@@ -99,14 +99,14 @@ export function BrandHeader({
               accessibilityLabel={t('profile')}
               style={[
                 styles.avatarCircle,
-                { backgroundColor: mode === 'dark' ? '#203D2A' : '#E6F7AD' },
+                { backgroundColor: tokens.brandLight },
               ]}
             >
               <AppText
                 variant="label"
                 bold
                 style={{
-                  color: mode === 'dark' ? tokens.signatureLime : tokens.primaryDeep,
+                  color: tokens.brand,
                   fontSize: 13,
                 }}
               >

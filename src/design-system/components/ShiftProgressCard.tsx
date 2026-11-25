@@ -25,32 +25,37 @@ export function ShiftProgressCard({ shift }: ShiftProgressCardProps) {
   const paceVariant =
     pct >= 90 ? tokens.success : pct >= 70 ? tokens.warning : tokens.danger;
 
+  const heroText = '#FFFFFF';
+  const heroMuted = 'rgba(255, 255, 255, 0.76)';
+  const heroDivider = 'rgba(255, 255, 255, 0.16)';
+  const progressAccent = '#34C765';
+
   return (
-    <AppCard variant="hero" padding={spacing[4]}>
+    <AppCard variant="forest" padding={spacing[4]}>
       {/* Header row */}
       <View style={styles.headerRow}>
         <View>
-          <AppText variant="caption" color="secondary" uppercase style={{ letterSpacing: 0.8, fontWeight: '600' }}>
+          <AppText variant="caption" uppercase style={{ color: heroMuted, letterSpacing: 0.8, fontWeight: '600' }}>
             {t('production:floorOutputProgress')}
           </AppText>
           <View style={styles.pctRow}>
-            <AppText style={[styles.pctText, { color: tokens.textPrimary }]}>
+            <AppText style={[styles.pctText, { color: heroText }]}>
               {pct}%
             </AppText>
-            <View style={[styles.paceBadge, { backgroundColor: tokens.surfaceSecondary }]}>
-              <AppText variant="label" mono bold style={{ color: paceVariant }}>
+            <View style={[styles.paceBadge, { backgroundColor: 'rgba(255, 255, 255, 0.14)' }]}>
+              <AppText variant="label" bold style={{ color: heroText, fontVariant: ['tabular-nums'] }}>
                 {shift.pacePerHour} pcs/hr
               </AppText>
             </View>
           </View>
         </View>
         <View style={styles.rightCol}>
-          <AppText variant="caption" color="secondary">{t('common:target')}</AppText>
-          <AppText variant="h3" mono bold>{shift.targetQty.toLocaleString()}</AppText>
+          <AppText variant="caption" style={{ color: heroMuted }}>{t('common:target')}</AppText>
+          <AppText variant="h3" bold style={{ color: heroText, fontVariant: ['tabular-nums'] }}>{shift.targetQty.toLocaleString()}</AppText>
         </View>
       </View>
 
-      {/* Signature Lime Progress Track */}
+      {/* Production Green Progress Track */}
       <View style={styles.segmentRow}>
         {Array.from({ length: totalSegments }).map((_, i) => (
           <View
@@ -58,7 +63,7 @@ export function ShiftProgressCard({ shift }: ShiftProgressCardProps) {
             style={[
               styles.segment,
               {
-                backgroundColor: i < filledSegments ? tokens.signatureLime : tokens.surfaceSecondary,
+                backgroundColor: i < filledSegments ? progressAccent : 'rgba(255, 255, 255, 0.18)',
                 marginRight: i < totalSegments - 1 ? 4 : 0,
               },
             ]}
@@ -67,21 +72,21 @@ export function ShiftProgressCard({ shift }: ShiftProgressCardProps) {
       </View>
 
       {/* Stats row */}
-      <View style={[styles.statsRow, { borderTopColor: tokens.border }]}>
-        <StatCol label="Packed" value={shift.packingQty} color={tokens.success} tokens={tokens} />
-        <View style={[styles.divider, { backgroundColor: tokens.border }]} />
-        <StatCol label="Pending" value={Math.max(0, shift.targetQty - shift.actualQty)} color={tokens.textSecondary} tokens={tokens} />
-        <View style={[styles.divider, { backgroundColor: tokens.border }]} />
-        <StatCol label="Rework" value={shift.reworkQty} color={tokens.danger} tokens={tokens} />
+      <View style={[styles.statsRow, { borderTopColor: heroDivider }]}>
+        <StatCol label="Packed" value={shift.packingQty} color={progressAccent} muted={heroMuted} />
+        <View style={[styles.divider, { backgroundColor: heroDivider }]} />
+        <StatCol label="Pending" value={Math.max(0, shift.targetQty - shift.actualQty)} color={heroText} muted={heroMuted} />
+        <View style={[styles.divider, { backgroundColor: heroDivider }]} />
+        <StatCol label="Rework" value={shift.reworkQty} color="#FBB315" muted={heroMuted} />
       </View>
     </AppCard>
   );
 }
 
-function StatCol({ label, value, color, tokens }: { label: string; value: number; color: string; tokens: any }) {
+function StatCol({ label, value, color, muted }: { label: string; value: number; color: string; muted: string }) {
   return (
     <View style={{ flex: 1, alignItems: 'center' }}>
-      <AppText variant="caption" color="secondary" style={{ marginBottom: 2 }}>{label}</AppText>
+      <AppText variant="caption" style={{ color: muted, marginBottom: 2 }}>{label}</AppText>
       <AppText style={{ color, fontSize: 18, lineHeight: 24, fontWeight: '800', letterSpacing: 0, includeFontPadding: false, fontVariant: ['tabular-nums'] }}>
         {value.toLocaleString()}
       </AppText>

@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  TouchableOpacity,
   View,
   StyleSheet,
   ActivityIndicator,
@@ -8,6 +7,7 @@ import {
 } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { AppText } from './AppText';
+import { PressableScale } from './PressableScale';
 import { spacing } from '../tokens/spacing';
 import { radii } from '../tokens/radii';
 
@@ -42,17 +42,17 @@ export function AppButton({
   const isDisabled = disabled || loading;
 
   const bgMap: Record<ButtonVariant, string> = {
-    primary: mode === 'dark' ? tokens.signatureLime : tokens.brand,
+    primary: tokens.brand,
     secondary: tokens.surfaceSecondary,
     danger: tokens.danger,
     ghost: 'transparent',
     outline: 'transparent',
-    lime: tokens.signatureLime,
+    lime: tokens.brand,
   };
 
   const getTextColor = (): 'primary' | 'secondary' | 'brand' | 'inverse' | 'danger' => {
-    if (variant === 'lime') return 'inverse'; // Dark forest text
-    if (variant === 'primary') return mode === 'dark' ? 'inverse' : 'inverse';
+    if (variant === 'lime') return 'inverse';
+    if (variant === 'primary') return 'inverse';
     if (variant === 'secondary') return 'primary';
     if (variant === 'danger') return 'inverse';
     if (variant === 'ghost' || variant === 'outline') return 'brand';
@@ -71,14 +71,16 @@ export function AppButton({
     lg: 'body',
   };
 
-  // Contrast override for lime surface
-  const customTextColor = (variant === 'lime' || (variant === 'primary' && mode === 'dark'))
-    ? '#0D2B20'
-    : undefined;
+  // Contrast override for dark-mode light blue button surface
+  const customTextColor =
+    (variant === 'lime' || variant === 'primary') && mode === 'dark'
+      ? '#11161E'
+      : undefined;
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
+    <PressableScale
+      scaleTo={0.97}
+      haptic="light"
       disabled={isDisabled}
       style={[
         styles.base,
@@ -93,7 +95,7 @@ export function AppButton({
         fullWidth && styles.fullWidth,
         style,
       ]}
-      {...props}
+      {...(props as any)}
     >
       {loading ? (
         <ActivityIndicator
@@ -114,7 +116,7 @@ export function AppButton({
           {rightIcon && <View style={{ marginLeft: spacing[2] }}>{rightIcon}</View>}
         </View>
       )}
-    </TouchableOpacity>
+    </PressableScale>
   );
 }
 

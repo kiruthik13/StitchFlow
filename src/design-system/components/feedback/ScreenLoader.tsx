@@ -20,7 +20,7 @@ export function ScreenLoader({
 }: ScreenLoaderProps) {
   const { tokens, mode } = useThemeStore();
   const trackColor = mode === 'dark' ? '#25352E' : '#DDE2D8';
-  const indicatorColor = tokens.signatureLime || '#C9EF45';
+  const indicatorColor = tokens.brand || '#4469B1';
 
   if (compact) {
     return (

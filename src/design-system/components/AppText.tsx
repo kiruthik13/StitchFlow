@@ -86,13 +86,14 @@ function getVariantStyle(
   bold: boolean,
   semiBold: boolean
 ) {
-  const isMono =
-    mono || variant === 'code' || variant === 'codeSmall' || variant === 'kpi';
+  // Reserve monospace strictly for technical identifiers (code / codeSmall / explicit mono)
+  // Editorial KPIs use clean sans-serif with tabular-nums for Swiss-precision readability.
+  const isMono = mono || variant === 'code' || variant === 'codeSmall';
 
   const defaultFontFamily = isMono
     ? Platform.select({ android: 'monospace', ios: 'Courier', default: 'monospace' })
     : Platform.select({
-      android: bold || variant === 'display' || variant === 'h1'
+      android: bold || variant === 'display' || variant === 'h1' || variant === 'kpi'
         ? 'sans-serif-bold'
         : semiBold || variant === 'h2' || variant === 'h3' || variant === 'h4' || variant === 'label'
           ? 'sans-serif-medium'

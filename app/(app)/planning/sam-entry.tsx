@@ -9,6 +9,7 @@ import { AppText } from '../../../src/design-system/components/AppText';
 import { AppCard } from '../../../src/design-system/components/AppCard';
 import { AppInput } from '../../../src/design-system/components/AppInput';
 import { AppButton } from '../../../src/design-system/components/AppButton';
+import { StickyActionLayout } from '../../../src/design-system/layouts/StickyActionLayout';
 import { spacing } from '../../../src/design-system/tokens/spacing';
 import { STYLES } from '../../../src/fixtures/mockData';
 
@@ -40,65 +41,62 @@ export default function SamEntryScreen() {
   };
 
   return (
-    <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title={t('production:samPlan')} subtitle={t('production:samEfficiency')} showBack onBack={() => router.back()} />
-
-      <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
-        {/* Style Selector */}
-        <AppText variant="caption" color="secondary" uppercase style={styles.sectionTitle}>Select Garment Style</AppText>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing[3] }}>
-          <View style={{ flexDirection: 'row', gap: spacing[2] }}>
-            {STYLES.map((s) => (
-              <TouchableOpacity
-                key={s.id}
-                onPress={() => setSelectedStyle(s)}
-                style={[
-                  styles.styleChip,
-                  {
-                    backgroundColor: selectedStyle.id === s.id ? tokens.brand : tokens.surface,
-                    borderColor: selectedStyle.id === s.id ? tokens.brand : tokens.border,
-                  },
-                ]}
-              >
-                <AppText variant="label" style={{ color: selectedStyle.id === s.id ? '#FFFFFF' : tokens.textPrimary }}>
-                  {s.name}
-                </AppText>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
-
-        {/* Calculated Benchmark Card */}
-        <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
-          <View style={styles.calcRow}>
-            <View style={{ flex: 1 }}>
-              <AppText variant="caption" color="secondary">Total Standard Minutes</AppText>
-              <AppText style={{ fontSize: 36, lineHeight: 46, fontWeight: '800', color: tokens.brand, letterSpacing: 0, includeFontPadding: false, fontVariant: ['tabular-nums'] }}>
-                {totalSam} SAM
+    <StickyActionLayout
+      header={<AppHeader title={t('production:samPlan')} subtitle={t('production:samEfficiency')} showBack onBack={() => router.back()} />}
+      stickyFooter={<AppButton title="Save & Broadcast SAM to Lines" fullWidth size="lg" onPress={handleSave} />}
+    >
+      {/* Style Selector */}
+      <AppText variant="caption" color="secondary" uppercase style={styles.sectionTitle}>Select Garment Style</AppText>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing[3] }}>
+        <View style={{ flexDirection: 'row', gap: spacing[2] }}>
+          {STYLES.map((s) => (
+            <TouchableOpacity
+              key={s.id}
+              onPress={() => setSelectedStyle(s)}
+              style={[
+                styles.styleChip,
+                {
+                  backgroundColor: selectedStyle.id === s.id ? tokens.brand : tokens.surface,
+                  borderColor: selectedStyle.id === s.id ? tokens.brand : tokens.border,
+                },
+              ]}
+            >
+              <AppText variant="label" style={{ color: selectedStyle.id === s.id ? '#FFFFFF' : tokens.textPrimary }}>
+                {s.name}
               </AppText>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <AppText variant="caption" color="secondary">Pace Target</AppText>
-              <AppText style={{ fontSize: 24, lineHeight: 32, fontWeight: '700', color: tokens.success, letterSpacing: 0, includeFontPadding: false, fontVariant: ['tabular-nums'] }}>
-                {targetPcsPerHour} pcs/hr
-              </AppText>
-            </View>
-          </View>
-        </AppCard>
-
-        {/* Stage Breakdown Inputs */}
-        <AppText variant="caption" color="secondary" uppercase style={styles.sectionTitle}>Operation Breakdown (Minutes)</AppText>
-        <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
-          <AppInput label="1. Front Placket & Chest Pocket" value={frontSam} onChangeText={setFrontSam} keyboardType="numeric" />
-          <AppInput label="2. Collar Band & Neck Join" value={collarSam} onChangeText={setCollarSam} keyboardType="numeric" />
-          <AppInput label="3. Sleeve Overlock & Cuffs" value={sleeveSam} onChangeText={setSleeveSam} keyboardType="numeric" />
-          <AppInput label="4. Bottom Hemming" value={hemSam} onChangeText={setHemSam} keyboardType="numeric" />
-          <AppInput label="5. Final Assembly & Clean Stitch" value={assemblySam} onChangeText={setAssemblySam} keyboardType="numeric" />
-        </AppCard>
-
-        <AppButton title="Save & Broadcast SAM to Lines" onPress={handleSave} />
+            </TouchableOpacity>
+          ))}
+        </View>
       </ScrollView>
-    </View>
+
+      {/* Calculated Benchmark Card */}
+      <AppCard variant="forest" padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
+        <View style={styles.calcRow}>
+          <View style={{ flex: 1 }}>
+            <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>Total Standard Minutes</AppText>
+            <AppText style={{ fontSize: 36, lineHeight: 46, fontWeight: '800', color: '#FFFFFF', letterSpacing: 0, includeFontPadding: false, fontVariant: ['tabular-nums'] }}>
+              {totalSam} SAM
+            </AppText>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>Pace Target</AppText>
+            <AppText style={{ fontSize: 24, lineHeight: 32, fontWeight: '700', color: '#34C765', letterSpacing: 0, includeFontPadding: false, fontVariant: ['tabular-nums'] }}>
+              {targetPcsPerHour} pcs/hr
+            </AppText>
+          </View>
+        </View>
+      </AppCard>
+
+      {/* Stage Breakdown Inputs */}
+      <AppText variant="caption" color="secondary" uppercase style={styles.sectionTitle}>Operation Breakdown (Minutes)</AppText>
+      <AppCard padding={spacing[4]}>
+        <AppInput label="1. Front Placket & Chest Pocket" value={frontSam} onChangeText={setFrontSam} keyboardType="numeric" />
+        <AppInput label="2. Collar Band & Neck Join" value={collarSam} onChangeText={setCollarSam} keyboardType="numeric" />
+        <AppInput label="3. Sleeve Overlock & Cuffs" value={sleeveSam} onChangeText={setSleeveSam} keyboardType="numeric" />
+        <AppInput label="4. Bottom Hemming" value={hemSam} onChangeText={setHemSam} keyboardType="numeric" />
+        <AppInput label="5. Final Assembly & Clean Stitch" value={assemblySam} onChangeText={setAssemblySam} keyboardType="numeric" />
+      </AppCard>
+    </StickyActionLayout>
   );
 }
 

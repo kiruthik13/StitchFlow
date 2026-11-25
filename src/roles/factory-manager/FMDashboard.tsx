@@ -132,50 +132,133 @@ export function FMDashboard() {
           pacePerHour={TODAY_SHIFT.pacePerHour}
         />
 
-        {/* 4. Compact 2x2 Floor Health Bento Grid */}
+        {/* 4. Differentiated Floor Health Composition */}
         <SectionTitle title={t('production:floorHealthMetrics')} subtitle={t('production:realtimeBalance')} />
         <View style={styles.bentoGrid}>
           <View style={styles.bentoCol}>
-            <MetricCard
-              label={t('production:lineEfficiency')}
-              value={`${Math.round(jobs.reduce((s, j) => s + j.efficiency, 0) / (jobs.length || 1))}%`}
-              trend={{ value: '+4.2%', isPositive: true }}
-              icon={<TrendingUp size={14} color={tokens.success} strokeWidth={2.4} />}
-              variant="brand"
-              compact
-            />
-            <MetricCard
-              label={t('production:defectRate')}
-              value={`${((jobs.reduce((s, j) => s + j.rejectedQty, 0) / (jobs.reduce((s, j) => s + j.cuttingQty, 0) || 1)) * 100).toFixed(1)}%`}
-              trend={{ value: '-0.4%', isPositive: true }}
-              icon={<AlertCircle size={14} color={tokens.warning} strokeWidth={2.4} />}
-              variant="default"
-              compact
-            />
+            {/* Highlighted Efficiency Block */}
+            <View
+              style={[
+                styles.healthTile,
+                {
+                  backgroundColor: tokens.brandLight,
+                  borderColor: mode === 'dark' ? '#334E7A' : '#C4D4EE',
+                },
+              ]}
+            >
+              <View style={styles.healthTop}>
+                <AppText variant="caption" color="secondary" uppercase style={styles.healthLabel}>
+                  {t('production:lineEfficiency')}
+                </AppText>
+                <TrendingUp size={15} color={tokens.brand} strokeWidth={2.4} />
+              </View>
+              <AppText
+                variant="kpi"
+                style={[
+                  styles.healthValue,
+                  { color: mode === 'dark' ? tokens.brand : tokens.primaryDeep },
+                ]}
+              >
+                {`${Math.round(jobs.reduce((s, j) => s + j.efficiency, 0) / (jobs.length || 1))}%`}
+              </AppText>
+              <View style={[styles.healthPill, { backgroundColor: tokens.successLight }]}>
+                <AppText variant="caption" bold style={{ color: tokens.success, fontSize: 10 }}>
+                  ▲ +4.2%
+                </AppText>
+              </View>
+            </View>
+
+            {/* Defect Rate Block */}
+            <View
+              style={[
+                styles.healthTile,
+                {
+                  backgroundColor: tokens.surface,
+                  borderColor: tokens.border,
+                },
+              ]}
+            >
+              <View style={styles.healthTop}>
+                <AppText variant="caption" color="secondary" uppercase style={styles.healthLabel}>
+                  {t('production:defectRate')}
+                </AppText>
+                <AlertCircle size={15} color={tokens.warning} strokeWidth={2.4} />
+              </View>
+              <AppText variant="kpi" style={[styles.healthValue, { color: tokens.textPrimary }]}>
+                {`${((jobs.reduce((s, j) => s + j.rejectedQty, 0) / (jobs.reduce((s, j) => s + j.cuttingQty, 0) || 1)) * 100).toFixed(1)}%`}
+              </AppText>
+              <View style={[styles.healthPill, { backgroundColor: tokens.successLight }]}>
+                <AppText variant="caption" bold style={{ color: tokens.success, fontSize: 10 }}>
+                  ▲ -0.4%
+                </AppText>
+              </View>
+            </View>
           </View>
+
           <View style={styles.bentoCol}>
-            <MetricCard
-              label={t('production:workInProgress')}
-              value={jobs.reduce((s, j) => s + Math.max(0, j.cuttingQty - j.packingQty), 0).toLocaleString()}
-              unit="pcs"
-              subLabel={t('common:activeJobsCount', { count: jobs.filter((j) => j.status === 'active').length })}
-              icon={<Layers size={14} color={tokens.info} strokeWidth={2.4} />}
-              variant="default"
-              compact
-            />
-            <MetricCard
-              label={t('quality:reworkQueue')}
-              value={jobs.reduce((s, j) => s + j.reworkQty, 0).toLocaleString()}
-              unit="pcs"
-              trend={{ value: `-${TODAY_SHIFT.reworkQty} shift`, isPositive: true }}
-              icon={<RotateCcw size={14} color={tokens.danger} strokeWidth={2.4} />}
-              variant="warning"
-              compact
-            />
+            {/* Work In Progress Block */}
+            <View
+              style={[
+                styles.healthTile,
+                {
+                  backgroundColor: tokens.surface,
+                  borderColor: tokens.border,
+                },
+              ]}
+            >
+              <View style={styles.healthTop}>
+                <AppText variant="caption" color="secondary" uppercase style={styles.healthLabel}>
+                  {t('production:workInProgress')}
+                </AppText>
+                <Layers size={15} color={tokens.info} strokeWidth={2.4} />
+              </View>
+              <View style={styles.healthValRow}>
+                <AppText variant="kpi" style={[styles.healthValue, { color: tokens.textPrimary }]}>
+                  {jobs.reduce((s, j) => s + Math.max(0, j.cuttingQty - j.packingQty), 0).toLocaleString()}
+                </AppText>
+                <AppText variant="caption" color="secondary" style={{ marginLeft: 4 }}>
+                  pcs
+                </AppText>
+              </View>
+              <AppText variant="caption" color="secondary" style={{ fontSize: 11 }}>
+                {t('common:activeJobsCount', { count: jobs.filter((j) => j.status === 'active').length })}
+              </AppText>
+            </View>
+
+            {/* Rework Queue Block */}
+            <View
+              style={[
+                styles.healthTile,
+                {
+                  backgroundColor: tokens.warningLight,
+                  borderColor: mode === 'dark' ? '#5A4628' : '#E8CFA0',
+                },
+              ]}
+            >
+              <View style={styles.healthTop}>
+                <AppText variant="caption" color="secondary" uppercase style={styles.healthLabel}>
+                  {t('quality:reworkQueue')}
+                </AppText>
+                <RotateCcw size={15} color={tokens.warning} strokeWidth={2.4} />
+              </View>
+              <View style={styles.healthValRow}>
+                <AppText variant="kpi" style={[styles.healthValue, { color: tokens.warning }]}>
+                  {jobs.reduce((s, j) => s + j.reworkQty, 0).toLocaleString()}
+                </AppText>
+                <AppText variant="caption" color="secondary" style={{ marginLeft: 4 }}>
+                  pcs
+                </AppText>
+              </View>
+              <View style={[styles.healthPill, { backgroundColor: tokens.surface }]}>
+                <AppText variant="caption" bold style={{ color: tokens.success, fontSize: 10 }}>
+                  ▲ -{TODAY_SHIFT.reworkQty} shift
+                </AppText>
+              </View>
+            </View>
           </View>
         </View>
 
-        {/* 5. Production Line Status */}
+        {/* 5. Production Line Status — Structured Editorial List */}
         <View style={styles.titleRow}>
           <SectionTitle title={t('production:linePerformance')} subtitle={t('production:activeStages')} />
           <TouchableOpacity onPress={() => router.push('/(app)/planning/workforce')}>
@@ -184,17 +267,21 @@ export function FMDashboard() {
             </AppText>
           </TouchableOpacity>
         </View>
-        {jobs.slice(0, 3).map((j) => (
-          <ProductionLineRow
-            key={j.id}
-            lineId={j.lineId}
-            lineName={`${j.lineName} — ${j.styleName}`}
-            actualQty={j.sewingOutQty}
-            targetQty={j.orderQuantity}
-            status={j.efficiency >= 80 ? 'running' : 'delayed'}
-            onPress={() => router.push(`/(app)/jobs/${j.id}`)}
-          />
-        ))}
+        <AppCard padding={0} style={{ marginBottom: spacing[1] }}>
+          {jobs.slice(0, 3).map((j, idx, arr) => (
+            <ProductionLineRow
+              key={j.id}
+              lineId={j.lineId}
+              lineName={`${j.lineName} — ${j.styleName}`}
+              actualQty={j.sewingOutQty}
+              targetQty={j.orderQuantity}
+              status={j.efficiency >= 80 ? 'running' : 'delayed'}
+              embedded
+              isLast={idx === arr.length - 1}
+              onPress={() => router.push(`/(app)/jobs/${j.id}`)}
+            />
+          ))}
+        </AppCard>
 
         {/* 6. Quick Operations Grid — Compact Industrial Action Tiles */}
         <SectionTitle title={t('production:factoryOperations')} subtitle={t('production:managementControls')} />
@@ -343,6 +430,42 @@ const styles = StyleSheet.create({
   bentoCol: {
     flex: 1,
     gap: spacing[2],
+  },
+  healthTile: {
+    borderWidth: 1,
+    borderRadius: radii.card,
+    padding: spacing[3.5],
+    minHeight: 108,
+    justifyContent: 'space-between',
+  },
+  healthTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing[1],
+  },
+  healthLabel: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    flex: 1,
+  },
+  healthValRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  healthValue: {
+    fontSize: 26,
+    lineHeight: 34,
+    fontWeight: '800',
+    letterSpacing: 0,
+    includeFontPadding: false,
+  },
+  healthPill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing[1.5],
+    paddingVertical: 2,
+    borderRadius: radii.xs,
   },
   titleRow: {
     flexDirection: 'row',
