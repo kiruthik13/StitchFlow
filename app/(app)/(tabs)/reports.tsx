@@ -430,7 +430,7 @@ function StatCell({
         {label}
       </AppText>
       <View style={styles.statValueRow}>
-        <AppText variant="h3" bold style={{ color, fontVariant: ['tabular-nums'] }}>
+        <AppText variant="h3" bold style={{ color, fontVariant: ['tabular-nums'], letterSpacing: 0, includeFontPadding: false }}>
           {value}
         </AppText>
         {unit ? (

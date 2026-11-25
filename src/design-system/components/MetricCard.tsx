@@ -62,7 +62,13 @@ export function MetricCard({
           variant="kpi"
           style={[
             styles.value,
-            { color: accentMap[variant], fontSize: compact ? 22 : 26 },
+            {
+              color: accentMap[variant],
+              fontSize: compact ? 22 : 26,
+              lineHeight: compact ? 28 : 34,
+              letterSpacing: 0,
+              includeFontPadding: false,
+            },
           ]}
         >
           {value}

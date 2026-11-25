@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { AppText } from './AppText';
 import { AppCard } from './AppCard';
@@ -132,17 +132,21 @@ const styles = StyleSheet.create({
     marginBottom: spacing[3],
   },
   heroActual: {
-    fontSize: 34,
+    fontSize: 48,
+    lineHeight: 60,
     fontWeight: '800',
-    fontFamily: 'JetBrainsMono_700Bold',
-    letterSpacing: -0.5,
+    fontFamily: Platform.select({ android: 'sans-serif-black', default: 'System' }),
+    letterSpacing: 0,
+    includeFontPadding: false,
     fontVariant: ['tabular-nums'],
   },
   heroTarget: {
-    fontSize: 16,
+    fontSize: 18,
+    lineHeight: 24,
     fontWeight: '600',
-    fontFamily: 'JetBrainsMono_700Bold',
-    marginLeft: spacing[1],
+    fontFamily: Platform.select({ android: 'sans-serif-medium', default: 'System' }),
+    marginLeft: spacing[1.5],
+    includeFontPadding: false,
   },
   progressTrack: {
     height: 10,

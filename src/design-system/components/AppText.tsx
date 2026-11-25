@@ -110,33 +110,37 @@ function getVariantStyle(
       return {
         ...base,
         fontSize: typography.fontSize['5xl'], // 36sp
-        lineHeight: 42,
+        lineHeight: 48,
         fontWeight: '800' as const,
-        letterSpacing: -0.8,
+        letterSpacing: -0.5,
+        includeFontPadding: false,
       };
     case 'h1':
       return {
         ...base,
         fontSize: typography.fontSize['4xl'], // 28sp
-        lineHeight: 34,
+        lineHeight: 36,
         fontWeight: '800' as const,
-        letterSpacing: -0.5,
+        letterSpacing: -0.3,
+        includeFontPadding: false,
       };
     case 'h2':
       return {
         ...base,
         fontSize: typography.fontSize['3xl'], // 24sp
-        lineHeight: 30,
+        lineHeight: 32,
         fontWeight: '700' as const,
-        letterSpacing: -0.4,
+        letterSpacing: -0.2,
+        includeFontPadding: false,
       };
     case 'h3':
       return {
         ...base,
         fontSize: typography.fontSize['2xl'], // 20sp
-        lineHeight: 26,
+        lineHeight: 28,
         fontWeight: '700' as const,
-        letterSpacing: -0.3,
+        letterSpacing: 0,
+        includeFontPadding: false,
       };
     case 'h4':
       return {
@@ -144,7 +148,8 @@ function getVariantStyle(
         fontSize: typography.fontSize.xl, // 18sp
         lineHeight: 24,
         fontWeight: '600' as const,
-        letterSpacing: -0.2,
+        letterSpacing: 0,
+        includeFontPadding: false,
       };
     case 'body':
       return {
@@ -152,6 +157,7 @@ function getVariantStyle(
         fontSize: typography.fontSize.base, // 14-15sp
         lineHeight: 21,
         fontWeight: bold ? ('700' as const) : ('400' as const),
+        includeFontPadding: false,
       };
     case 'bodySmall':
       return {
@@ -159,6 +165,7 @@ function getVariantStyle(
         fontSize: typography.fontSize.sm, // 12-13sp
         lineHeight: 18,
         fontWeight: bold ? ('700' as const) : ('400' as const),
+        includeFontPadding: false,
       };
     case 'caption':
       return {
@@ -166,6 +173,7 @@ function getVariantStyle(
         fontSize: typography.fontSize.xs, // 11-12sp
         lineHeight: 16,
         fontWeight: bold ? ('700' as const) : ('500' as const),
+        includeFontPadding: false,
       };
     case 'label':
       return {
@@ -174,31 +182,37 @@ function getVariantStyle(
         lineHeight: 18,
         fontWeight: '600' as const,
         letterSpacing: 0.15,
+        includeFontPadding: false,
       };
     case 'kpi':
       return {
         ...base,
-        fontSize: typography.fontSize['5xl'], // 34-36sp
-        lineHeight: 40,
+        fontSize: typography.fontSize['5xl'], // 36sp
+        lineHeight: 46,
         fontWeight: '800' as const,
-        fontVariant: ['tabular-nums'],
-        letterSpacing: -0.5,
+        fontVariant: ['tabular-nums' as const],
+        letterSpacing: 0,
+        includeFontPadding: false,
       };
     case 'code':
       return {
         ...base,
         fontSize: typography.fontSize.base,
-        lineHeight: 20,
+        lineHeight: 22,
         fontWeight: '700' as const,
-        fontVariant: ['tabular-nums'],
+        fontVariant: ['tabular-nums' as const],
+        letterSpacing: 0,
+        includeFontPadding: false,
       };
     case 'codeSmall':
       return {
         ...base,
         fontSize: typography.fontSize.sm,
-        lineHeight: 17,
+        lineHeight: 18,
         fontWeight: '600' as const,
-        fontVariant: ['tabular-nums'],
+        fontVariant: ['tabular-nums' as const],
+        letterSpacing: 0,
+        includeFontPadding: false,
       };
     default:
       return base;

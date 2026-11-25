@@ -184,8 +184,10 @@ export function MDDashboard() {
                         fontSize: 28,
                         fontWeight: '800',
                         color: effColor,
-                        fontFamily: 'JetBrainsMono_700Bold',
-                        lineHeight: 32,
+                        fontFamily: 'sans-serif-black',
+                        lineHeight: 36,
+                        letterSpacing: 0,
+                        includeFontPadding: false,
                         fontVariant: ['tabular-nums'],
                       }}
                     >

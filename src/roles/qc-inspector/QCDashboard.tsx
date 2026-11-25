@@ -105,8 +105,10 @@ export function QCDashboard() {
                   fontSize: 40,
                   fontWeight: '800',
                   color: pendingBundles.length > 0 ? tokens.warning : tokens.success,
-                  fontFamily: 'JetBrainsMono_700Bold',
-                  lineHeight: 44,
+                  fontFamily: 'sans-serif-black',
+                  lineHeight: 52,
+                  letterSpacing: 0,
+                  includeFontPadding: false,
                   fontVariant: ['tabular-nums'],
                 }}
               >
@@ -144,7 +146,10 @@ export function QCDashboard() {
                   fontSize: 22,
                   fontWeight: '800',
                   color: tokens.textPrimary,
-                  fontFamily: 'JetBrainsMono_700Bold',
+                  fontFamily: 'sans-serif-black',
+                  lineHeight: 28,
+                  letterSpacing: 0,
+                  includeFontPadding: false,
                   fontVariant: ['tabular-nums'],
                 }}
               >
@@ -158,7 +163,10 @@ export function QCDashboard() {
                   fontSize: 22,
                   fontWeight: '800',
                   color: tokens.success,
-                  fontFamily: 'JetBrainsMono_700Bold',
+                  fontFamily: 'sans-serif-black',
+                  lineHeight: 28,
+                  letterSpacing: 0,
+                  includeFontPadding: false,
                   fontVariant: ['tabular-nums'],
                 }}
               >
@@ -172,7 +180,10 @@ export function QCDashboard() {
                   fontSize: 22,
                   fontWeight: '800',
                   color: tokens.warning,
-                  fontFamily: 'JetBrainsMono_700Bold',
+                  fontFamily: 'sans-serif-black',
+                  lineHeight: 28,
+                  letterSpacing: 0,
+                  includeFontPadding: false,
                   fontVariant: ['tabular-nums'],
                 }}
               >
@@ -186,7 +197,10 @@ export function QCDashboard() {
                   fontSize: 22,
                   fontWeight: '800',
                   color: tokens.danger,
-                  fontFamily: 'JetBrainsMono_700Bold',
+                  fontFamily: 'sans-serif-black',
+                  lineHeight: 28,
+                  letterSpacing: 0,
+                  includeFontPadding: false,
                   fontVariant: ['tabular-nums'],
                 }}
               >

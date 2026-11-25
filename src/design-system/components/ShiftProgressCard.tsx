@@ -1,6 +1,6 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { useThemeStore } from '../../store/themeStore';
 import { AppText } from './AppText';
 import { AppCard } from './AppCard';
@@ -82,7 +82,7 @@ function StatCol({ label, value, color, tokens }: { label: string; value: number
   return (
     <View style={{ flex: 1, alignItems: 'center' }}>
       <AppText variant="caption" color="secondary" style={{ marginBottom: 2 }}>{label}</AppText>
-      <AppText style={{ color, fontSize: 18, fontWeight: '800', fontFamily: 'JetBrainsMono_700Bold' }}>
+      <AppText style={{ color, fontSize: 18, lineHeight: 24, fontWeight: '800', letterSpacing: 0, includeFontPadding: false, fontVariant: ['tabular-nums'] }}>
         {value.toLocaleString()}
       </AppText>
     </View>
@@ -103,10 +103,12 @@ const styles = StyleSheet.create({
     marginTop: spacing[0.5],
   },
   pctText: {
-    fontSize: 36,
+    fontSize: 42,
     fontWeight: '800',
-    fontFamily: 'JetBrainsMono_700Bold',
-    lineHeight: 40,
+    fontFamily: Platform.select({ android: 'sans-serif-black', default: 'System' }),
+    lineHeight: 52,
+    includeFontPadding: false,
+    letterSpacing: 0,
     fontVariant: ['tabular-nums'],
   },
   paceBadge: {

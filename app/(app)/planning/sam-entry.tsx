@@ -73,13 +73,13 @@ export default function SamEntryScreen() {
           <View style={styles.calcRow}>
             <View style={{ flex: 1 }}>
               <AppText variant="caption" color="secondary">Total Standard Minutes</AppText>
-              <AppText style={{ fontSize: 36, fontWeight: '800', color: tokens.brand, fontFamily: 'JetBrainsMono_700Bold' }}>
+              <AppText style={{ fontSize: 36, lineHeight: 46, fontWeight: '800', color: tokens.brand, letterSpacing: 0, includeFontPadding: false, fontVariant: ['tabular-nums'] }}>
                 {totalSam} SAM
               </AppText>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <AppText variant="caption" color="secondary">Pace Target</AppText>
-              <AppText style={{ fontSize: 24, fontWeight: '700', color: tokens.success, fontFamily: 'JetBrainsMono_700Bold' }}>
+              <AppText style={{ fontSize: 24, lineHeight: 32, fontWeight: '700', color: tokens.success, letterSpacing: 0, includeFontPadding: false, fontVariant: ['tabular-nums'] }}>
                 {targetPcsPerHour} pcs/hr
               </AppText>
             </View>
