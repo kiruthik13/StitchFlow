@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../src/store/themeStore';
-import { useAuthStore } from '../../src/store/authStore';
+import { getRecentLogins, RecentLoginEntry, useAuthStore, isDemoModeAvailable } from '../../src/store/authStore';
 import { UserRole } from '../../src/core/types';
 import { AppText } from '../../src/design-system/components/AppText';
 import { AppButton } from '../../src/design-system/components/AppButton';
@@ -21,6 +21,7 @@ import { LanguageSwitcher } from '../../src/design-system/components/LanguageSwi
 import { StitchFlowLogo } from '../../src/design-system/components/branding/StitchFlowLogo';
 import { StitchFlowWordmark } from '../../src/design-system/components/branding/StitchFlowWordmark';
 import { spacing } from '../../src/design-system/tokens/spacing';
+import { radii } from '../../src/design-system/tokens/radii';
 import {
   Lock,
   Mail,
@@ -60,22 +61,56 @@ const DEMO_ROLES: UserRole[] = [
 
 export default function LoginScreen() {
   const { tokens, mode } = useThemeStore();
-  const { demoLogin } = useAuthStore();
+  const { login, demoLogin } = useAuthStore();
   const { t } = useTranslation(['auth', 'common']);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const demoEnabled = isDemoModeAvailable();
 
   const [showDemo, setShowDemo] = useState(false);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [recentLogins, setRecentLogins] = useState<RecentLoginEntry[]>([]);
+
+  useEffect(() => {
+    void getRecentLogins().then((items) => {
+      setRecentLogins(items);
+      if (items.length > 0 && !email) {
+        setEmail(items[0].email);
+      }
+    });
+  }, []);
+
+  const handleRealLogin = async () => {
+    setAuthError(null);
+    if (!email.trim() || !password) {
+      setAuthError(t('auth:enterCredentials'));
+      return;
+    }
+    setLoading(true);
+    try {
+      await login(email, password);
+      router.replace('/(app)/(tabs)');
+    } catch (err: any) {
+      setAuthError(err?.message || t('auth:loginFailed'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDemoLogin = async (role: UserRole) => {
     setLoading(true);
-    await demoLogin(role);
-    setLoading(false);
-    router.replace('/(app)/(tabs)');
+    try {
+      await demoLogin(role);
+      router.replace('/(app)/(tabs)');
+    } catch (err: any) {
+      setAuthError(err?.message || t('auth:loginFailed'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -109,6 +144,38 @@ export default function LoginScreen() {
             <AppText variant="bodySmall" color="secondary" style={{ marginBottom: spacing[4] }}>
               {t('roleSelectionHint')}
             </AppText>
+
+            {recentLogins.length > 0 && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing[3] }}>
+                <View style={{ flexDirection: 'row', gap: spacing[2] }}>
+                  {recentLogins.map((item) => {
+                    const active = email.trim().toLowerCase() === item.email;
+                    return (
+                      <TouchableOpacity
+                        key={item.email}
+                        onPress={() => setEmail(item.email)}
+                        activeOpacity={0.75}
+                        style={{
+                          paddingHorizontal: spacing[3],
+                          paddingVertical: spacing[1.5],
+                          borderRadius: radii.md,
+                          borderWidth: 1,
+                          borderColor: active ? tokens.brand : tokens.border,
+                          backgroundColor: active ? tokens.brandLight : tokens.surfaceSecondary,
+                        }}
+                      >
+                        <AppText variant="caption" bold style={{ color: active ? tokens.brand : tokens.textPrimary }}>
+                          {t(`common:roles.${item.role}`)}
+                        </AppText>
+                        <AppText variant="caption" color="secondary">
+                          {item.email}
+                        </AppText>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            )}
 
             <AppInput
               label={t('emailOrId')}
@@ -152,37 +219,49 @@ export default function LoginScreen() {
               </AppText>
             </TouchableOpacity>
 
+            {authError && (
+              <View style={[styles.demoBadge, { backgroundColor: tokens.dangerLight, marginBottom: spacing[3] }]}>
+                <AlertTriangle size={14} color={tokens.danger} strokeWidth={2.4} />
+                <AppText variant="caption" bold style={{ color: tokens.danger, marginLeft: 6, flexShrink: 1 }}>
+                  {authError}
+                </AppText>
+              </View>
+            )}
+
             <AppButton
               title={t('loginButton')}
               variant="primary"
               size="lg"
               fullWidth
-              onPress={() => {
-                handleDemoLogin('factory-manager');
-              }}
-              style={{ marginBottom: spacing[3] }}
+              loading={loading}
+              onPress={handleRealLogin}
+              style={{ marginBottom: demoEnabled ? spacing[3] : 0 }}
             />
 
-            {/* Divider */}
-            <View style={[styles.divider, { borderTopColor: tokens.border }]}>
-              <AppText variant="caption" color="secondary">
-                {t('orContinueWith')}
-              </AppText>
-            </View>
+            {demoEnabled && (
+              <>
+                {/* Divider */}
+                <View style={[styles.divider, { borderTopColor: tokens.border }]}>
+                  <AppText variant="caption" color="secondary">
+                    {t('orContinueWith')}
+                  </AppText>
+                </View>
 
-            {/* Demo Login Button */}
-            <AppButton
-              title={t('demoLogin')}
-              variant="secondary"
-              size="lg"
-              fullWidth
-              leftIcon={<Users size={18} color={tokens.textPrimary} strokeWidth={2.2} />}
-              onPress={() => setShowDemo(!showDemo)}
-            />
+                {/* Demo Login Button */}
+                <AppButton
+                  title={t('demoLogin')}
+                  variant="secondary"
+                  size="lg"
+                  fullWidth
+                  leftIcon={<Users size={18} color={tokens.textPrimary} strokeWidth={2.2} />}
+                  onPress={() => setShowDemo(!showDemo)}
+                />
+              </>
+            )}
           </AppCard>
 
           {/* Demo Role Selector Modal / Container */}
-          {showDemo && (
+          {demoEnabled && showDemo && (
             <View style={[styles.demoCard, { backgroundColor: tokens.surface, borderColor: mode === 'dark' ? tokens.signatureLime : tokens.brand }]}>
               <View style={[styles.demoBadge, { backgroundColor: tokens.warningLight }]}>
                 <AlertTriangle size={14} color={tokens.warning} strokeWidth={2.4} />
@@ -212,7 +291,7 @@ export default function LoginScreen() {
                         },
                       ]}
                     >
-                      <View style={[styles.roleIconWrap, { backgroundColor: mode === 'dark' ? '#203D2A' : '#E6F7AD' }]}>
+                      <View style={[styles.roleIconWrap, { backgroundColor: tokens.brandLight }]}>
                         <IconComponent
                           size={18}
                           color={mode === 'dark' ? tokens.signatureLime : tokens.primaryDeep}

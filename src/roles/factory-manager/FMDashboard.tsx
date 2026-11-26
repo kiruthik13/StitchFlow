@@ -1,3 +1,4 @@
+import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -102,15 +103,18 @@ export function FMDashboard() {
     },
   ];
 
+  const liveDashboard = !useAuthStore(state => state.isDemoMode);
+
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
       {/* 1. Premium StitchFlow Brand Header with Logo, Subtitle & Demo Status */}
-      <BrandHeader subtitle={`${user?.factoryName ?? 'Factory Unit 1'} · ${t('common:shift')} A`} />
+      <BrandHeader subtitle={liveDashboard ? user?.name : `${user?.factoryName ?? 'Factory Unit 1'} · ${t('common:shift')} A`} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}
         showsVerticalScrollIndicator={false}
       >
+        {liveDashboard ? <LiveDashboardPanel /> : <>
         {/* 2. Personalized Greeting & Shift Context */}
         <View style={styles.welcomeSection}>
           <AppText variant="h2" bold style={{ color: tokens.textPrimary, letterSpacing: -0.4 }}>
@@ -332,6 +336,7 @@ export function FMDashboard() {
             </View>
           </View>
         ))}
+        </>}
       </ScrollView>
     </View>
   );

@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
-import { useThemeStore } from '../../store/themeStore';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { useThemeStore } from '../../store/themeStore';
+import { useAuthStore } from '../../store/authStore';
+import { apiRequest } from '../../services/api/apiClient';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
-import { MetricCard } from '../../design-system/components/MetricCard';
 import { StatusBadge } from '../../design-system/components/StatusBadge';
 import { spacing } from '../../design-system/tokens/spacing';
 
@@ -17,22 +19,83 @@ const STAGE_SAM_STATS = [
   { stage: 'Packing', targetSam: 2.0, actualSam: 1.9, eff: 105, buffer: '24 pcs', status: 'optimal' },
 ];
 
+interface LiveSamPlan {
+  id: string;
+  styleName: string;
+  styleCode: string;
+  totalSam: number;
+  targetPcsPerHour: number;
+}
+
+interface LiveBottleneck {
+  id: string;
+  stage: string;
+  lineName: string;
+  rootCause: string;
+  severity: string;
+}
+
 export function SamMonitorView() {
   const { tokens } = useThemeStore();
   const { t } = useTranslation(['production', 'common']);
+  const { isDemoMode, user } = useAuthStore();
+  const factoryId = user?.factoryId;
+
+  const samQuery = useQuery({
+    queryKey: ['monitor-sam', user?.id, factoryId],
+    enabled: !isDemoMode && !!factoryId,
+    queryFn: () => apiRequest<LiveSamPlan[]>(`/planning/sam?factoryId=${encodeURIComponent(factoryId!)}`),
+  });
+
+  const bottlenecksQuery = useQuery({
+    queryKey: ['monitor-bottlenecks', user?.id, factoryId],
+    enabled: !isDemoMode && !!factoryId,
+    queryFn: () => apiRequest<LiveBottleneck[]>(`/planning/bottlenecks?factoryId=${encodeURIComponent(factoryId!)}`),
+  });
+
+  if (!isDemoMode) {
+    return (
+      <ScrollView contentContainerStyle={styles.scroll}>
+        {(bottlenecksQuery.data ?? []).slice(0, 2).map((b) => (
+          <View key={b.id} style={[styles.alertBanner, { backgroundColor: tokens.dangerLight, borderColor: tokens.danger }]}>
+            <AppText variant="h4" bold style={{ color: tokens.danger }}>{b.stage} · {b.lineName}</AppText>
+            <AppText variant="bodySmall" color="secondary" style={{ marginTop: 2 }}>{b.rootCause}</AppText>
+          </View>
+        ))}
+
+        <AppText variant="caption" color="secondary" uppercase style={{ letterSpacing: 0.8, marginBottom: spacing[2] }}>
+          {t('production:samPlan')}
+        </AppText>
+        {samQuery.isLoading && <AppText>{t('common:loading')}</AppText>}
+        {samQuery.data?.map((item) => (
+          <AppCard key={item.id} padding={spacing[4]} style={{ marginBottom: spacing[2] }}>
+            <View style={styles.rowBetween}>
+              <View>
+                <AppText variant="h4" bold>{item.styleName}</AppText>
+                <AppText variant="code" color="secondary">{item.styleCode}</AppText>
+              </View>
+              <StatusBadge label={`${item.totalSam} SAM`} variant="brand" size="sm" />
+            </View>
+            <AppText variant="caption" color="secondary" style={{ marginTop: spacing[2] }}>
+              {item.targetPcsPerHour} pcs/hr
+            </AppText>
+          </AppCard>
+        ))}
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.scroll}>
-      {/* Bottleneck alert banner */}
       <View style={[styles.alertBanner, { backgroundColor: tokens.dangerLight, borderColor: tokens.danger }]}>
-        <AppText variant="h4" bold style={{ color: tokens.danger }}>⚡ Active Bottleneck: Ironing Station</AppText>
+        <AppText variant="h4" bold style={{ color: tokens.danger }}>Ironing Station</AppText>
         <AppText variant="bodySmall" color="secondary" style={{ marginTop: 2 }}>
-          Actual cycle time (4.9 SAM) exceeds benchmark (3.2 SAM) by 53%. 240 pieces piling up in buffer.
+          4.9 SAM vs 3.2 SAM (+53%) · 240 pcs
         </AppText>
       </View>
 
       <AppText variant="caption" color="secondary" uppercase style={{ letterSpacing: 0.8, marginBottom: spacing[2] }}>
-        Standard vs Actual Allowed Minutes (SAM)
+        {t('production:samMonitor')}
       </AppText>
 
       {STAGE_SAM_STATS.map((item, idx) => (
@@ -40,7 +103,7 @@ export function SamMonitorView() {
           <View style={styles.rowBetween}>
             <View>
               <AppText variant="h4" bold>{item.stage}</AppText>
-              <AppText variant="caption" color="secondary">Buffer Pile: {item.buffer}</AppText>
+              <AppText variant="caption" color="secondary">{item.buffer}</AppText>
             </View>
             <StatusBadge
               label={item.status.toUpperCase()}
@@ -50,9 +113,9 @@ export function SamMonitorView() {
           </View>
 
           <View style={[styles.statsRow, { marginTop: spacing[3] }]}>
-            <View style={{ flex: 1 }}><AppText variant="caption" color="secondary">Target SAM</AppText><AppText variant="label" bold>{item.targetSam}m</AppText></View>
-            <View style={{ flex: 1 }}><AppText variant="caption" color="secondary">Actual SAM</AppText><AppText variant="label" bold style={{ color: item.status === 'bottleneck' ? tokens.danger : tokens.textPrimary }}>{item.actualSam}m</AppText></View>
-            <View style={{ flex: 1 }}><AppText variant="caption" color="secondary">Efficiency</AppText><AppText variant="label" bold style={{ color: item.eff >= 100 ? tokens.success : item.eff >= 80 ? tokens.warning : tokens.danger }}>{item.eff}%</AppText></View>
+            <View style={{ flex: 1 }}><AppText variant="caption" color="secondary">Target</AppText><AppText variant="label" bold>{item.targetSam}m</AppText></View>
+            <View style={{ flex: 1 }}><AppText variant="caption" color="secondary">Actual</AppText><AppText variant="label" bold style={{ color: item.status === 'bottleneck' ? tokens.danger : tokens.textPrimary }}>{item.actualSam}m</AppText></View>
+            <View style={{ flex: 1 }}><AppText variant="caption" color="secondary">Eff.</AppText><AppText variant="label" bold style={{ color: item.eff >= 100 ? tokens.success : item.eff >= 80 ? tokens.warning : tokens.danger }}>{item.eff}%</AppText></View>
           </View>
         </AppCard>
       ))}

@@ -3,6 +3,8 @@ import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-nat
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuthStore } from '../../../src/store/authStore';
+import { LiveMastersPanel, MasterTab } from '../../../src/features/operations/LiveMastersPanel';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppText } from '../../../src/design-system/components/AppText';
@@ -19,6 +21,10 @@ const TABS = [
   { key: 'lines', label: 'Lines' },
   { key: 'stages', label: 'Stages' },
   { key: 'locations', label: 'Locations' },
+  { key: 'cutting-masters', label: 'Cutting Masters' },
+  { key: 'contacts', label: 'Contacts' },
+  { key: 'ranks', label: 'Ranks' },
+  { key: 'configs', label: 'Configs' },
 ];
 
 const STAGES_MASTER = [
@@ -42,6 +48,7 @@ export default function MastersScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['production', 'common']);
+  const demo = useAuthStore(state => state.isDemoMode);
   const [activeTab, setActiveTab] = useState('buyers');
 
   return (
@@ -52,6 +59,7 @@ export default function MastersScreen() {
       </View>
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
+        {!demo ? <LiveMastersPanel key={activeTab} tab={activeTab as MasterTab} /> : <>
         {activeTab === 'buyers' && (
           <View>
             <View style={styles.headerRow}>
@@ -160,6 +168,16 @@ export default function MastersScreen() {
             ))}
           </View>
         )}
+
+        {(activeTab === 'cutting-masters' || activeTab === 'contacts' || activeTab === 'ranks' || activeTab === 'configs') && (
+          <AppCard padding={spacing[4]}>
+            <AppText variant="h4" bold>{TABS.find((tabItem) => tabItem.key === activeTab)?.label}</AppText>
+            <AppText variant="caption" color="secondary" style={{ marginTop: spacing[1] }}>
+              {t('production:masters')}
+            </AppText>
+          </AppCard>
+        )}
+        </>}
       </ScrollView>
     </View>
   );

@@ -11,6 +11,8 @@ import { ReportIssueView } from '../../../src/features/operations/ReportIssueVie
 import { WorkAssignmentView } from '../../../src/features/operations/WorkAssignmentView';
 import { TailorMappingView } from '../../../src/features/operations/TailorMappingView';
 import { SamMonitorView } from '../../../src/features/operations/SamMonitorView';
+import { CutStockView } from '../../../src/features/operations/CutStockView';
+import { useAuthStore } from '../../../src/store/authStore';
 import { StockMovementView } from '../../../src/features/operations/StockMovementView';
 
 const TITLES: Record<string, string> = {
@@ -56,6 +58,7 @@ export default function OperationScreen() {
     }
   };
 
+  const isDemoMode = useAuthStore(state => state.isDemoMode);
   const title = getTitle(slug);
 
   const renderContent = () => {
@@ -83,9 +86,9 @@ export default function OperationScreen() {
       case 'input-out':
         return <StockMovementView mode="input-out" />;
       case 'output-in':
-        return <StockMovementView mode="output-in" />;
+        return isDemoMode ? <StockMovementView mode="output-in" /> : <CutStockView mode="output-in" />;
       case 'output-out':
-        return <StockMovementView mode="output-out" />;
+        return isDemoMode ? <StockMovementView mode="output-out" /> : <CutStockView mode="output-out" />;
       default:
         return <CuttingEntryView />;
     }

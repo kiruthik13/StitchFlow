@@ -1,3 +1,4 @@
+import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
 import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -29,6 +30,8 @@ export function MDDashboard() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['production', 'common']);
 
+  const liveDashboard = !useAuthStore(state => state.isDemoMode);
+
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
       <BrandHeader
@@ -39,6 +42,7 @@ export function MDDashboard() {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}
         showsVerticalScrollIndicator={false}
       >
+        {liveDashboard ? <LiveDashboardPanel /> : <>
         {/* Executive Intelligence Hero — Deep Forest Summary */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
           {t('production:manufacturingGroupSummary')}
@@ -286,6 +290,7 @@ export function MDDashboard() {
             <StatusBadge label="ON HOLD" variant="warning" size="sm" dot />
           </View>
         </AppCard>
+        </>}
       </ScrollView>
     </View>
   );

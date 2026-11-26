@@ -1,10 +1,12 @@
 import { Buyer, Style, Line, Factory } from '../../core/types';
 import { BUYERS, STYLES, LINES, FACTORIES } from '../../fixtures/mockData';
+import { useAuthStore } from '../../store/authStore';
+import { ApiError, apiRequest } from '../api/apiClient';
 
 export interface IMasterRepository {
-  getBuyers(): Promise<Buyer[]>;
-  getStyles(): Promise<Style[]>;
-  getLines(): Promise<Line[]>;
+  getBuyers(factoryId?: string): Promise<Buyer[]>;
+  getStyles(factoryId?: string): Promise<Style[]>;
+  getLines(factoryId?: string): Promise<Line[]>;
   getFactories(): Promise<Factory[]>;
 }
 
@@ -23,4 +25,35 @@ export class MockMasterRepository implements IMasterRepository {
   }
 }
 
-export const masterRepository = new MockMasterRepository();
+export class ApiMasterRepository implements IMasterRepository {
+  private resolveFactoryId(factoryId?: string): string {
+    const resolved = factoryId ?? useAuthStore.getState().user?.factoryId;
+    if (!resolved) throw new ApiError(400, 'ERR_FACTORY_REQUIRED', 'Factory ID is required');
+    return resolved;
+  }
+
+  async getBuyers(factoryId?: string): Promise<Buyer[]> {
+    const fid = this.resolveFactoryId(factoryId);
+    return apiRequest<Buyer[]>(`/masters/buyers?factoryId=${encodeURIComponent(fid)}`);
+  }
+
+  async getStyles(factoryId?: string): Promise<Style[]> {
+    const fid = this.resolveFactoryId(factoryId);
+    return apiRequest<Style[]>(`/masters/styles?factoryId=${encodeURIComponent(fid)}`);
+  }
+
+  async getLines(factoryId?: string): Promise<Line[]> {
+    const fid = this.resolveFactoryId(factoryId);
+    const res = await apiRequest<{ lines: Line[] }>(`/factories/${encodeURIComponent(fid)}/hierarchy`);
+    return res.lines;
+  }
+
+  async getFactories(): Promise<Factory[]> {
+    return apiRequest<Factory[]>('/factories');
+  }
+}
+
+export const apiMasters = new ApiMasterRepository();
+export const masterRepository: IMasterRepository = process.env.EXPO_PUBLIC_DEMO_MODE === 'true'
+  ? new MockMasterRepository()
+  : apiMasters;

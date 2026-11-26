@@ -1,3 +1,5 @@
+import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
+import { OfflineSyncBanner } from '../../features/operations/OfflineSyncBanner';
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -67,16 +69,24 @@ export function OperatorDashboard() {
     },
   ];
 
+  const liveDashboard = !useAuthStore(state => state.isDemoMode);
+
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
       <BrandHeader
-        subtitle={`${t('common:roles.operator')} · ${user?.lineName ?? 'Line 1'} (${t('common:morning')} ${t('common:shift')})`}
+        subtitle={liveDashboard ? user?.name : `${t('common:roles.operator')} · ${user?.lineName ?? 'Line 1'} (${t('common:morning')} ${t('common:shift')})`}
       />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
+        {liveDashboard ? (
+          <>
+            <OfflineSyncBanner />
+            <LiveDashboardPanel />
+          </>
+        ) : <>
         {/* Output Today — High-Contrast Forest Workstation Strip */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
           {t('production:myOutputToday')}
@@ -217,6 +227,7 @@ export function OperatorDashboard() {
             ))}
           </>
         )}
+        </>}
       </ScrollView>
 
       <BottomScanAction

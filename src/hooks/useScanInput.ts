@@ -1,31 +1,56 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { validateBarcodeFormat } from '../services/adapters/hidScannerAdapter';
+
+export interface ScanCaptureMeta {
+  source: 'hid' | 'manual';
+  avgKeystrokeMs: number;
+}
 
 /**
  * Hook for capturing input from an external hardware scanner (USB/Bluetooth HID keyboard wedge).
- * Hardware scanners usually type very fast (<30ms between keystrokes) followed by Enter.
+ * Hardware scanners typically emit keystrokes < 50ms apart followed by Enter (\r or \n).
  */
-export function useScanInput(onScan: (code: string) => void) {
+export function useScanInput(onScan: (code: string, meta: ScanCaptureMeta) => void) {
   const [buffer, setBuffer] = useState('');
-  const [lastKeystrokeTime, setLastKeystrokeTime] = useState(0);
+  const lastKeystrokeRef = useRef<number>(0);
+  const intervalsRef = useRef<number[]>([]);
 
   const handleKeyInput = useCallback((char: string) => {
     const now = Date.now();
-    if (char === '\n' || char === '\r') {
-      if (buffer.trim().length > 0) {
-        onScan(buffer.trim());
-        setBuffer('');
+    if (char === '\n' || char === '\r' || char === 'Enter') {
+      const check = validateBarcodeFormat(buffer);
+      if (check.valid) {
+        const intervals = intervalsRef.current;
+        const avgKeystrokeMs = intervals.length
+          ? Math.round(intervals.reduce((sum, v) => sum + v, 0) / intervals.length)
+          : 0;
+        const source: 'hid' | 'manual' = intervals.length >= 3 && avgKeystrokeMs <= 60 ? 'hid' : 'manual';
+        onScan(check.normalized, { source, avgKeystrokeMs });
       }
+      setBuffer('');
+      intervalsRef.current = [];
+      lastKeystrokeRef.current = 0;
       return;
     }
 
-    // If gap between keystrokes is too long (> 100ms), it's likely human typing, reset if desired
-    if (now - lastKeystrokeTime > 150 && buffer.length > 0) {
+    const delta = lastKeystrokeRef.current ? now - lastKeystrokeRef.current : 0;
+    if (delta > 150 && buffer.length > 0) {
       setBuffer(char);
+      intervalsRef.current = [];
     } else {
+      if (delta > 0) intervalsRef.current.push(delta);
       setBuffer((prev) => prev + char);
     }
-    setLastKeystrokeTime(now);
-  }, [buffer, lastKeystrokeTime, onScan]);
+    lastKeystrokeRef.current = now;
+  }, [buffer, onScan]);
 
-  return { buffer, handleKeyInput, resetBuffer: () => setBuffer('') };
+  return {
+    buffer,
+    handleKeyInput,
+    resetBuffer: () => {
+      setBuffer('');
+      intervalsRef.current = [];
+      lastKeystrokeRef.current = 0;
+    },
+  };
 }

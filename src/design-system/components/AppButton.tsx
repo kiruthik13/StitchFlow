@@ -42,19 +42,17 @@ export function AppButton({
   const isDisabled = disabled || loading;
 
   const bgMap: Record<ButtonVariant, string> = {
-    primary: tokens.brand,
+    primary: tokens.brandButton,
     secondary: tokens.surfaceSecondary,
     danger: tokens.danger,
     ghost: 'transparent',
     outline: 'transparent',
-    lime: tokens.brand,
+    lime: tokens.brandButton,
   };
 
   const getTextColor = (): 'primary' | 'secondary' | 'brand' | 'inverse' | 'danger' => {
-    if (variant === 'lime') return 'inverse';
-    if (variant === 'primary') return 'inverse';
+    if (variant === 'lime' || variant === 'primary' || variant === 'danger') return 'inverse';
     if (variant === 'secondary') return 'primary';
-    if (variant === 'danger') return 'inverse';
     if (variant === 'ghost' || variant === 'outline') return 'brand';
     return 'primary';
   };
@@ -71,10 +69,9 @@ export function AppButton({
     lg: 'body',
   };
 
-  // Contrast override for dark-mode light blue button surface
   const customTextColor =
-    (variant === 'lime' || variant === 'primary') && mode === 'dark'
-      ? '#11161E'
+    variant === 'primary' || variant === 'lime' || variant === 'danger'
+      ? tokens.brandButtonText
       : undefined;
 
   return (

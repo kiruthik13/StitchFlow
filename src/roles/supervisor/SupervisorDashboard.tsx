@@ -1,3 +1,4 @@
+import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
 import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -63,16 +64,19 @@ export function SupervisorDashboard() {
     },
   ];
 
+  const liveDashboard = !useAuthStore(state => state.isDemoMode);
+
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
       <BrandHeader
-        subtitle={`${user?.lineName ?? 'Line 1'} · ${user?.factoryName ?? 'Tirupur Unit 1'}`}
+        subtitle={liveDashboard ? user?.name : `${user?.lineName ?? 'Line 1'} · ${user?.factoryName ?? 'Tirupur Unit 1'}`}
       />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}
         showsVerticalScrollIndicator={false}
       >
+        {liveDashboard ? <LiveDashboardPanel /> : <>
         {/* Shift KPIs 2x2 Bento Grid */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
           {t('production:lineKPIs')}
@@ -166,6 +170,7 @@ export function SupervisorDashboard() {
             onPress={() => router.push(`/(app)/jobs/${job.id}`)}
           />
         ))}
+        </>}
       </ScrollView>
     </View>
   );

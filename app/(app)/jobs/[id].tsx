@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { apiRequest, ApiError } from '../../../src/services/api/apiClient';
+import { JobQueueCard } from '../../../src/features/operations/JobQueueCard';
+import { JobRouteSetupCard } from '../../../src/features/operations/JobRouteSetupCard';
+import { apiJobs } from '../../../src/services/repositories/jobRepository';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,12 +34,39 @@ export default function JobDetailScreen() {
   const router = useRouter();
   const { tokens, mode } = useThemeStore();
   const { jobs, bundles, updateJobStatus } = useDemoStore();
-  const { user } = useAuthStore();
+  const { user, isDemoMode, serverPermissions } = useAuthStore();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['production', 'common', 'errors']);
   const [pendingAction, setPendingAction] = useState<JobAction>(null);
 
-  const job = jobs.find((j) => j.id === id);
+  const queryClient = useQueryClient();
+  const jobKey = ['job', user?.id, id];
+  const query = useQuery({
+    queryKey: jobKey,
+    queryFn: () => apiJobs.getJobById(id),
+    enabled: !isDemoMode && !!user && typeof id === 'string',
+  });
+  const mutation = useMutation({
+    mutationFn: async (status: 'on-hold' | 'active' | 'closed') => {
+      if (status !== 'closed') return apiJobs.updateJobStatus(id, status);
+      await apiRequest(`/jobs/${encodeURIComponent(id)}/close`, { method: 'POST' });
+      return apiJobs.getJobById(id);
+    },
+    onSuccess: (saved) => {
+      queryClient.setQueryData(jobKey, saved);
+      void queryClient.invalidateQueries({ queryKey: ['jobs', user?.id] });
+      void queryClient.invalidateQueries({ queryKey: ['job-route', user?.id, id] });
+      setPendingAction(null);
+    },
+    onError: error => Alert.alert(t(error instanceof ApiError && error.errorCode === 'ERR_JOB_UNRECONCILED'
+      ? 'production:jobUnreconciled' : error instanceof ApiError && error.errorCode === 'ERR_JOB_REJECTION_LIMIT'
+        ? 'production:jobRejectionLimit' : 'errors:serverError')),
+  });
+
+  if (!isDemoMode && (query.isLoading || query.isError)) {
+    return <EmptyState title={t(query.isLoading ? 'common:loading' : 'errors:serverError')} />;
+  }
+  const job = isDemoMode ? jobs.find((j) => j.id === id) : query.data;
   if (!job) return <EmptyState title={t('errors:jobNotFound')} message={`ID: ${id}`} />;
 
   const jobBundles = bundles.filter((b) => b.jobId === id);
@@ -42,6 +74,10 @@ export default function JobDetailScreen() {
 
   const confirmAction = (action: JobAction) => {
     if (!action) return;
+    if (!isDemoMode) {
+      if (!mutation.isPending) mutation.mutate(action === 'close' ? 'closed' : action === 'hold' ? 'on-hold' : 'active');
+      return;
+    }
     if (action === 'hold') updateJobStatus(job.id, 'on-hold');
     if (action === 'resume') updateJobStatus(job.id, 'active');
     if (action === 'close') updateJobStatus(job.id, 'closed');
@@ -72,11 +108,13 @@ export default function JobDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* 1. Prominent Signature Lime Scanner Action Card */}
-        <ScannerActionCard
+        {isDemoMode && <ScannerActionCard
           title="Scan Bundle QR / Barcode"
           description={`Scan for ${job.jobCode} ticket reconciliation`}
           onPress={() => router.push('/(app)/(tabs)/scan')}
         />
+
+        }
 
         {/* 2. Work Order Details Card (Garment Product Hang-Tag Style) */}
         <AppCard variant="forest" padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
@@ -107,16 +145,16 @@ export default function JobDetailScreen() {
             </View>
             <View style={[styles.stripDivider, { backgroundColor: 'rgba(255, 255, 255, 0.18)' }]} />
             <View style={styles.balanceItem}>
-              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>Packed</AppText>
+              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>{isDemoMode ? 'Packed' : t('production:cutting')}</AppText>
               <AppText variant="label" bold style={{ color: '#34C765', fontVariant: ['tabular-nums'] }}>
-                {job.packingQty.toLocaleString()}
+                {(isDemoMode ? job.packingQty : job.cuttingQty).toLocaleString()}
               </AppText>
             </View>
             <View style={[styles.stripDivider, { backgroundColor: 'rgba(255, 255, 255, 0.18)' }]} />
             <View style={styles.balanceItem}>
               <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>Balance</AppText>
               <AppText variant="label" bold style={{ color: '#FBB315', fontVariant: ['tabular-nums'] }}>
-                {balanceQty.toLocaleString()}
+                {(isDemoMode ? balanceQty : Math.max(0, job.orderQuantity - job.cuttingQty)).toLocaleString()}
               </AppText>
             </View>
           </View>
@@ -125,11 +163,12 @@ export default function JobDetailScreen() {
           <View style={styles.attrList}>
             <DetailRow label="Colors" value={job.colors.join(', ')} onDark />
             <DetailRow label="Sizes" value={job.sizes.join(', ')} onDark />
-            <DetailRow label="SAM" value={`${job.samValue} min / pc`} onDark />
+            {isDemoMode && <DetailRow label="SAM" value={`${job.samValue} min / pc`} onDark />}
             <DetailRow label="Target Date" value={job.targetDate} isLast onDark />
           </View>
         </AppCard>
 
+        {isDemoMode && <>
         {/* 3. Production Stage Lifecycle Stepper */}
         <SectionLabel label="Production Lifecycle" />
         <AppCard padding={spacing[3]} style={{ marginBottom: spacing[3] }}>
@@ -236,8 +275,14 @@ export default function JobDetailScreen() {
           />
         </View>
 
+        </>}
+
+        {!isDemoMode && serverPermissions.includes('CAN_VIEW_EXECUTIVE_REPORTS') && <JobQueueCard jobId={job.id} />}
+        {!isDemoMode && user?.role === 'factory-manager' && serverPermissions.includes('CAN_MANAGE_JOBS') && (
+          <JobRouteSetupCard jobId={job.id} canConfigureClosing={serverPermissions.includes('CAN_CLOSE_JOB')} />
+        )}
         {/* 8. Job Control Actions */}
-        {perms.canEditJob && (
+        {(isDemoMode ? perms.canEditJob : serverPermissions.includes('CAN_MANAGE_JOBS')) && (
           <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
             <AppText variant="label" bold style={{ marginBottom: spacing[2], color: tokens.textPrimary }}>
               Manager Control Actions
@@ -259,9 +304,10 @@ export default function JobDetailScreen() {
                   onPress={() => setPendingAction('resume')}
                 />
               )}
-              {perms.canCloseJob && job.status !== 'closed' && (
+              {(isDemoMode ? perms.canCloseJob && job.status !== 'closed'
+                : serverPermissions.includes('CAN_CLOSE_JOB') && job.status === 'active') && (
                 <AppButton
-                  title="Close Job"
+                  title={t('production:closeReconciledJob')}
                   variant="danger"
                   style={{ flex: 1 }}
                   onPress={() => setPendingAction('close')}

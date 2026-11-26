@@ -1,3 +1,4 @@
+import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
 import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -83,16 +84,19 @@ export function QCDashboard() {
     },
   ];
 
+  const liveDashboard = !useAuthStore(state => state.isDemoMode);
+
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
       <BrandHeader
-        subtitle={`QC Hub · ${t('common:inspector')}: ${user?.name ?? 'QC Floor'}`}
+        subtitle={liveDashboard ? user?.name : `QC Hub · ${t('common:inspector')}: ${user?.name ?? 'QC Floor'}`}
       />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
+        {liveDashboard ? <LiveDashboardPanel /> : <>
         {/* {t('quality:inspectionQueue')} Card */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
           Inspection Queue
@@ -275,6 +279,7 @@ export function QCDashboard() {
             </View>
           </AppCard>
         ))}
+        </>}
       </ScrollView>
 
       <BottomScanAction

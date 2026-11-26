@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../src/store/themeStore';
+import { useAuthStore } from '../../src/store/authStore';
 import { AppHeader } from '../../src/design-system/components/AppHeader';
 import { AppInput } from '../../src/design-system/components/AppInput';
 import { AppButton } from '../../src/design-system/components/AppButton';
@@ -10,9 +11,22 @@ import { spacing } from '../../src/design-system/tokens/spacing';
 
 export default function ForgotPasswordScreen() {
   const { tokens } = useThemeStore();
+  const { forgotPassword } = useAuthStore();
   const { t } = useTranslation(['auth', 'common']);
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!email.trim()) return;
+    setLoading(true);
+    try {
+      await forgotPassword(email);
+      setSent(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -36,7 +50,8 @@ export default function ForgotPasswordScreen() {
                 title={t('sendResetLink')}
                 size="lg"
                 fullWidth
-                onPress={() => setSent(true)}
+                loading={loading}
+                onPress={handleSubmit}
                 style={{ marginTop: spacing[2] }}
               />
             </View>

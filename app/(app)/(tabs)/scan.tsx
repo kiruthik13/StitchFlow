@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   View,
@@ -9,7 +9,13 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { BundleEvidencePanel } from '../../../src/features/operations/BundleEvidencePanel';
+import { BundleDutyPanel } from '../../../src/features/operations/BundleDutyPanel';
+import { ApiError, apiRequest } from '../../../src/services/api/apiClient';
+import { hidScannerAdapter, validateBarcodeFormat } from '../../../src/services/adapters/hidScannerAdapter';
+import { useScanInput } from '../../../src/hooks/useScanInput';
 import * as Haptics from 'expo-haptics';
 import {
   Camera,
@@ -42,17 +48,35 @@ import { typography } from '../../../src/design-system/tokens/typography';
 import { getBundleByCode, BUNDLES } from '../../../src/fixtures/mockData';
 import { ScanResult, Bundle } from '../../../src/core/types';
 
+interface LiveBundle {
+  id: string;
+  bundleCode: string;
+  jobCode: string;
+  size: string;
+  color: string;
+  quantity: number;
+}
+interface LiveStep {
+  id: string;
+  stageCode: string;
+  requestId: string;
+  ready: boolean;
+  completedAt: string | null;
+  completed: number;
+  available: number;
+}
+
 type ScanPhase = 'idle' | 'resolved' | 'quantity-entry' | 'confirmed';
 
 const DEMO_CODES = ['BND-00521', 'BND-00522', 'BND-00523', 'BND-00524', 'BND-00525'];
 
 export default function ScanTabScreen() {
   const { tokens } = useThemeStore();
-  const { user } = useAuthStore();
+  const { user, isDemoMode, serverPermissions } = useAuthStore();
   const { addScan, submitProductionQty, recentScans } = useDemoStore();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { t } = useTranslation(['common', 'production', 'quality', 'inventory', 'packing']);
+  const { t } = useTranslation(['common', 'production', 'quality', 'inventory', 'packing', 'errors']);
 
   const [manualCode, setManualCode] = useState('');
   const [phase, setPhase] = useState<ScanPhase>('idle');
@@ -60,6 +84,97 @@ export default function ScanTabScreen() {
   const [quantity, setQuantity] = useState(0);
   const [showConfirm, setShowConfirm] = useState(false);
   const [torchOn, setTorchOn] = useState(false);
+
+  const [permission, requestPermission] = useCameraPermissions();
+  const [cameraActive, setCameraActive] = useState(false);
+  const [liveBundle, setLiveBundle] = useState<LiveBundle | null>(null);
+  const [stageQuantities, setStageQuantities] = useState<Record<string, string>>({});
+  const [steps, setSteps] = useState<LiveStep[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [hidConnected, setHidConnected] = useState(hidScannerAdapter.isHardwareConnected);
+  const inFlight = useRef(false);
+
+  const { handleKeyInput } = useScanInput((scannedCode) => {
+    setHidConnected(true);
+    hidScannerAdapter.emitScan(scannedCode);
+  });
+
+  useEffect(() => {
+    return hidScannerAdapter.onBarcodeScanned((barcode) => {
+      setHidConnected(true);
+      setManualCode(barcode);
+      if (isDemoMode) {
+        resolveCode(barcode);
+      } else {
+        void lookupLive(barcode);
+      }
+    });
+  }, [isDemoMode]);
+
+  useFocusEffect(useCallback(() => () => {
+    setCameraActive(false);
+    setTorchOn(false);
+  }, []));
+
+  const openCamera = async () => {
+    const access = permission?.granted ? permission : await requestPermission();
+    if (!access?.granted) {
+      Alert.alert(t('errors:cameraPermissionRequired'));
+      return;
+    }
+    setCameraActive(true);
+  };
+
+  const lookupLive = async (value: string) => {
+    if (inFlight.current) return;
+    const validation = validateBarcodeFormat(value);
+    if (!validation.valid) {
+      Alert.alert(t('errors:validationError'), validation.reason ?? '');
+      return;
+    }
+    const barcode = validation.normalized;
+    inFlight.current = true;
+    setBusy(true);
+    setCameraActive(false);
+    setTorchOn(false);
+    setLiveBundle(null);
+    setSteps([]);
+    setStageQuantities({});
+    try {
+      const bundle = await apiRequest<LiveBundle>('/barcodes/resolve', {
+        method: 'POST', body: JSON.stringify({ barcode }),
+      });
+      setLiveBundle(bundle);
+      setSteps(await apiRequest<LiveStep[]>(`/production/bundles/${bundle.id}/route`));
+    } catch (error) {
+      Alert.alert(t(error instanceof ApiError && error.statusCode === 404
+        ? 'errors:bundleNotFound' : error instanceof ApiError && error.statusCode === 0
+          ? 'errors:networkError' : 'errors:scanFailed'));
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
+  };
+
+  const completeLive = async (step: LiveStep, quantity: number) => {
+    if (!liveBundle || inFlight.current || !step.ready) return;
+    inFlight.current = true;
+    setBusy(true);
+    try {
+      await apiRequest('/production/stages/complete', {
+        method: 'POST',
+        body: JSON.stringify({ bundleId: liveBundle.id, stepId: step.id, requestId: step.requestId, quantity }),
+      });
+      setSteps(current => current.map(item => item.id === step.id
+        ? { ...item, ready: false, completed: item.completed + quantity } : item));
+      setSteps(await apiRequest<LiveStep[]>(`/production/bundles/${liveBundle.id}/route`));
+    } catch (error) {
+      Alert.alert(t(error instanceof ApiError && error.statusCode === 0 ? 'errors:networkError' : 'errors:scanFailed'));
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
+  };
 
   const resolveCode = (code: string) => {
     const trimmed = code.trim().toUpperCase();
@@ -98,7 +213,7 @@ export default function ScanTabScreen() {
     resolveCode(code);
   };
 
-  const handleManualLookup = () => resolveCode(manualCode);
+  const handleManualLookup = () => { if (isDemoMode) resolveCode(manualCode); else void lookupLive(manualCode); };
 
   const handleConfirmQuantity = () => {
     if (!scanResult?.resolvedBundle) return;
@@ -183,6 +298,13 @@ export default function ScanTabScreen() {
             },
           ]}
         >
+          {!isDemoMode && cameraActive && <CameraView
+            style={StyleSheet.absoluteFill}
+            facing="back"
+            enableTorch={torchOn}
+            barcodeScannerSettings={{ barcodeTypes: ['qr', 'code128', 'code39', 'ean13', 'ean8', 'upc_a', 'upc_e', 'itf14'] }}
+            onBarcodeScanned={busy ? undefined : ({ data }) => void lookupLive(data)}
+          />}
           {/* Laser Corner Reticles */}
           <View style={[styles.bracketTL, { borderColor: tokens.brand }]} />
           <View style={[styles.bracketTR, { borderColor: tokens.brand }]} />
@@ -202,10 +324,13 @@ export default function ScanTabScreen() {
               QR codes and Code-128 industrial tags are decoded instantly.
             </AppText>
 
+            {!isDemoMode && !cameraActive && (
+              <AppButton title={t('production:openScannerCamera')} onPress={() => void openCamera()} disabled={busy} />
+            )}
             {/* Torch Control Button */}
             <TouchableOpacity
               activeOpacity={0.8}
-              onPress={() => setTorchOn(!torchOn)}
+              onPress={() => { if (isDemoMode || cameraActive) setTorchOn(!torchOn); }}
               style={[
                 styles.torchBtn,
                 {
@@ -234,7 +359,7 @@ export default function ScanTabScreen() {
         </View>
 
         {/* Quick Demo Scan Chips */}
-        <View style={styles.demoSection}>
+        {isDemoMode && <View style={styles.demoSection}>
           <View style={styles.demoSectionHeader}>
             <Tag size={13} color={tokens.textSecondary} />
             <AppText
@@ -270,6 +395,8 @@ export default function ScanTabScreen() {
           </View>
         </View>
 
+        }
+
         {/* Manual Input Card */}
         <AppCard padding={spacing[3.5]} style={{ marginBottom: spacing[3] }}>
           <AppText variant="caption" color="secondary" uppercase bold style={{ letterSpacing: 0.6, marginBottom: spacing[2] }}>
@@ -290,7 +417,7 @@ export default function ScanTabScreen() {
             <TextInput
               value={manualCode}
               onChangeText={setManualCode}
-              placeholder="e.g. BND-00521"
+              placeholder={isDemoMode ? "e.g. BND-00521" : t("common:scanBarcode")}
               placeholderTextColor={tokens.textDisabled}
               autoCapitalize="characters"
               style={[
@@ -302,6 +429,7 @@ export default function ScanTabScreen() {
                 },
               ]}
               onSubmitEditing={handleManualLookup}
+              onKeyPress={(e) => handleKeyInput(e.nativeEvent.key)}
               returnKeyType="search"
             />
             <TouchableOpacity
@@ -314,7 +442,50 @@ export default function ScanTabScreen() {
               </AppText>
             </TouchableOpacity>
           </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing[2] }}>
+            <AppText variant="caption" color="secondary">
+              {`CAM: ${permission?.granted ? 'OK' : 'PENDING'} · HID: ${hidConnected ? 'READY' : 'WEDGE'}`}
+            </AppText>
+            <TouchableOpacity onPress={() => hidScannerAdapter.sendSimulatedScan(DEMO_CODES[0])}>
+              <AppText variant="caption" color="brand" bold>HID TEST</AppText>
+            </TouchableOpacity>
+          </View>
         </AppCard>
+
+        {!isDemoMode && liveBundle && (
+          <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
+            <AppText variant="h4" bold>{liveBundle.bundleCode}</AppText>
+            <AppText variant="bodySmall" color="secondary">
+              {liveBundle.jobCode} · {liveBundle.color} · {liveBundle.size} · {liveBundle.quantity}
+            </AppText>
+            {steps.filter(step => step.ready).map(step => {
+              const value = stageQuantities[step.id] ?? String(step.available);
+              const amount = Number(value);
+              return (
+                <View key={step.id} style={{ marginTop: spacing[2] }}>
+                  <AppText variant="label">{step.stageCode} · {step.completed}/{liveBundle.quantity}</AppText>
+                  {serverPermissions.includes('CAN_ENTER_PRODUCTION') && <>
+                    <TextInput value={value} keyboardType="numeric" accessibilityLabel={t('production:enterQuantity')}
+                      style={[styles.textInput, { minHeight: 44, color: tokens.textPrimary }]}
+                      onChangeText={text => setStageQuantities(current => ({ ...current, [step.id]: text }))} />
+                    <AppButton title={t('production:confirmRouteStep')}
+                      disabled={busy || !Number.isInteger(amount) || amount < 1 || amount > step.available}
+                      onPress={() => Alert.alert(t('production:confirmRouteStep'),
+                        `${liveBundle.bundleCode} · ${step.stageCode} · ${amount}`, [
+                          { text: t('common:cancel'), style: 'cancel' },
+                          { text: t('common:confirm'), onPress: () => void completeLive(step, amount) },
+                        ])}
+                    />
+                  </>}
+                </View>
+              );
+            })}
+            <BundleDutyPanel key={liveBundle.id} bundleId={liveBundle.id} />
+            {(user?.role === 'qc-inspector' || user?.role === 'factory-manager') && (
+              <BundleEvidencePanel key={liveBundle.id} bundleId={liveBundle.id} />
+            )}
+          </AppCard>
+        )}
 
         {/* Scan Result Notice */}
         {scanResult && phase !== 'idle' && (

@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '../../../src/store/authStore';
+import { apiRequest } from '../../../src/services/api/apiClient';
+import { AppInput } from '../../../src/design-system/components/AppInput';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,12 +21,46 @@ const PENDING_APPROVALS = [
   { id: 'appr-3', type: 'Excess Fabric', title: 'Line 2 Requisition CT-002', desc: '40 meters additional Chino fabric due to cutting edge distortion.', requestedBy: 'Cutting Master', urgency: 'High' },
 ];
 
+interface DraftApproval {
+  id: string;
+  jobCode: string;
+  orderQuantity: number;
+  targetDate: string;
+}
+
 export default function ApprovalsScreen() {
   const { tokens } = useThemeStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t } = useTranslation(['production', 'common']);
+  const { t } = useTranslation(['production', 'common', 'errors']);
   const [items, setItems] = useState(PENDING_APPROVALS);
+
+  const { user, isDemoMode, serverPermissions } = useAuthStore();
+  const allowed = serverPermissions.includes('CAN_MANAGE_JOBS');
+  const factory = user?.factoryId;
+  const [rejecting, setRejecting] = useState<string | null>(null);
+  const [reason, setReason] = useState('');
+  const queryClient = useQueryClient();
+  const key = ['job-approvals', user?.id, factory];
+  const pending = useQuery({
+    queryKey: key,
+    queryFn: () => apiRequest<DraftApproval[]>(`/approvals?factoryId=${encodeURIComponent(factory ?? '')}`),
+    enabled: !isDemoMode && allowed && !!factory,
+  });
+  const decide = useMutation({
+    mutationFn: (input: { id: string; decision: 'approved' | 'rejected'; reason?: string }) =>
+      apiRequest(`/approvals/${encodeURIComponent(input.id)}/decide`, {
+        method: 'POST', body: JSON.stringify({ decision: input.decision, reason: input.reason }),
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: key });
+      void queryClient.invalidateQueries({ queryKey: ['jobs', user?.id] });
+      void queryClient.invalidateQueries({ queryKey: ['job', user?.id] });
+      setRejecting(null);
+      setReason('');
+    },
+    onError: () => Alert.alert(t('errors:serverError')),
+  });
 
   const handleApprove = (id: string, title: string) => {
     setItems(items.filter((i) => i.id !== id));
@@ -34,6 +72,37 @@ export default function ApprovalsScreen() {
       <AppHeader title={t('production:approvals')} subtitle={t('production:floorApprovals')} showBack onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
+        {!isDemoMode ? (
+          !allowed || !factory ? <AppText>{t('errors:unauthorized')}</AppText>
+          : pending.isLoading ? <AppText>{t('common:loading')}</AppText>
+          : pending.isError ? <AppButton title={t('common:refresh')} onPress={() => void pending.refetch()} />
+          : !pending.data?.length ? <AppCard padding={spacing[6]}><AppText>{t('production:noJobApprovals')}</AppText></AppCard>
+          : pending.data.map(job => (
+            <AppCard key={job.id} padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
+              <AppText variant="h4" bold>{job.jobCode}</AppText>
+              <AppText variant="bodySmall" color="secondary">
+                {t('production:orderQuantity')} · {job.orderQuantity.toLocaleString()} · {job.targetDate}
+              </AppText>
+              {rejecting === job.id && (
+                <AppInput label={t('production:jobRejectionReason')} value={reason} onChangeText={setReason} />
+              )}
+              <View style={{ marginTop: spacing[3], flexDirection: 'row', gap: spacing[2] }}>
+                <View style={{ flex: 1 }}>
+                  <AppButton title={t('production:approveDraftJob')} size="sm" disabled={decide.isPending}
+                    onPress={() => decide.mutate({ id: job.id, decision: 'approved' })} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <AppButton title={t('production:rejectDraftJob')} size="sm" variant="outline"
+                    disabled={decide.isPending || (rejecting === job.id && !reason.trim())}
+                    onPress={() => {
+                      if (rejecting === job.id) decide.mutate({ id: job.id, decision: 'rejected', reason: reason.trim() });
+                      else { setRejecting(job.id); setReason(''); }
+                    }} />
+                </View>
+              </View>
+            </AppCard>
+          ))
+        ) : <>
         <AppText variant="caption" color="secondary" uppercase style={{ letterSpacing: 0.8, marginBottom: spacing[2] }}>
           Pending Actions ({items.length})
         </AppText>
@@ -67,6 +136,7 @@ export default function ApprovalsScreen() {
             </AppCard>
           ))
         )}
+        </>}
       </ScrollView>
     </View>
   );

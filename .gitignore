@@ -17,8 +17,11 @@ ios/
 
 # Environment and secrets
 .env
+backend/.env
 .env.local
 .env.*.local
+.test-credentials.local.md
+*.zip
 
 # Logs
 npm-debug.log*

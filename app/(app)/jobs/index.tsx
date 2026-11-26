@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { View, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { useAuthStore } from '../../../src/store/authStore';
+import { apiJobs } from '../../../src/services/repositories/jobRepository';
+import { ApiError } from '../../../src/services/api/apiClient';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../../src/store/themeStore';
@@ -18,9 +22,19 @@ import { Job } from '../../../src/core/types';
 
 export default function JobsIndexScreen() {
   const { tokens } = useThemeStore();
-  const { jobs } = useDemoStore();
+  const demo = useAuthStore((state) => state.isDemoMode);
+  const userId = useAuthStore((state) => state.user?.id);
+  const demoJobs = useDemoStore((state) => state.jobs);
+  const query = useInfiniteQuery({
+    queryKey: ['jobs', userId],
+    initialPageParam: undefined as string | undefined,
+    queryFn: ({ pageParam }) => apiJobs.getJobPage(pageParam),
+    getNextPageParam: (page) => page.length === 100 ? page[page.length - 1].id : undefined,
+    enabled: !demo && !!userId,
+  });
+  const jobs = demo ? demoJobs : query.data?.pages.flat() ?? [];
   const router = useRouter();
-  const { t } = useTranslation(['production', 'common']);
+  const { t } = useTranslation(['production', 'common', 'errors']);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
 
@@ -56,16 +70,28 @@ export default function JobsIndexScreen() {
         data={filtered}
         keyExtractor={(j) => j.id}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={<EmptyState title={t('production:noJobsFound')} />}
-        renderItem={({ item }) => <JobRow job={item} onPress={() => router.push(`/(app)/jobs/${item.id}`)} tokens={tokens} />}
+        refreshing={!demo && query.isRefetching && !query.isFetchingNextPage}
+        onRefresh={!demo ? () => void query.refetch() : undefined}
+        onEndReached={() => {
+          if (!demo && query.hasNextPage && !query.isFetching) void query.fetchNextPage();
+        }}
+        ListFooterComponent={!demo && query.isFetchNextPageError ? (
+          <AppText variant="caption" color="danger" onPress={() => void query.fetchNextPage()}>
+            {t('errors:serverError')} {t('common:refresh')}
+          </AppText>
+        ) : undefined}
+        ListEmptyComponent={<EmptyState title={t(!demo && query.isLoading ? 'common:loading'
+          : !demo && query.isError ? (query.error instanceof ApiError && query.error.statusCode === 0
+            ? 'errors:networkError' : 'errors:serverError') : 'production:noJobsFound')} />}
+        renderItem={({ item }) => <JobRow job={item} showDemoMetrics={demo} onPress={() => router.push(`/(app)/jobs/${item.id}`)} tokens={tokens} />}
         ItemSeparatorComponent={() => <View style={{ height: spacing[2] }} />}
       />
     </View>
   );
 }
 
-function JobRow({ job, onPress, tokens }: { job: Job; onPress: () => void; tokens: any }) {
-  const prog = Math.round((job.packingQty / job.orderQuantity) * 100);
+function JobRow({ job, onPress, tokens, showDemoMetrics }: { job: Job; onPress: () => void; tokens: any; showDemoMetrics: boolean }) {
+  const prog = Math.round(((showDemoMetrics ? job.packingQty : job.cuttingQty) / job.orderQuantity) * 100);
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
       <AppCard padding={spacing[4]}>
@@ -80,8 +106,8 @@ function JobRow({ job, onPress, tokens }: { job: Job; onPress: () => void; token
         <View style={styles.stats}>
           <Stat label="Order" value={String(job.orderQuantity)} tokens={tokens} />
           <Stat label="Cut" value={String(job.cuttingQty)} tokens={tokens} />
-          <Stat label="Packed" value={String(job.packingQty)} tokens={tokens} />
-          <Stat label="Eff." value={`${job.efficiency}%`} tokens={tokens} />
+          {showDemoMetrics && <Stat label="Packed" value={String(job.packingQty)} tokens={tokens} />}
+          {showDemoMetrics && <Stat label="Eff." value={`${job.efficiency}%`} tokens={tokens} />}
         </View>
         {/* Progress bar */}
         <View style={[styles.progressBg, { backgroundColor: tokens.surfaceSecondary }]}>
@@ -89,7 +115,7 @@ function JobRow({ job, onPress, tokens }: { job: Job; onPress: () => void; token
         </View>
         <View style={styles.footer}>
           <AppText variant="caption" color="secondary">Target: {job.targetDate}</AppText>
-          <AppText variant="caption" color={prog >= 80 ? 'success' : prog >= 50 ? 'warning' : 'danger'} mono>{prog}% packed</AppText>
+          <AppText variant="caption" color={prog >= 80 ? 'success' : prog >= 50 ? 'warning' : 'danger'} mono>{prog}%</AppText>
         </View>
       </AppCard>
     </TouchableOpacity>

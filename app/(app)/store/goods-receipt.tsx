@@ -1,3 +1,5 @@
+import { RawInventoryPanel } from '../../../src/features/operations/RawInventoryPanel';
+import { useAuthStore } from '../../../src/store/authStore';
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -13,6 +15,7 @@ import { QuantityStepper } from '../../../src/design-system/components/QuantityS
 import { spacing } from '../../../src/design-system/tokens/spacing';
 
 export default function GoodsReceiptScreen() {
+  const demo = useAuthStore(state => state.isDemoMode);
   const { tokens } = useThemeStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -37,6 +40,7 @@ export default function GoodsReceiptScreen() {
       <AppHeader title={t('inventory:goodsReceipt')} subtitle={t('inventory:storeOverview')} showBack onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
+        {!demo ? <RawInventoryPanel mode="receipt" /> : <>
         <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
           <AppInput label="Purchase Order (PO) Number" value={poNumber} onChangeText={setPoNumber} />
           <AppInput label="Mill / Supplier Name" value={supplier} onChangeText={setSupplier} />
@@ -65,6 +69,7 @@ export default function GoodsReceiptScreen() {
         </AppCard>
 
         <AppButton title="Post Goods Receipt to Inventory" onPress={handleSubmit} />
+        </>}
       </ScrollView>
     </View>
   );

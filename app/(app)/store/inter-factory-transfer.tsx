@@ -1,3 +1,5 @@
+import { RawInventoryPanel } from '../../../src/features/operations/RawInventoryPanel';
+import { useAuthStore } from '../../../src/store/authStore';
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -13,6 +15,7 @@ import { QuantityStepper } from '../../../src/design-system/components/QuantityS
 import { spacing } from '../../../src/design-system/tokens/spacing';
 
 export default function InterFactoryTransferScreen() {
+  const demo = useAuthStore(state => state.isDemoMode);
   const { tokens } = useThemeStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -34,9 +37,10 @@ export default function InterFactoryTransferScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title={t('inventory:interFactoryTransfer')} subtitle="TRF-2026-0042 · Separate Confirmations" showBack onBack={() => router.back()} />
+      <AppHeader title={t('inventory:interFactoryTransfer')} subtitle={demo ? "TRF-2026-0042 · Separate Confirmations" : undefined} showBack onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
+        {!demo ? <RawInventoryPanel mode="transfer" /> : <>
         {/* Origin and Destination Card */}
         <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
           <View style={styles.flowRow}>
@@ -98,6 +102,7 @@ export default function InterFactoryTransferScreen() {
         ) : (
           <AppButton title="Transfer Fully Reconciled" variant="outline" disabled />
         )}
+        </>}
       </ScrollView>
     </View>
   );

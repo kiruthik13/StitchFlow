@@ -1,3 +1,4 @@
+import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -38,11 +39,13 @@ export function PackingDashboard() {
   const packingBundle = bundles.find((b) => b.status === 'packing') ?? bundles[2];
   const packingQCInspection = QC_INSPECTIONS.find((q) => q.status === 'passed');
 
+  const liveDashboard = !useAuthStore(state => state.isDemoMode);
+
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
       <BrandHeader
-        subtitle={`Packing Station · ${user?.lineName ?? 'Line 1'}`}
-        rightEl={
+        subtitle={liveDashboard ? user?.name : `Packing Station · ${user?.lineName ?? 'Line 1'}`}
+        rightEl={liveDashboard ? undefined : 
           <AppButton
             title={t('packing:newCarton')}
             size="sm"
@@ -55,6 +58,7 @@ export function PackingDashboard() {
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
+        {liveDashboard ? <LiveDashboardPanel /> : <>
         {/* Packing Fulfilment Hero Strip */}
         <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
           {t('packing:todayOutput')}
@@ -240,6 +244,7 @@ export function PackingDashboard() {
             </AppCard>
           </TouchableOpacity>
         ))}
+        </>}
       </ScrollView>
 
       <BottomScanAction

@@ -1,0 +1,10 @@
+# Known limitations
+
+- Phase 1 source is ready for isolated integration testing. Database migration execution, Supabase confirmation email, login, refresh, reset and remote logout still need end-to-end verification.
+- The employee roster requires authorized provisioning. Identity and job assignment checks for department, designation, address, unit and workstation have yet to be implemented in the registration and management screens.
+- The job and buyer/style API foundation is local. Draft approvals, bundle allocation and barcode identity resolution are implemented locally. Job closing reconciliation, other masters, per-size/color allocation and printer support remain pending. Job List, Job Detail, Create Job and Approvals are wired locally. Other operational screens retain demo data paths.
+- The backend captures assigned cutting output. Scanner integration, subsequent production stages, QC and rework, packing, dispatch, full inventory, full rework-aware intelligence, realtime and durable SQLite sync remain outstanding. Cut-stock handovers and cutting-only what-if estimation are implemented locally.
+- Cutting is recorded by the assigned Line Operator and tracked as line output. Store receipt requires separate confirmation. Ironing, Kaja and other factory-specific routing responsibilities need configuration before live use.
+- No Android release performance, camera/HID hardware, translation regression or theme/device compatibility benchmarks have been run.
+
+For the current routed workflow, the configured first line must receive the full bundle before post-cut work. Further step order and job assignments come from configuration. Intermediate QC, measurements, photos, multi-bundle cartons and multi-carton shipment manifests require additional workflows. The scanner keyboard input path expects an Enter suffix for wedge scanners and has not been validated with physical devices. The SQLite package installation was blocked by registry access and the automatic approval policy, and offline replay has not been enabled.

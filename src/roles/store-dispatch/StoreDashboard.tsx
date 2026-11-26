@@ -1,3 +1,4 @@
+import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
 import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -94,16 +95,19 @@ export function StoreDashboard() {
     },
   ];
 
+  const liveDashboard = !useAuthStore(state => state.isDemoMode);
+
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
       <BrandHeader
-        subtitle={`Store & Logistics · ${user?.factoryName ?? 'Tirupur Unit 1'}`}
+        subtitle={liveDashboard ? user?.name : `Store & Logistics · ${user?.factoryName ?? 'Tirupur Unit 1'}`}
       />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
+        {liveDashboard ? <LiveDashboardPanel /> : <>
         {/* Low Stock Alerts */}
         {lowStock.map((s) => (
           <View
@@ -208,6 +212,7 @@ export function StoreDashboard() {
             </AppCard>
           </TouchableOpacity>
         ))}
+        </>}
       </ScrollView>
 
       <BottomScanAction

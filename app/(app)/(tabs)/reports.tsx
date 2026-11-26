@@ -1,3 +1,4 @@
+import { LiveReportsPanel } from '../../../src/features/operations/LiveDashboardPanels';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
@@ -59,7 +60,7 @@ const STAGE_MATRIX = [
 
 export default function ReportsTabScreen() {
   const { tokens } = useThemeStore();
-  const { user } = useAuthStore();
+  const { user, isDemoMode } = useAuthStore();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['reports', 'common', 'production', 'quality']);
   const [selectedReport, setSelectedReport] = useState<string | null>('shift');
@@ -103,6 +104,7 @@ export default function ReportsTabScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {!isDemoMode ? <LiveReportsPanel /> : <>
         {/* Offline Demo Export Notice */}
         <View
           style={[
@@ -298,6 +300,7 @@ export default function ReportsTabScreen() {
               )}
           </>
         )}
+        </>}
       </ScrollView>
     </View>
   );

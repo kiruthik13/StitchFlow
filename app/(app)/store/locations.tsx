@@ -3,6 +3,8 @@ import { View, ScrollView, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LiveMastersPanel } from '../../../src/features/operations/LiveMastersPanel';
+import { useAuthStore } from '../../../src/store/authStore';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppText } from '../../../src/design-system/components/AppText';
@@ -18,6 +20,7 @@ const RACK_ZONES = [
 ];
 
 export default function StorageLocationsScreen() {
+  const demo = useAuthStore(state => state.isDemoMode);
   const { tokens } = useThemeStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -25,9 +28,10 @@ export default function StorageLocationsScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title={t('inventory:storageLocations')} subtitle="Factory A Warehouse Map" showBack onBack={() => router.back()} />
+      <AppHeader title={t('inventory:storageLocations')} subtitle={demo ? "Factory A Warehouse Map" : undefined} showBack onBack={() => router.back()} />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
+        {!demo ? <LiveMastersPanel tab="locations" /> : <>
         <AppText variant="caption" color="secondary" uppercase style={{ letterSpacing: 0.8, marginBottom: spacing[2] }}>
           Warehouse Zones & Capacity
         </AppText>
@@ -64,6 +68,7 @@ export default function StorageLocationsScreen() {
             </AppCard>
           );
         })}
+        </>}
       </ScrollView>
     </View>
   );

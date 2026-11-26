@@ -261,6 +261,8 @@ export interface ScanResult {
 
 export interface Permission {
   canScan: boolean;
+  canLookupBarcode: boolean;
+  canScanProduction: boolean;
   canCreateJob: boolean;
   canEditJob: boolean;
   canCloseJob: boolean;
@@ -268,6 +270,9 @@ export interface Permission {
   canReleasePieces: boolean;
   canPack: boolean;
   canDispatch: boolean;
+  canMonitorDispatch: boolean;
+  canApproveDispatch: boolean;
+  canExecuteDispatch: boolean;
   canViewMD: boolean;
   canManageUsers: boolean;
   canManageMasters: boolean;
