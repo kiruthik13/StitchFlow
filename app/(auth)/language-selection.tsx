@@ -19,6 +19,16 @@ const LANGUAGES = [
     nativeName: 'English',
     secondaryDesc: 'Default factory operating language',
   },
+  {
+    code: 'ta',
+    nativeName: 'தமிழ்',
+    secondaryDesc: 'தமிழ்நாடு ஆடை உற்பத்தி ஆலைக்கு உகந்தது',
+  },
+  {
+    code: 'hi',
+    nativeName: 'हिन्दी',
+    secondaryDesc: 'उत्तर भारतीय परिधान निर्माण इकाइयों के लिए',
+  },
 ];
 
 export default function LanguageSelectionScreen() {

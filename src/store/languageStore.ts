@@ -22,9 +22,12 @@ export const useLanguageStore = create<LanguageState>((set) => ({
 
   initialize: async () => {
     try {
-      await AsyncStorage.setItem(LANGUAGE_KEY, 'en');
-      await i18n.changeLanguage('en');
-      set({ language: 'en' });
+      const stored = await AsyncStorage.getItem(LANGUAGE_KEY);
+      if (stored && ['en', 'ta', 'hi'].includes(stored)) {
+        const lang = stored as Language;
+        await i18n.changeLanguage(lang);
+        set({ language: lang });
+      }
     } catch {
       // keep default
     }

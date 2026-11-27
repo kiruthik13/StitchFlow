@@ -10,6 +10,8 @@ import { Language } from '../../core/types';
 
 const LANGUAGES: { key: Language; label: string; native: string; sub: string }[] = [
   { key: 'en', label: 'English', native: 'English', sub: 'Primary floor language' },
+  { key: 'ta', label: 'Tamil', native: 'தமிழ்', sub: 'தமிழ்நாடு ஆடை உற்பத்தி' },
+  { key: 'hi', label: 'Hindi', native: 'हिन्दी', sub: 'गारमेंट फ्लोर निर्देश' },
 ];
 
 interface LanguageSwitcherProps {
