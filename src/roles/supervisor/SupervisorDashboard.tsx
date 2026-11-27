@@ -1,4 +1,5 @@
 import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
+import { LiveWorkPanel } from '../../features/operations/LiveWorkPanels';
 import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -178,10 +179,13 @@ export function SupervisorDashboard() {
 
 export function SupervisorWork() {
   const { tokens } = useThemeStore();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const { bundles } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['production', 'common']);
+
+  if (!isDemoMode) return <LiveWorkPanel mode="supervisor" />;
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>

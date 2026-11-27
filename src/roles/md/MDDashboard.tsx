@@ -1,6 +1,8 @@
 import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
 import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import { masterRepository } from '../../services/repositories/masterRepository';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -298,9 +300,18 @@ export function MDDashboard() {
 
 export function MDWork() {
   const { tokens } = useThemeStore();
+  const { user, isDemoMode } = useAuthStore();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useTranslation(['production', 'common']);
+
+  const factoriesQuery = useQuery({
+    queryKey: ['md-factories', user?.id],
+    queryFn: () => masterRepository.getFactories(),
+    enabled: !isDemoMode && !!user?.id,
+  });
+
+  const factories = isDemoMode ? FACTORIES : (factoriesQuery.data ?? []);
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
@@ -319,7 +330,7 @@ export function MDWork() {
         </AppText>
       </View>
       <ScrollView contentContainerStyle={styles.scroll}>
-        {FACTORIES.map((f) => {
+        {factories.map((f) => {
           const eff = f.id === 'factory-a' ? 82 : 68;
           return (
             <TouchableOpacity

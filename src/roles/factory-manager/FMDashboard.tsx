@@ -1,6 +1,8 @@
 import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import { apiJobs } from '../../services/repositories/jobRepository';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -344,11 +346,20 @@ export function FMDashboard() {
 
 export function FMWork() {
   const { tokens } = useThemeStore();
-  const { jobs } = useDemoStore();
+  const { jobs: demoJobs } = useDemoStore();
+  const { user, isDemoMode } = useAuthStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['production', 'common']);
   const [filter, setFilter] = useState('all');
+
+  const liveJobsQuery = useQuery({
+    queryKey: ['jobs', user?.id],
+    queryFn: () => apiJobs.getJobs(),
+    enabled: !isDemoMode && !!user?.id,
+  });
+
+  const jobs = isDemoMode ? demoJobs : (liveJobsQuery.data ?? []);
 
   const JOB_FILTERS = [
     { key: 'all', label: t('common:all') },
@@ -387,7 +398,9 @@ export function FMWork() {
         data={filtered}
         keyExtractor={(j) => j.id}
         contentContainerStyle={[styles.scroll, { paddingTop: 0 }]}
-        ListEmptyComponent={<EmptyState title={t('production:noJobsFound')} />}
+        refreshing={!isDemoMode && liveJobsQuery.isRefetching}
+        onRefresh={!isDemoMode ? () => void liveJobsQuery.refetch() : undefined}
+        ListEmptyComponent={<EmptyState title={!isDemoMode && liveJobsQuery.isLoading ? t('common:loading') : t('production:noJobsFound')} />}
         renderItem={({ item: job }) => (
           <JobTicketCard
             job={job}

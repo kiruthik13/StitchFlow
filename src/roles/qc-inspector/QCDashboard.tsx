@@ -1,4 +1,5 @@
 import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
+import { LiveWorkPanel } from '../../features/operations/LiveWorkPanels';
 import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -292,10 +293,12 @@ export function QCDashboard() {
 
 export function QCWork() {
   const { tokens } = useThemeStore();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const { bundles } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['quality', 'common']);
+  if (!isDemoMode) return <LiveWorkPanel mode="qc" />;
   const pending = bundles.filter((b) => b.status === 'qc-pending');
 
   return (

@@ -1,4 +1,5 @@
 import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
+import { LiveWorkPanel } from '../../features/operations/LiveWorkPanels';
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -257,11 +258,13 @@ export function PackingDashboard() {
 
 export function PackingWork() {
   const { tokens } = useThemeStore();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const { bundles } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['packing', 'common']);
   const [selectedSize, setSelectedSize] = useState('L');
+  if (!isDemoMode) return <LiveWorkPanel mode="packing" />;
   const packBundles = bundles.filter((b) => ['packing', 'packed'].includes(b.status));
 
   return (

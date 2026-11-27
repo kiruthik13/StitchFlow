@@ -1,4 +1,5 @@
 import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
+import { LiveWorkPanel } from '../../features/operations/LiveWorkPanels';
 import { OfflineSyncBanner } from '../../features/operations/OfflineSyncBanner';
 import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
@@ -240,11 +241,13 @@ export function OperatorDashboard() {
 
 export function OperatorWork() {
   const { tokens } = useThemeStore();
-  const { user } = useAuthStore();
+  const { user, isDemoMode } = useAuthStore();
   const { bundles } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState('all');
+
+  if (!isDemoMode) return <LiveWorkPanel mode="operator" />;
 
   const BUNDLE_FILTERS = [
     { key: 'all', label: 'All' },

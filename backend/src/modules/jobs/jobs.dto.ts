@@ -7,22 +7,24 @@ export const masterTables = {
 } as const;
 export type MasterKind = keyof typeof masterTables;
 
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export class FactoryQuery {
-  @IsUUID()
+  @Matches(uuidPattern, { message: 'factoryId must be a UUID' })
   factoryId!: string;
 
   @IsOptional()
-  @IsUUID()
+  @Matches(uuidPattern, { message: 'after must be a UUID' })
   after?: string;
 }
 
 export class JobListQuery {
   @IsOptional()
-  @IsUUID()
+  @Matches(uuidPattern, { message: 'factoryId must be a UUID' })
   factoryId?: string;
 
   @IsOptional()
-  @IsUUID()
+  @Matches(uuidPattern, { message: 'after must be a UUID' })
   after?: string;
 }
 

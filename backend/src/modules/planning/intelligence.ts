@@ -363,7 +363,6 @@ export class PlanningIntelligenceController {
   constructor(private readonly intel: PlanningIntelligenceService) {}
 
   @Get('sam')
-  @RequirePermissions('CAN_VIEW_REPORTS')
   listSam(@CurrentUser() user: AuthenticatedUser, @Query() query: FactoryQuery) {
     return this.intel.listSamPlans(user, query);
   }
@@ -375,7 +374,6 @@ export class PlanningIntelligenceController {
   }
 
   @Get('workforce')
-  @RequirePermissions('CAN_VIEW_REPORTS')
   listWorkforce(@CurrentUser() user: AuthenticatedUser, @Query() query: FactoryQuery) {
     return this.intel.listWorkforcePlans(user, query);
   }
@@ -387,13 +385,11 @@ export class PlanningIntelligenceController {
   }
 
   @Get('bottlenecks')
-  @RequirePermissions('CAN_VIEW_REPORTS')
   bottlenecks(@CurrentUser() user: AuthenticatedUser, @Query() query: FactoryQuery) {
     return this.intel.detectBottlenecks(user, query);
   }
 
   @Get('delivery-predictions')
-  @RequirePermissions('CAN_VIEW_REPORTS')
   deliveryPredictions(@CurrentUser() user: AuthenticatedUser, @Query() query: FactoryQuery) {
     return this.intel.deliveryPredictions(user, query);
   }

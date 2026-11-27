@@ -63,8 +63,19 @@ export default function JobDetailScreen() {
         ? 'production:jobRejectionLimit' : 'errors:serverError')),
   });
 
-  if (!isDemoMode && (query.isLoading || query.isError)) {
-    return <EmptyState title={t(query.isLoading ? 'common:loading' : 'errors:serverError')} />;
+  if (!isDemoMode && query.isLoading) {
+    return <EmptyState title={t('common:loading')} />;
+  }
+  if (!isDemoMode && query.isError) {
+    return (
+      <View style={[styles.flex, { backgroundColor: tokens.background, justifyContent: 'center', padding: spacing[4] }]}>
+        <EmptyState
+          title={t('errors:serverError')}
+          message={query.error instanceof ApiError ? query.error.message : undefined}
+        />
+        <AppButton title={t('common:refresh')} onPress={() => void query.refetch()} />
+      </View>
+    );
   }
   const job = isDemoMode ? jobs.find((j) => j.id === id) : query.data;
   if (!job) return <EmptyState title={t('errors:jobNotFound')} message={`ID: ${id}`} />;

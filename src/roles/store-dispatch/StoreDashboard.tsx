@@ -1,4 +1,5 @@
 import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
+import { LiveWorkPanel } from '../../features/operations/LiveWorkPanels';
 import React from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -225,8 +226,10 @@ export function StoreDashboard() {
 
 export function StoreWork() {
   const { tokens } = useThemeStore();
+  const isDemoMode = useAuthStore((state) => state.isDemoMode);
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['inventory', 'common']);
+  if (!isDemoMode) return <LiveWorkPanel mode="store" />;
   const lowStock = STOCK_ITEMS.filter((s) => s.currentStock < s.minimumStock);
 
   return (

@@ -61,6 +61,18 @@ class WorkflowController {
     return this.workflow.release(user, body);
   }
 
+  @Get('packing/cartons')
+  @RequirePermissions('CAN_CREATE_CARTON')
+  packingCartons(@CurrentUser() user: AuthenticatedUser, @Query() query: FactoryQuery) {
+    return this.workflow.cartons(user, query.factoryId, query.after);
+  }
+
+  @Post('packing/cartons')
+  @RequirePermissions('CAN_CREATE_CARTON')
+  packAlias(@CurrentUser() user: AuthenticatedUser, @Body() body: QuantityRequest) {
+    return this.workflow.pack(user, body);
+  }
+
   @Post('cartons')
   @RequirePermissions('CAN_CREATE_CARTON')
   pack(@CurrentUser() user: AuthenticatedUser, @Body() body: QuantityRequest) {
