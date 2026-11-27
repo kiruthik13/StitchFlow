@@ -1,37 +1,41 @@
 # Role-Based Permissions Matrix
 
+**Last Verified:** 2026-11-27  
+**Source of Truth:** [src/core/permissions/index.ts](file:///c:/Users/Kathik/Downloads/StitchFlow-main/src/core/permissions/index.ts) and backend `@RequirePermissions()` guards.
+
 StitchFlow enforces strict operational separation between management, production, quality, warehouse, and packing staff.
 
-| Permission Key | MD | Factory Manager | Supervisor | Operator | QC Inspector | Store / Dispatch | Packing Staff |
+| Permission Key (Frontend / Backend) | MD | Factory Manager | Supervisor | Operator | QC Inspector | Store / Dispatch | Packing Staff |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| **CAN_LOOKUP_BARCODE** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **CAN_SCAN_PRODUCTION** | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| **CAN_VIEW_ALL_FACTORIES** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **CAN_MANAGE_JOBS** | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **CAN_CLOSE_JOB** | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **CAN_ASSIGN_WORK** | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| **CAN_ENTER_PRODUCTION** | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| **CAN_PERFORM_QC** | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| **CAN_RELEASE_QC** | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| **CAN_MANAGE_INVENTORY** | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| **CAN_MONITOR_DISPATCH** | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| **CAN_APPROVE_DISPATCH** | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| **CAN_EXECUTE_DISPATCH** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
-| **CAN_CREATE_CARTON** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| **CAN_VIEW_EXECUTIVE_REPORTS** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
-| **CAN_VIEW_FINANCIAL_SAM** | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **`canLookupBarcode` / `CAN_LOOKUP_BARCODE`** | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **`canScan` / `CAN_SCAN_PRODUCTION`** | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| **`canViewMD` / `CAN_VIEW_ALL_FACTORIES`** | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **`canCreateJob` / `canEditJob` / `CAN_MANAGE_JOBS`** | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **`canCloseJob` / `CAN_CLOSE_JOB`** | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **`canManageUsers` / `CAN_MANAGE_USERS`** | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **`canManageMasters` / `CAN_MANAGE_MASTERS`** | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **`canApproveRework`** | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| **`canDoQC` / `CAN_PERFORM_QC`** | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| **`canReleasePieces` / `CAN_RELEASE_QC`** | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| **`canManageInventory` / `CAN_MANAGE_INVENTORY`** | ❌ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| **`canMonitorDispatch` / `CAN_MONITOR_DISPATCH`** | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| **`canApproveDispatch` / `CAN_APPROVE_DISPATCH`** | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| **`canExecuteDispatch` / `CAN_EXECUTE_DISPATCH`** | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ |
+| **`canPack` / `CAN_CREATE_CARTON`** | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| **`canViewReports` / `CAN_VIEW_EXECUTIVE_REPORTS`** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ❌ |
 
 ---
 
 ## Operational & Quality Separation Safeguards
 
 1. **Factory Manager Separation of Duties**:
-   - Factory Manager can view barcode and bundle details (`CAN_LOOKUP_BARCODE`) and monitor/approve dispatch (`CAN_MONITOR_DISPATCH`, `CAN_APPROVE_DISPATCH`), **but cannot perform routine production scan transactions (`CAN_SCAN_PRODUCTION`) or execute physical dispatch (`CAN_EXECUTE_DISPATCH`)**.
-   - Store / Dispatch Staff execute physical dispatch transactions (`CAN_EXECUTE_DISPATCH`).
+   - Factory Manager has `canLookupBarcode: true`, `canMonitorDispatch: true`, and `canApproveDispatch: true`, **but `canScan: false`, `canScanProduction: false`, and `canExecuteDispatch: false`**.
+   - Store / Dispatch Staff execute physical dispatch transactions (`canExecuteDispatch: true`).
+   - `FactoryScopeGuard` blocks Factory Managers from accessing another factory's endpoints (HTTP 403).
 
 2. **Independent QC Release**:
-   - Factory Managers and Supervisors can view QC metrics, but **cannot approve, alter, or release QC inspections**.
-   - Only the **QC Inspector** role has `CAN_RELEASE_QC` permissions.
+   - Factory Managers and Supervisors can view QC metrics, but **cannot perform or release QC inspections** (`canDoQC: false`, `canReleasePieces: false`).
+   - Only the **QC Inspector** role has `canDoQC: true` and `canReleasePieces: true`.
 
 3. **Packing Bounded by QC Release**:
-   - Packing staff can only pack quantities that have a recorded `QC Passed` / `Released` status.
+   - Packing staff (`canPack: true`) can only allocate quantities that have a recorded `QC Passed` / `Released` status.

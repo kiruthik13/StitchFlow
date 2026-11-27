@@ -1,39 +1,55 @@
-# StitchFlow completion report
+# StitchFlow — Testing & Verification Report
 
-## Delivered in this increment
+**Test Execution Date:** 2026-11-27  
+**Git Commit:** `7b78455` (code unchanged since `e583aab` / `a8d1991`)  
+**Environment:** Windows (local workstation), Node.js, TypeScript 6.0 (frontend), NestJS 10 / Jest 29 (backend)
 
-| Requested area | Local implementation |
-| --- | --- |
-| Raw-material inventory | Material catalog, referenced receipts/issues, ledger-derived balances, physical counts, and separately approved stock adjustments. Store screens are connected for these flows. Counts with a stale book balance require a recount. |
-| Inter-factory transfers | Source stock moves into transit. Independent destination employees receive the matching quantity or record discrepancies. An original sender can confirm a full physical return to credit the source. Both sides are scoped to the same organization. |
-| Partial stage output | Scanner accepts explicit quantities. Each entry is capped by confirmed earlier input minus recorded output at that step. Retry IDs protect repeated requests. QC opens when the full configured terminal route is complete. |
-| Shipment manifests | One or more Store-received cartons are grouped with carrier, vehicle, seal and destination. A separate Factory Manager approves, then Store executes and receives a gate-pass reference. An individual carton cannot be dispatched twice or belong to two manifests. |
-| Dashboards and reports | All seven role dashboards now read scoped production metrics in real sessions. Existing demo content remains limited to demo sessions on these dashboards. The reports tab shows paged job records and shares CSV content capped at 1,000 rows per share. |
-| Offline synchronization | Authenticated production replay endpoint handles cutting and stage events and reports individual confirmed, conflict, rejected or retry outcomes. The original client time is stored separately. No durable mobile SQLite queue is enabled. |
+---
 
-The update builds on the earlier local job, QC, packing, dispatch, and Realtime integration. The new migrations and source are included for review.
+## 1. Executed Automated Checks (2026-11-27)
 
-## Verification actually performed
+| Check | Command | Result | Details |
+|---|---|---|---|
+| **Frontend TypeScript** | `npm run ts-check` (`tsc --noEmit`) | **PASSED** (exit 0) | 0 type errors across `app/` and `src/` |
+| **Backend Build** | `cd backend && npm run build` (`nest build`) | **PASSED** (exit 0) | Clean NestJS compilation |
+| **Backend Unit & Security Suites** | `cd backend && npm test -- --runInBand` | **PASSED** (exit 0) | **17/17 suites passed, 79/79 tests passed** in `39.409 s` |
 
-| Check | Result |
-| --- | --- |
-| NestJS build | Passed |
-| Backend Jest | 60 tests passed across 10 suites |
-| Frontend TypeScript | Passed |
-| NestJS startup and OpenAPI route smoke check | Passed. Checked 34 API route registrations plus storage route ordering, with live credentials unset. |
-| ZIP | Credential-pattern scan and archive integrity passed. Actual env files and build outputs were excluded. |
-| Live PostgreSQL, Supabase Auth, Storage, Realtime and Redis | Not executed in this increment. No live migration or deployment was performed. |
-| Android, camera, keyboard-wedge devices and printer | Not tested. |
-| Lint | The existing frontend command lacks an ESLint configuration. No backend lint script is defined. |
+### Executed Backend Jest Suites (17 Suites / 79 Tests)
+1. `test/phase1-security.spec.ts` — Auth guards, RBAC, `FactoryScopeGuard`
+2. `test/e2e-app-smoke.spec.ts` — Full `AppModule` OpenAPI route smoke check
+3. `test/phase2-completion.spec.ts` — Draft approvals, bundles, barcodes, tag reprints
+4. `test/quality-evidence.spec.ts` — POM measurements & private photo evidence
+5. `test/phase3-completion.spec.ts` — Production issues & work assignments
+6. `test/stock-shipment-report.spec.ts` — Raw stock, shipments, reports
+7. `test/cutting-output.spec.ts` — Idempotent cutting output bounds
+8. `test/job-closing-and-recovery.spec.ts` — Job close reconciliation & discrepancy returns
+9. `test/phase4-completion.spec.ts` — Inline QC audits & quality queues
+10. `test/phase5-completion.spec.ts` — Partial loss & gate-pass flows
+11. `test/phase6-completion.spec.ts` — SAM, workforce, bottlenecks, delivery prediction
+12. `test/cutting-scenario.spec.ts` — What-if cutting capacity simulation
+13. `test/cut-stock.spec.ts` — Cut-stock Output In/Out handovers
+14. `test/jobs.spec.ts` — Job creation, status transitions, factory scope
+15. `test/routed-workflow.spec.ts` — Route setup, stage completion, QC, packing, dispatch
+16. `test/employee-enrollment.spec.ts` — Pre-enrolled roster registration & approval
+17. `test/document-export.spec.ts` — CSV/PDF/XLS export & formula escaping
 
-Unit tests use mocked database access to exercise authorization, quantity bounds, stock discrepancies, replay ownership and failure handling, and export escaping. The Nest startup check does not execute migration SQL or prove that a production database accepts or isolates the workflows.
+> **Test Scope Note**: Backend Jest suites use mocked database/Supabase/Redis dependencies to verify business rules, authorization, quantity bounds, and error codes deterministically without mutating live production data.
 
-## Blockers and limits
+---
 
-- Expo SQLite network installation was previously denied by the workspace and escalation policy. The offline retry specifically returned ENOTCACHED. The mobile queue remains blocked until the compatible package and a native build are available.
-- Run the versioned migrations in an isolated PostgreSQL/Supabase environment and verify database concurrency, auth, Realtime policy isolation, and file access. Live project changes require separate review and approval.
-- Android and physical hardware verification remain pending. Actual factory routes and employee assignments must be configured before production use.
-- Store and manifest forms use the employee's primary factory and bounded result sets. CSV export is paged and does not include PDF or printed gate-pass output. Partial loss recovery is outside the raw transfer return flow.
-- Wider master-plan items still pending include specialized factory masters, persisted SAM/workforce planning, intermediate QC variants, calendar-based delivery prediction, and the remaining legacy operational screen bindings. The connected dashboards and reports do not claim these unimplemented metrics.
+## 2. Earlier Live API Verification (Commit `e583aab`)
 
-Setup and API details are in docs/deployment-guide.md, docs/api-contracts.md, and docs/production-workflow.md.
+- **Multi-Factory E2E API Checks**: **6/6 checks passed** against the backend (MD factory list, two factory hierarchies, line detail, FM cross-factory 403 block, malformed UUID 400 rejection).
+
+---
+
+## 3. Unexecuted & Pending Verification
+
+| Test / Check | Status | Reason |
+|---|---|---|
+| **ESLint (`npm run lint`)** | **NOT EXECUTED** | No ESLint configuration file in root; no `lint` script in `backend/package.json`. |
+| **Physical Android APK Device Test** | **NOT EXECUTED** | Requires physical Android device install from EAS preview APK. |
+| **Camera & Torch Barcode Scan** | **NOT EXECUTED** | Requires physical device camera + printed QR/Code-128 tags. |
+| **USB/Bluetooth HID Wedge Scanner** | **NOT EXECUTED** | Requires physical HID scanner hardware with `\r`/`\n` suffix. |
+| **Thermal Tag Printer (ZPL/TSPL)** | **NOT EXECUTED** | Requires physical Zebra/TSC printer or Print Bridge / RawBT target. |
+| **Offline Airplane-Mode Replay (Device)** | **NOT EXECUTED** | Requires physical device offline toggle + `AsyncStorage` queue replay test. |

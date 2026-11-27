@@ -21,3 +21,16 @@ This repository hosts **StitchFlow**, a mobile-only React Native + Expo applicat
    - Maintain the standard QC equation: `Inspected (200) = Passed (180) + Rework (15) + Rejected (5)`.
    - Never release more than the passed quantity (180).
    - Use `useDemoStore` for mutable user actions during demo flows.
+
+## Continuous Documentation Maintenance Checklist
+
+Whenever functionality, routes, API endpoints, permissions, or design tokens change, update the corresponding documentation before merging:
+
+- [ ] Source code implemented and verified (`npm run ts-check`, `cd backend && npm run build && npm test`)
+- [ ] Tests added or updated for new behavior or bug fixes
+- [ ] `docs/implementation-status.md` updated
+- [ ] `docs/requirement-traceability.md` updated
+- [ ] `docs/known-limitations.md` and `docs/pending-implementation.md` updated
+- [ ] `docs/api-contracts.md` and `docs/frontend-backend-mapping.md` updated (if endpoints changed)
+- [ ] `docs/frontend-route-inventory.md` and `docs/screens.md` updated (if routes/screens changed)
+- [ ] Security & RBAC implications reviewed against `docs/security-model.md` and `docs/permissions.md`

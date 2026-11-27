@@ -1,77 +1,88 @@
 # StitchFlow Architecture
 
+**Last Verified:** 2026-11-27  
+**Source of Truth:** [package.json](file:///c:/Users/Kathik/Downloads/StitchFlow-main/package.json), [app.json](file:///c:/Users/Kathik/Downloads/StitchFlow-main/app.json), [app/](file:///c:/Users/Kathik/Downloads/StitchFlow-main/app), and [src/](file:///c:/Users/Kathik/Downloads/StitchFlow-main/src).
+
 StitchFlow is an Android-first, mobile-only production monitoring and rework-aware bottleneck optimization application designed specifically for garment manufacturing environments.
 
 ## 1. High-Level Architectural Principles
 
-- **Mobile-First & Tactile**: Built strictly for mobile handheld usage on the factory floor (narrow 360dp devices up to modern tablets/rugged scanners).
-- **Separation of Concerns**: Feature-first structure with centralized core configurations, typed design system tokens, and unified state stores.
-- **Backend-Agnostic UI**: All data access is mediated through typed TypeScript interfaces, Zustand state stores, and TanStack Query query clients, allowing seamless transition to NestJS REST APIs and Supabase PostgreSQL in the next phase.
-- **Multilingual Support (i18n)**: Instant runtime switching between English (`en`), Tamil (`ta`), and Hindi (`hi`) across all UI strings, alerts, and instructions.
-- **Strict Role-Based Access Control (RBAC)**: Supports 7 distinct factory roles from a single unified codebase with dynamic navigation and permission gates.
+- **Mobile-Only Industrial Design**: Built strictly for mobile handheld usage on the factory floor (portrait orientation, minimum 44 × 44 pt touch targets, no desktop grids or sidebars).
+- **Separation of Concerns**: Feature-first structure with centralized design system tokens (`src/design-system/tokens/`), typed repositories (`src/services/repositories/`), and Zustand + TanStack Query state management.
+- **Dual-Mode Operation**: Supports **Live Mode** (`EXPO_PUBLIC_DEMO_MODE=false`, backed by NestJS + Supabase + Upstash Redis) and **Demo Mode** (`EXPO_PUBLIC_DEMO_MODE=true`, backed by `useDemoStore` and `src/fixtures/`).
+- **Multilingual Support (i18n)**: Runtime localization via `react-i18next` across English (`en`), Tamil (`ta`), and Hindi (`hi`).
+- **Strict Role-Based Access Control (RBAC)**: Supports 7 distinct factory roles from a single unified codebase with server-enforced guards and client-side permission checks.
 
 ---
 
 ## 2. Directory Structure
 
 ```text
-StitchFlow/
-|-- app/                            # Expo Router file-based navigation
-|   |-- _layout.tsx                 # Root layout (Theme, Auth, QueryClient, Gestures)
-|   |-- index.tsx                   # Auth & startup router redirect
-|   |-- (auth)/                     # Authentication & onboarding stack
-|   |   |-- _layout.tsx
-|   |   |-- language-selection.tsx  # First-launch language selection
-|   |   |-- login.tsx               # Login screen + 7-role demo picker
-|   |   |-- register.tsx            # Factory user registration
-|   |   |-- forgot-password.tsx     # Password recovery
-|   |-- (app)/                      # Authenticated application shell
-|       |-- _layout.tsx             # Auth guard
-|       |-- (tabs)/                 # Main bottom tabs
-|       |   |-- _layout.tsx         # Role-aware tab bar
-|       |   |-- index.tsx           # Dispatches to 7 role dashboards
-|       |   |-- work.tsx            # Role-specific daily worklists
-|       |   |-- scan.tsx            # Universal camera & manual barcode scanner
-|       |   |-- reports.tsx         # Stage matrix, QC, & efficiency metrics
-|       |   |-- settings.tsx        # Profile, language, theme, and notifications
-|       |-- jobs/                   # Job master list & detail screens
-|       |-- bundles/                # Garment hang-tag bundle detail screen
-|       |-- inspections/            # Multi-tier QC inspection & defect logging
-|       |-- cartons/                # Carton packaging & shipping label preview
-|       |-- operations/             # Operation step completion screens
-|
-|-- src/
-|   |-- core/                       # Core configurations, types & permission matrix
-|   |   |-- types/                  # Typed interfaces for jobs, bundles, users, etc.
-|   |   |-- permissions/            # RBAC permissions matrix for all 7 roles
-|   |-- design-system/              # Centralized tactile dual-theme industrial design system
-|   |   |-- tokens/                 # Light (Daylight Stone), Dark (Matte Obsidian), typography, spacing, radii
-|   |   |-- components/             # 19 reusable tactile industrial UI components
-|   |-- store/                      # Zustand state stores (auth, theme, language, demo mutations)
-|   |-- fixtures/                   # Realistic factory mock datasets with verified QC math
-|   |-- i18n/                       # i18next configuration & JSON translation dictionaries
-|
-|-- assets/                         # Splash screens, app icons, and fonts
-|-- docs/                           # System documentation
-|-- package.json
-|-- tsconfig.json
+StitchFlow-main/
+├── app/                            # Expo Router v3 file-based navigation
+│   ├── _layout.tsx                 # Root layout (Theme, Auth, QueryClient, Gestures)
+│   ├── index.tsx                   # Auth & startup router redirect
+│   ├── (auth)/                     # Authentication & onboarding stack
+│   │   ├── _layout.tsx
+│   │   ├── language-selection.tsx  # Language selection
+│   │   ├── login.tsx               # Live email/password + 7-role demo switcher
+│   │   ├── register.tsx            # Roster-matched employee registration
+│   │   └── forgot-password.tsx     # Password recovery
+│   └── (app)/                      # Authenticated application shell
+│       ├── _layout.tsx             # Auth guard
+│       ├── (tabs)/                 # Main 5-tab bottom navigator
+│       ├── approvals/              # Draft job approval queue
+│       ├── bundles/                # Bundle hang-tag detail & reprint
+│       ├── cartons/                # Carton creation & label/seal preview
+│       ├── inspections/            # Inline, endline, measurement, photo, reinspection
+│       ├── jobs/                   # Job list, create, detail & route setup
+│       ├── management/             # User roster/approvals & tag print queue
+│       ├── masters/                # Buyers, styles, lines, locations, stages
+│       ├── md/                     # MD factory/[id] (6-tab), line/[id], bottlenecks, sam-efficiency
+│       ├── operations/             # Cutting, sewing, kaja, ironing, stock movements, issues
+│       ├── packing/                # Store handover & packing history
+│       ├── planning/               # SAM entry & workforce planning
+│       └── store/                  # GRN, transfers, locations, stock-count, dispatch
+│
+├── src/
+│   ├── core/                       # Types (`src/core/types/`), permissions (`src/core/permissions/`)
+│   ├── design-system/              # Industrial Royal Blue tokens (`light.ts`, `dark.ts`), shared & dashboard components
+│   ├── features/operations/        # `useLiveDashboardData.ts` unified role dashboard hook
+│   ├── fixtures/                   # Demo datasets with reconciled QC equations
+│   ├── hooks/                      # Shared React hooks
+│   ├── i18n/                       # `en.json`, `ta.json`, `hi.json`
+│   ├── roles/                      # 7 role dashboard components
+│   ├── services/
+│   │   ├── adapters/               # `hidScannerAdapter.ts`
+│   │   ├── api/                    # `apiClient.ts`, `useFactoryUpdates.ts`
+│   │   ├── offline/                # `offlineQueueService.ts` (AsyncStorage queue)
+│   │   ├── printer/                # `thermalPrinterService.ts` (ZPL/TSPL bridge & share)
+│   │   └── repositories/           # `bundleRepository`, `inventoryRepository`, `jobRepository`, `masterRepository`, `qcRepository`
+│   ├── store/                      # `authStore`, `themeStore`, `languageStore`, `demoStore`
+│   └── utils/                      # Formatting & barcode utilities
+│
+├── backend/                        # NestJS REST API (`/api/v1/`)
+├── supabase/migrations/            # 22 SQL migrations (`202611260001` – `202611260022`)
+├── docs/                           # System documentation
+├── AGENTS.md                       # Engineering & documentation guidelines
+├── eas.json                        # EAS Build profiles (development, preview, production)
+├── app.json                        # Expo SDK 58 configuration
+└── package.json
 ```
 
 ---
 
 ## 3. State Management
 
-- **`useAuthStore`**: Stores active `User`, authentication status, demo mode flag, and demo role switcher.
-- **`useThemeStore`**: Controls `light` (Daylight Stone) vs `dark` (Matte Obsidian) themes, applying tokens instantly and persisting selection in `@react-native-async-storage/async-storage`.
-- **`useLanguageStore`**: Manages i18n language selection (`en`, `ta`, `hi`) with persistent storage.
-- **`useDemoStore`**: Maintains in-memory reactive state for bundles, jobs, cartons, inspections, and recent scans to support full interactive offline testing.
+- **`useAuthStore`**: Stores active `User`, JWT session, demo mode flag, and role metadata.
+- **`useThemeStore`**: Controls `light` vs `dark` themes, applying Industrial Royal Blue tokens and persisting via `AsyncStorage`.
+- **`useLanguageStore`**: Manages `i18next` locale (`en`, `ta`, `hi`) with persistent storage.
+- **`useDemoStore`**: Maintains reactive in-memory state for demo mode (`EXPO_PUBLIC_DEMO_MODE=true`).
 
 ---
 
-## 4. Universal Scanner Integration
+## 4. Universal Scanner & Offline Integration
 
-The scanner module (`app/(app)/(tabs)/scan.tsx`) provides:
-1. Native camera scanning using `expo-camera` supporting QR, Code 128, Code 39, EAN-13, ITF, etc.
-2. Torch control and manual input fallback for factory environments with low light or degraded barcodes.
-3. Interactive demo scan shortcut (e.g., `BND-00521`) to demonstrate end-to-end scanning, stage resolution, quantity verification, and stage progression without requiring physical barcodes.
-4. Scan history log with timestamps and status indicators.
+- **Camera & Manual Input ([app/(app)/(tabs)/scan.tsx](file:///c:/Users/Kathik/Downloads/StitchFlow-main/app/(app)/(tabs)/scan.tsx))**: Uses `expo-camera` for QR/Code-128/Code-39/EAN-13 scanning with torch toggle and manual barcode lookup (`POST /api/v1/barcodes/resolve`).
+- **HID Keyboard-Wedge Adapter ([hidScannerAdapter.ts](file:///c:/Users/Kathik/Downloads/StitchFlow-main/src/services/adapters/hidScannerAdapter.ts))**: Captures USB/Bluetooth HID scanner input terminated by Enter.
+- **Offline Queue ([offlineQueueService.ts](file:///c:/Users/Kathik/Downloads/StitchFlow-main/src/services/offline/offlineQueueService.ts))**: Queues `cutting` and `stage` events in `AsyncStorage` when offline and replays them to `POST /api/v1/sync/production`.

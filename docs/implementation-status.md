@@ -1,139 +1,62 @@
 # Implementation Status
 
-**Last Updated:** 2026-11-24  
-**Build:** 1.0.0 Mobile UI and Partial Backend  
-**Status:** Frontend demo with local auth and partial job backend. Live database and end-to-end verification pending.
+**Last Verified:** 2026-11-27  
+**Build:** 1.0.0 (Expo SDK 58 + NestJS 10)  
+**Latest Verified Code Commit:** `7b78455` (preceded by `e583aab` dashboard/multi-factory & `a8d1991` language revert)
 
 ---
 
-## Legend
-- ✅ **Real** — Fully implemented with working UI, design tokens, and state
-- 🟡 **Mocked** — UI complete, uses realistic typed mock repositories and Zustand store
-- 🔒 **Truthful Demo Disabled** — Hardware-dependent features (physical thermal printing, server-side PDF exports) clearly communicated with truthful notices
+## Status Classification Legend
+- **IMPLEMENTED AND VERIFIED** — Implemented in source code and verified via automated tests or live API checks.
+- **IMPLEMENTED BUT NOT VERIFIED** — Implemented in source code; awaiting live DB/deployed verification or physical hardware test.
+- **PARTIALLY IMPLEMENTED** — Core path exists, but specific sub-features or edge cases remain open.
+- **NOT IMPLEMENTED** — Not built in the current codebase.
+- **BLOCKED** — Blocked by external dependencies, hardware, or environment constraints.
 
 ---
 
-## Foundation & Architecture
+## 1. Platform Summary
 
-| Module | Status | Notes |
-|---|:---:|---|
-| Expo Router setup | ✅ | File-based routing with slide animations |
-| TypeScript strict mode | ✅ | Zero type errors, typed interfaces |
-| Design tokens (Light - Daylight Stone) | ✅ | Industrial daylight palette (Default) |
-| Design tokens (Dark - Matte Obsidian) | ✅ | Industrial matte obsidian palette |
-| Theme persistence | ✅ | Immediate toggle with AsyncStorage |
-| i18n Localization (en / ta / hi) | ✅ | 8 namespaces, instant switching, persisted |
-| State Management | ✅ | Zustand (auth, theme, language, demo) |
-| Service Layer & Repositories | ✅ | `IJobRepository`, `IBundleRepository`, `IQCRepository`, `IInventoryRepository`, `IMasterRepository` |
-| HID Barcode Scanner Adapter | ✅ | External USB/Bluetooth keyboard-wedge scanner adapter interface |
-| Permissions Matrix | ✅ | 7 Roles × 14 granular permissions |
-
----
-
-## Design System Components (All 20 Implemented)
-
-| Component | Status | Notes |
-|---|:---:|---|
-| `AppText` | ✅ | Semantic variants, tabular numbers, font scales |
-| `AppButton` | ✅ | Primary, secondary, outline, danger, ghost |
-| `AppCard` | ✅ | Hairline industrial border, elevation |
-| `AppInput` | ✅ | Label, error, focus state, numeric handling |
-| `AppHeader` | ✅ | Back action, title, subtitle, right accessories |
-| `StatusBadge` | ✅ | Standard factory status variants |
-| `MetricCard` | ✅ | Compact and large KPI layouts |
-| `ShiftProgressCard` | ✅ | Segmented progress, pace badge (pcs/hr) |
-| `GarmentTicketCard` | ✅ | Physical hang-tag, punch notches, tear line |
-| `QuickOperationsGrid` | ✅ | Industrial grid layout, min 44x44pt touch targets |
-| `BottomScanAction` | ✅ | Thumb-accessible bottom action |
-| `SearchField` | ✅ | Clean input with clear action |
-| `FilterBar` | ✅ | Segmented filter controls |
-| `QuantityStepper` | ✅ | Industrial stepper with rapid increment |
-| `BarcodeResultCard` | ✅ | Barcode and QR decoded preview card |
-| `EmptyState` | ✅ | Empty list handling |
-| `LoadingState` | ✅ | Restrained loading indicator |
-| `ConfirmSheet` | ✅ | Two-step action confirmation sheet |
-| `LanguageSwitcher` | ✅ | 3-Language quick switcher |
-| `ThemeSelector` | ✅ | Dual-theme switcher |
+| Area | Status | Evidence & Notes |
+|---|---|---|
+| **Frontend Mobile App** | **IMPLEMENTED AND VERIFIED** | Expo SDK 58, Expo Router v3, TypeScript (`npm run ts-check` → 0 errors). Portrait industrial UI with Light/Dark Industrial Royal Blue tokens. |
+| **Backend REST API** | **IMPLEMENTED AND VERIFIED** | NestJS 10 (`/api/v1/`), `nest build` → 0 errors, `17/17` Jest suites (`79/79` tests pass). |
+| **Database Migrations** | **IMPLEMENTED BUT NOT VERIFIED (Full Suite)** | 22 SQL migrations (`202611260001`–`202611260022`) exist in `supabase/migrations/`. Remote Supabase has live operational records, though physical-device E2E across all 22 migrations remains pending. |
+| **Seven Role Dashboards** | **IMPLEMENTED AND VERIFIED** | `MDDashboard`, `FMDashboard`, `SupervisorDashboard`, `OperatorDashboard`, `QCDashboard`, `StoreDashboard`, `PackingDashboard` redesigned using `src/design-system/components/dashboard/` and `useLiveDashboardData.ts`. |
+| **Multi-Factory Hierarchy** | **IMPLEMENTED AND VERIFIED** | Canonical `app/(app)/md/factory/[id].tsx` (6-tab drilldown), `app/(app)/md/line/[id].tsx`, `GET /factories`, `GET /factories/:id/hierarchy`, `GET /factories/:id/lines/:lineId`. |
+| **Security & RBAC** | **IMPLEMENTED AND VERIFIED** | `JwtAuthGuard`, `PermissionsGuard`, `FactoryScopeGuard` (blocks cross-factory FM access with HTTP 403), immutable `audit_logs`, private QC photo bucket. |
+| **Offline Queue** | **PARTIALLY IMPLEMENTED** | `AsyncStorage` queue (`offlineQueueService.ts`) + `POST /sync/production` replay are implemented. Original `expo-sqlite` queue is **NOT IMPLEMENTED / BLOCKED**. |
+| **Hardware Integrations** | **IMPLEMENTED BUT NOT VERIFIED** | Camera (`expo-camera`), HID keyboard-wedge (`hidScannerAdapter.ts`), and ZPL/TSPL thermal print (`thermalPrinterService.ts`) code exists; **physical device testing not executed**. |
+| **Localization (i18n)** | **IMPLEMENTED AND VERIFIED** | `react-i18next` with `en.json`, `ta.json`, `hi.json`. |
+| **Deployment Config** | **IMPLEMENTED AND VERIFIED** | `eas.json` (`preview` APK, `production` AAB pointing to Railway URL with `EXPO_PUBLIC_DEMO_MODE=false`); Railway auto-deploys from `main`. |
 
 ---
 
-## Role Dashboards & Work Views (Modularized in `src/roles/`)
+## 2. Design System & Shared Components
 
-| Role | Dashboard | Work View | Status |
-|---|:---:|:---:|:---:|
-| Managing Director (MD) | ✅ | ✅ | Multi-factory, executive alerts, risk jobs |
-| Factory Manager (FM) | ✅ | ✅ | Shift progress, quick operations, job list |
-| Supervisor | ✅ | ✅ | Shift KPIs, bottleneck banner, line bundles |
-| Operator | ✅ | ✅ | My output, current ticket, station entries |
-| QC Inspector | ✅ | ✅ | Inspection queue, today's summary, rework |
-| Store / Dispatch | ✅ | ✅ | Low stock alerts, movements, FG cartons |
-| Packing Staff | ✅ | ✅ | Hang-tag ticket, QC release note, cartons |
+- **Tokens**: `light.ts` (`#4469B1` brand, `#F4F6F9` bg) and `dark.ts` (`#87A5E0` brand, `#10151E` bg), `typography.ts`, `spacing.ts`, `radii.ts`, `motion.ts`, `shadows.ts`.
+- **Core UI Components**: 30+ components in `src/design-system/components/` (`AppButton`, `AppCard`, `AppHeader`, `AppInput`, `AppText`, `StatusBadge`, `GarmentTicketCard`, `JobTicketCard`, `QuantityStepper`, `BarcodeResultCard`, `ConfirmSheet`, etc.).
+- **Dashboard Components**: `DashboardCards.tsx`, `DashboardCharts.tsx`, `DashboardHeader.tsx`.
 
 ---
 
-## Specialized Operations & Screen Modules
+## 3. Role-Based Modules
 
-### Factory Manager
-- ✅ Job Index & Filter (`/(app)/jobs/index`)
-- ✅ Create Job Form (`/(app)/jobs/create`)
-- ✅ Job Detail & Production Control (`/(app)/jobs/[id]`) - Hold/Resume/Close safeguards
-- ✅ Master Management Hub (`/(app)/masters/index`) - Buyers, Styles, Lines, Stages, Locations
-- ✅ SAM Planning & Entry (`/(app)/planning/sam-entry`) - Operation breakdown & pace targets
-- ✅ Workforce & Line Strength (`/(app)/planning/workforce`) - Line balancing & absenteeism
-- ✅ User & Role Access Control (`/(app)/management/users`)
-- ✅ Tag Print & Reprint Queue (`/(app)/management/tags`)
-- ✅ Factory Authorizations & Approvals (`/(app)/approvals/index`)
-
-### Supervisor
-- ✅ Work Assignment (`/(app)/operations/work-assignment`) - Bundle to operator assignment
-- ✅ Tailor Mapping (`/(app)/operations/tailor-mapping`) - Station and machine mapping
-- ✅ SAM Monitoring (`/(app)/operations/sam-monitor`) - Cycle time variance & bottlenecks
-- ✅ Shift Summary & Line Progress
-
-### Operator
-- ✅ Universal Scanner (`/(app)/(tabs)/scan`) - Camera, manual entry, bundle lookup
-- ✅ Cutting Entry (`/(app)/operations/cutting-entry`) - Plies, roll batch, cut pieces
-- ✅ Sewing Out Entry (`/(app)/operations/sewing-entry`) - Bundle output logging
-- ✅ Kaja / Button Entry (`/(app)/operations/kaja-entry`)
-- ✅ Ironing & Thread Trimming Entry (`/(app)/operations/ironing-entry`)
-- ✅ Report Production Issue (`/(app)/operations/report-issue`) - Breakdown & stoppage alerts
-
-### QC Inspector
-- ✅ Bundle QC Inspection Detail (`/(app)/inspections/[id]`) - Defect logging & release flow
-- ✅ Inline QC Roving Audit (`/(app)/inspections/inline`) - In-process station checks
-- ✅ Endline 100% Inspection (`/(app)/inspections/endline`) - Reconciled QC equation check
-- ✅ Measurement Spec Check (`/(app)/inspections/measurement`) - Tolerance POM sheet
-- ✅ Defect Photo Evidence (`/(app)/inspections/photo-evidence`) - Macro defect capture
-- ✅ Reinspection Workflow (`/(app)/inspections/reinspection`) - Secondary release after rework
-
-### Store & Dispatch
-- ✅ Goods Receipt Note (GRN) (`/(app)/store/goods-receipt`) - Supplier inward receiving
-- ✅ Inter-Factory Stock Transfer (`/(app)/store/inter-factory-transfer`) - Dual sender/receiver confirmations
-- ✅ Storage Locations & Racks (`/(app)/store/locations`) - Warehouse occupancy tracking
-- ✅ Physical Stock Audit (`/(app)/store/stock-count`) - Cyclic count reconciliation
-- ✅ Order Dispatch & Freight (`/(app)/store/dispatch`) - Container loading & manifests
-- ✅ Inward / Outward Operational Entries (`input-in`, `input-out`, `output-in`, `output-out`)
-
-### Packing Staff
-- ✅ Hang-Tag Garment Ticket (`GarmentTicketCard`) - Monospaced IDs, tear lines, punch notches
-- ✅ Create Export Carton (`/(app)/cartons/create`) - QC release limit safeguard
-- ✅ Carton Label & Seal Preview (`/(app)/cartons/[id]`) - Barcode label & seal action
-- ✅ Store Handover Slip (`/(app)/packing/handover`) - Transfer to FG warehouse
-- ✅ Packing Audit History (`/(app)/packing/history`)
-
-### Managing Director (MD)
-- ✅ Executive Group Dashboard (`/(app)/(tabs)/`)
-- ✅ Factory Detail Drilldown (`/(app)/md/factory-[id]`)
-- ✅ Bottleneck Analytics & AI Rebalancing (`/(app)/md/bottlenecks`)
-- ✅ SAM Efficiency Benchmarks (`/(app)/md/sam-efficiency`)
+| Role | Dashboard | Work & Operations | Verification Status |
+|---|---|---|---|
+| **Managing Director** | `MDDashboard` | `md/factory/[id]`, `md/line/[id]`, `md/bottlenecks`, `md/sam-efficiency`, `reports` | **IMPLEMENTED AND VERIFIED** (TS + Factory E2E API) |
+| **Factory Manager** | `FMDashboard` | `jobs/*`, `approvals`, `masters`, `management/users`, `management/tags`, `planning/*` | **IMPLEMENTED AND VERIFIED** (TS + Jest + FactoryScope 403 check) |
+| **Supervisor** | `SupervisorDashboard` | `operations/work-assignment`, `tailor-mapping`, `sam-monitor`, `cutting-entry` | **IMPLEMENTED AND VERIFIED** (TS + Jest) |
+| **Operator** | `OperatorDashboard` | `(tabs)/scan`, `bundles/[id]`, `operations/cutting-entry`, `sewing-entry`, `kaja-entry`, `ironing-entry`, `report-issue` | **IMPLEMENTED BUT NOT VERIFIED** (Physical scanner/device pending) |
+| **QC Inspector** | `QCDashboard` | `inspections/[id]`, `inline`, `endline`, `measurement`, `photo-evidence`, `reinspection` | **IMPLEMENTED AND VERIFIED** (TS + Jest QC equation checks) |
+| **Store / Dispatch** | `StoreDashboard` | `store/goods-receipt`, `inter-factory-transfer`, `locations`, `stock-count`, `dispatch`, `operations/input-*`, `output-*` | **IMPLEMENTED AND VERIFIED** (TS + Jest) |
+| **Packing Staff** | `PackingDashboard` | `cartons/create`, `cartons/[id]`, `packing/handover`, `packing/history`, `bundles/[id]` | **IMPLEMENTED AND VERIFIED** (TS + Jest) |
 
 ---
 
-## Logically Consistent Mock QC Equation
+## 4. Remaining Blockers
 
-```
-Inspected (200) = Passed (180) + Rework (15) + Rejected (5)
-Initial Release = 180 pieces only (Never 200)
-Reinspection = 15 rework pieces audited -> secondary release authorized
-```
-All QC releases and carton creation flows strictly enforce this rule across the application.
+1. **Physical Android Device & Hardware Testing**: Camera/torch scan, USB/Bluetooth HID scanner, ZPL/TSPL thermal printer, and offline airplane-mode replay have not been verified on physical hardware.
+2. **Expo SQLite Offline Queue**: `expo-sqlite` is not installed; `AsyncStorage` is the active fallback.
+3. **ESLint Tooling**: Root `npm run lint` has no ESLint config file; backend has no lint script.
+4. **Minor Functional Gaps**: Storage location deactivation toggle, post-save job route editing, partial transfer loss recovery, and automated cleanup of orphaned QC photos on SQL rollback. See [pending-implementation.md](file:///c:/Users/Kathik/Downloads/StitchFlow-main/docs/pending-implementation.md).
