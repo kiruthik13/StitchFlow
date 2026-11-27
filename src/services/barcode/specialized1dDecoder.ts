@@ -100,7 +100,7 @@ export function extractRunLengths(line: Uint8Array): RunLength[] {
     if (isBar === currentBar) {
       len++;
     } else {
-      runs.push({ isBar, length: len });
+      runs.push({ isBar: currentBar, length: len });
       currentBar = isBar;
       len = 1;
     }
@@ -173,11 +173,12 @@ export function decodeCode11Runs(rawRuns: RunLength[]): SpecializedDecodeResult 
     if (chars[0] !== '*' || chars[chars.length - 1] !== '*' || chars.length < 3) return null;
     const inner = chars.slice(1, -1).join('');
     const check = verifyCode11Checksum(inner);
+    if (!check.valid) return null;
     return {
       decoded: true,
       symbology: 'CODE_11',
-      value: check.valid ? check.data : inner,
-      checksumValid: check.valid,
+      value: check.data,
+      checksumValid: true,
       decoder: 'stitchflow-1d-cv',
     };
   };
@@ -196,6 +197,8 @@ export function verifyMsiMod10(digits: string): { valid: boolean; data: string }
   if (!/^\d{2,}$/.test(digits)) return { valid: false, data: digits };
   const data = digits.slice(0, -1);
   const check = Number(digits[digits.length - 1]);
+
+  // Standard MSI Mod-10 (right-to-left odd digits)
   let oddStr = '';
   let evenSum = 0;
   for (let i = data.length - 1, pos = 0; i >= 0; i--, pos++) {
@@ -205,8 +208,21 @@ export function verifyMsiMod10(digits: string): { valid: boolean; data: string }
   const doubled = String(Number(oddStr || '0') * 2);
   let oddSum = 0;
   for (const ch of doubled) oddSum += Number(ch);
-  const expected = (10 - ((oddSum + evenSum) % 10)) % 10;
-  return { valid: expected === check, data };
+  const expectedRtl = (10 - ((oddSum + evenSum) % 10)) % 10;
+  if (expectedRtl === check) return { valid: true, data };
+
+  // Luhn-style MSI Mod-10 (e.g. BWIPP default)
+  let luhnSum = 0;
+  for (let i = data.length - 1, pos = 0; i >= 0; i--, pos++) {
+    let n = Number(data[i]);
+    if (pos % 2 === 1) {
+      n *= 2;
+      if (n > 9) n -= 9;
+    }
+    luhnSum += n;
+  }
+  const expectedLuhn = (10 - (luhnSum % 10)) % 10;
+  return { valid: expectedLuhn === check, data };
 }
 
 export function decodeMsiRuns(rawRuns: RunLength[]): SpecializedDecodeResult | null {
@@ -214,14 +230,17 @@ export function decodeMsiRuns(rawRuns: RunLength[]): SpecializedDecodeResult | n
   // Start (2 runs: 1 bar, 1 space) + N*8 runs (4 bits * 2 runs) + Stop (3 runs: B S B)
   if (runs.length < 13 || (runs.length - 5) % 8 !== 0) return null;
 
-  const avg = runs.reduce((s, r) => s + r.length, 0) / runs.length;
-  const isWide = (r: RunLength) => r.length > avg * 1.35;
+  const minLen = Math.min(...runs.map((r) => r.length));
+  const maxLen = Math.max(...runs.map((r) => r.length));
+  if (maxLen < minLen * 1.4) return null;
+  const threshold = (minLen + maxLen) / 2;
+  const isWide = (r: RunLength) => r.length > threshold;
 
   // Start: wide bar, narrow space
   if (!isWide(runs[0]) || isWide(runs[1])) return null;
-  // Stop: narrow bar, narrow space, narrow bar
+  // Stop: narrow bar, wide space, narrow bar
   const n = runs.length;
-  if (isWide(runs[n - 3]) || isWide(runs[n - 2]) || isWide(runs[n - 1])) return null;
+  if (isWide(runs[n - 3]) || !isWide(runs[n - 2]) || isWide(runs[n - 1])) return null;
 
   let digits = '';
   for (let i = 2; i < n - 3; i += 8) {
@@ -240,11 +259,12 @@ export function decodeMsiRuns(rawRuns: RunLength[]): SpecializedDecodeResult | n
   }
 
   const check = verifyMsiMod10(digits);
+  if (!check.valid) return null;
   return {
     decoded: true,
     symbology: 'MSI',
-    value: check.valid ? check.data : digits,
-    checksumValid: check.valid,
+    value: check.data,
+    checksumValid: true,
     orientation: 'forward',
     decoder: 'stitchflow-1d-cv',
   };
@@ -395,6 +415,7 @@ export function decodeSpecializedFromGrayscale(
   gray: Uint8Array,
   width: number,
   height: number,
+  options?: { allowPharmacode?: boolean },
 ): SpecializedDecodeResult {
   const rowFractions = [0.5, 0.4, 0.6, 0.3, 0.7];
   let bestBlur = 0;
@@ -411,7 +432,7 @@ export function decodeSpecializedFromGrayscale(
       decodeCode11Runs(runs) ??
       decodeMsiRuns(runs) ??
       decodeIndustrial2Of5Runs(runs) ??
-      decodePharmacode1TrackRuns(runs);
+      (options?.allowPharmacode ? decodePharmacode1TrackRuns(runs) : null);
 
     if (match) {
       return { ...match, blurScore: Math.round(blur * 10) / 10 };

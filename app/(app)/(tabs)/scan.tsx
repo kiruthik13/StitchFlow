@@ -18,6 +18,7 @@ import { BundleDutyPanel } from '../../../src/features/operations/BundleDutyPane
 import { ApiError, apiRequest } from '../../../src/services/api/apiClient';
 import { hidScannerAdapter, validateBarcodeFormat } from '../../../src/services/adapters/hidScannerAdapter';
 import { ProcessedBarcode, ScannerInputSource } from '../../../src/services/barcode/barcodeProcessor';
+import { decodeCapturedCameraFrame } from '../../../src/services/barcode/cameraFrameDecoder';
 import { useScanInput } from '../../../src/hooks/useScanInput';
 import * as Haptics from 'expo-haptics';
 import {
@@ -99,6 +100,7 @@ export default function ScanTabScreen() {
   const [busy, setBusy] = useState(false);
   const [hidConnected, setHidConnected] = useState(hidScannerAdapter.isHardwareConnected);
   const inFlight = useRef(false);
+  const cameraRef = useRef<CameraView>(null);
 
   const { handleKeyInput } = useScanInput((scannedCode) => {
     setHidConnected(true);
@@ -131,6 +133,28 @@ export default function ScanTabScreen() {
     });
     return () => sub.remove();
   }, []);
+
+  const scanExtendedFrame = async () => {
+    if (!cameraRef.current || busy) return;
+    setBusy(true);
+    try {
+      const pic = await cameraRef.current.takePictureAsync({ quality: 0.55, skipProcessing: true });
+      if (!pic?.uri) {
+        Alert.alert(t('errors:scanFailed'), 'Could not capture camera frame');
+        return;
+      }
+      const outcome = await decodeCapturedCameraFrame(pic.uri);
+      if (outcome.decoded && outcome.rawText) {
+        await lookupLive(outcome.rawText, { inputSource: 'camera', expoType: outcome.symbology });
+      } else {
+        Alert.alert(t('common:scanBarcode'), outcome.reason ?? 'No barcode detected in frame');
+      }
+    } catch {
+      Alert.alert(t('errors:scanFailed'));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   const openCamera = async () => {
     const access = permission?.granted ? permission : await requestPermission();
@@ -358,6 +382,7 @@ export default function ScanTabScreen() {
           ]}
         >
           {!isDemoMode && cameraActive && <CameraView
+            ref={cameraRef}
             style={StyleSheet.absoluteFill}
             facing="back"
             enableTorch={torchOn}
@@ -391,6 +416,9 @@ export default function ScanTabScreen() {
 
             {!isDemoMode && !cameraActive && (
               <AppButton title={t('production:openScannerCamera')} onPress={() => void openCamera()} disabled={busy} />
+            )}
+            {!isDemoMode && cameraActive && (
+              <AppButton title="Capture Extended (MicroQR / DataBar)" variant="outline" size="sm" onPress={() => void scanExtendedFrame()} disabled={busy} />
             )}
             {/* Torch Control Button */}
             <TouchableOpacity

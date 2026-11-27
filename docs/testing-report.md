@@ -37,6 +37,14 @@
 
 ---
 
+### Executed Real Image Decoding Results (`bwip-js` Independent PNG Fixtures)
+| Fixture | Symbology | Expected | Actual | Decoder | Exact Match | Latency |
+|---|---|---|---|---|---|---|
+| `TC-22_code11.png` | Code-11 | `12` | `12` (`checksumValid: true`) | `stitchflow-1d-cv` | Yes | `4.81 ms` |
+| `TC-23_msi.png` | MSI / MSI Plessey | `12` | `12` (`checksumValid: true`) | `stitchflow-1d-cv` | Yes | `0.86 ms` |
+| `TC-24_pharmacode.png` | Pharmacode 1-Track | `12` | `12` | `stitchflow-1d-cv` | Yes | `0.75 ms` |
+| `TC-26_industrial2of5.png` | Industrial 2 of 5 | `12` | `12` | `stitchflow-1d-cv` | Yes | `0.42 ms` |
+
 ## 2. Earlier Live API Verification (Commit `e583aab`)
 
 - **Multi-Factory E2E API Checks**: **6/6 checks passed** against the backend (MD factory list, two factory hierarchies, line detail, FM cross-factory 403 block, malformed UUID 400 rejection).

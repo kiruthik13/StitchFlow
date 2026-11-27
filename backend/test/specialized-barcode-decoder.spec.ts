@@ -73,7 +73,7 @@ describe('Specialized 1D Barcode Image & Scanline Decoders', () => {
       ...digit(['0', '0', '0', '1']), // 1
       ...digit(['0', '0', '1', '0']), // 2
       ...digit(['0', '1', '0', '1']), // 5
-      '0', '0', '0', // Stop
+      '0', '1', '0', // Stop (narrow B, wide S, narrow B)
     ];
     const res = decodeMsiRuns(runsFromBitStrings(seq));
     expect(res).toMatchObject({ decoded: true, symbology: 'MSI', value: '12', checksumValid: true });

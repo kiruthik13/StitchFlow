@@ -1,0 +1,251 @@
+[
+  {
+    "id": "TC-01",
+    "bcid": "code128",
+    "text": "BND-00521",
+    "label": "Code-128",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-01_code128.png",
+    "generated": true
+  },
+  {
+    "id": "TC-02",
+    "bcid": "gs1-128",
+    "text": "(01)01234567890128(10)LOT42(21)SER0099",
+    "label": "GS1-128",
+    "tier": "Tier 1 (ML Kit + GS1)",
+    "file": "TC-02_gs1-128.png",
+    "generated": true
+  },
+  {
+    "id": "TC-03",
+    "bcid": "code39",
+    "text": "JOB-1001",
+    "label": "Code-39",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-03_code39.png",
+    "generated": true
+  },
+  {
+    "id": "TC-04",
+    "bcid": "code39ext",
+    "text": "Job/1001-A",
+    "label": "Code-39 Full ASCII",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-04_code39ext.png",
+    "generated": true
+  },
+  {
+    "id": "TC-05",
+    "bcid": "code93",
+    "text": "CTN-00042",
+    "label": "Code-93",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-05_code93.png",
+    "generated": true
+  },
+  {
+    "id": "TC-06",
+    "bcid": "interleaved2of5",
+    "text": "000123456789",
+    "label": "Code 2of5 Interleaved (ITF)",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-06_interleaved2of5.png",
+    "generated": true
+  },
+  {
+    "id": "TC-07",
+    "bcid": "itf14",
+    "text": "00012345678905",
+    "label": "ITF-14",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-07_itf14.png",
+    "generated": true
+  },
+  {
+    "id": "TC-08",
+    "bcid": "ean13",
+    "text": "8901234567890",
+    "label": "EAN-13",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-08_ean13.png",
+    "generated": true
+  },
+  {
+    "id": "TC-09",
+    "bcid": "ean8",
+    "text": "96385074",
+    "label": "EAN-8",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-09_ean8.png",
+    "generated": true
+  },
+  {
+    "id": "TC-10",
+    "bcid": "upca",
+    "text": "012345678905",
+    "label": "UPC-A",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-10_upca.png",
+    "generated": true
+  },
+  {
+    "id": "TC-11",
+    "bcid": "upce",
+    "text": "01234565",
+    "label": "UPC-E",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-11_upce.png",
+    "generated": true
+  },
+  {
+    "id": "TC-12",
+    "bcid": "rationalizedCodabar",
+    "text": "A12345B",
+    "label": "Codabar",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-12_rationalizedCodabar.png",
+    "generated": true
+  },
+  {
+    "id": "TC-13",
+    "bcid": "qrcode",
+    "text": "BND-00521",
+    "label": "QR Code",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-13_qrcode.png",
+    "generated": true
+  },
+  {
+    "id": "TC-14",
+    "bcid": "gs1qrcode",
+    "text": "(00)001234567890123452(21)00042",
+    "label": "GS1 QR Code",
+    "tier": "Tier 1 (ML Kit + GS1)",
+    "generated": false,
+    "error": "bwipp.GS1missingAIs#3967: One of more requisite AIs for AI (21) are missing: 01 OR 03 OR 8006"
+  },
+  {
+    "id": "TC-15",
+    "bcid": "datamatrix",
+    "text": "BND-00522",
+    "label": "Data Matrix",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-15_datamatrix.png",
+    "generated": true
+  },
+  {
+    "id": "TC-16",
+    "bcid": "gs1datamatrix",
+    "text": "(01)01234567890128(17)271127",
+    "label": "GS1 DataMatrix",
+    "tier": "Tier 1 (ML Kit + GS1)",
+    "file": "TC-16_gs1datamatrix.png",
+    "generated": true
+  },
+  {
+    "id": "TC-17",
+    "bcid": "pdf417",
+    "text": "JOB-1001|LOT42|QTY200",
+    "label": "PDF417",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-17_pdf417.png",
+    "generated": true
+  },
+  {
+    "id": "TC-18",
+    "bcid": "azteccode",
+    "text": "LOC-RACK-A1",
+    "label": "Aztec Code",
+    "tier": "Tier 1 (ML Kit)",
+    "file": "TC-18_azteccode.png",
+    "generated": true
+  },
+  {
+    "id": "TC-19",
+    "bcid": "microqrcode",
+    "text": "MQR42",
+    "label": "Micro QR Code",
+    "tier": "Tier 2 (ZXing-C++)",
+    "file": "TC-19_microqrcode.png",
+    "generated": true
+  },
+  {
+    "id": "TC-20",
+    "bcid": "databaromni",
+    "text": "01234567890128",
+    "label": "GS1 DataBar Omnidirectional",
+    "tier": "Tier 2 (ZXing-C++)",
+    "generated": false,
+    "error": "bwipp.databaromniBadLength#11733: GS1 DataBar Omnidirectional must be 13 or 14 digits"
+  },
+  {
+    "id": "TC-21",
+    "bcid": "micropdf417",
+    "text": "MPDF100",
+    "label": "MicroPDF417",
+    "tier": "Unsupported Camera / HID",
+    "file": "TC-21_micropdf417.png",
+    "generated": true
+  },
+  {
+    "id": "TC-22",
+    "bcid": "code11",
+    "text": "12",
+    "label": "Code-11",
+    "tier": "Tier 3 (StitchFlow 1D CV)",
+    "extra": {
+      "includecheck": true
+    },
+    "file": "TC-22_code11.png",
+    "generated": true
+  },
+  {
+    "id": "TC-23",
+    "bcid": "msi",
+    "text": "12",
+    "label": "MSI / MSI Plessey",
+    "tier": "Tier 3 (StitchFlow 1D CV)",
+    "extra": {
+      "includecheck": true
+    },
+    "file": "TC-23_msi.png",
+    "generated": true
+  },
+  {
+    "id": "TC-24",
+    "bcid": "pharmacode",
+    "text": "12",
+    "label": "Pharmacode One-Track",
+    "tier": "Tier 3 (StitchFlow 1D CV)",
+    "file": "TC-24_pharmacode.png",
+    "generated": true
+  },
+  {
+    "id": "TC-25",
+    "bcid": "pharmacode2",
+    "text": "32",
+    "label": "Pharmacode Two-Track",
+    "tier": "Tier 3 (StitchFlow 1D CV)",
+    "file": "TC-25_pharmacode2.png",
+    "generated": true
+  },
+  {
+    "id": "TC-26",
+    "bcid": "industrial2of5",
+    "text": "12",
+    "label": "Industrial / Standard 2 of 5",
+    "tier": "Tier 3 (StitchFlow 1D CV)",
+    "file": "TC-26_industrial2of5.png",
+    "generated": true
+  },
+  {
+    "id": "TC-27",
+    "bcid": "flattermarken",
+    "text": "105",
+    "label": "Flattermarken",
+    "tier": "Tier 3 (StitchFlow 1D CV)",
+    "file": "TC-27_flattermarken.png",
+    "generated": true
+  }
+]
