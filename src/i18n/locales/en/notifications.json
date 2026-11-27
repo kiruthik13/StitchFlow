@@ -1,0 +1,87 @@
+{
+  "unread": "Unread",
+  "actionRequired": "Action Required",
+  "markAllRead": "Mark All Read",
+  "preferences": "Notification Preferences",
+  "inAppAlerts": "In-App Notifications",
+  "mobilePushAlerts": "Mobile Push Notifications",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "earlier": "Earlier",
+  "emptyTitle": "No notifications yet",
+  "categories": {
+    "work_orders": "Work Orders",
+    "production": "Production",
+    "quality": "Quality",
+    "inventory": "Inventory",
+    "packing_dispatch": "Packing & Dispatch",
+    "intelligence": "Intelligence",
+    "admin": "Administration"
+  },
+  "events": {
+    "JOB_APPROVAL_REQUESTED": {
+      "title": "Work Order Approval Needed",
+      "message": "Job {{jobCode}} is awaiting Factory Manager approval."
+    },
+    "JOB_APPROVED": {
+      "title": "Work Order Approved",
+      "message": "Job {{jobCode}} has been approved for production."
+    },
+    "JOB_REJECTED": {
+      "title": "Work Order Rejected",
+      "message": "Job {{jobCode}} was rejected. Review feedback."
+    },
+    "CUTTING_COMPLETED": {
+      "title": "Cutting Output Recorded",
+      "message": "{{quantity}} pcs cut for {{bundleCode}} ({{jobCode}})."
+    },
+    "PRODUCTION_STAGE_COMPLETED": {
+      "title": "Stage Completed",
+      "message": "Bundle {{bundleCode}} completed {{stageCode}} ({{quantity}} pcs)."
+    },
+    "BUNDLE_READY_FOR_NEXT_STAGE": {
+      "title": "Bundle Ready for Next Stage",
+      "message": "Bundle {{bundleCode}} is ready for {{stageCode}}."
+    },
+    "QC_INSPECTION_REQUESTED": {
+      "title": "QC Inspection Required",
+      "message": "Bundle {{bundleCode}} is ready for QC inspection."
+    },
+    "QC_REWORK_REQUESTED": {
+      "title": "Rework Assigned",
+      "message": "{{rework}} pcs on {{bundleCode}} require rework."
+    },
+    "QC_REWORK_COMPLETED": {
+      "title": "Rework Ready for Reinspection",
+      "message": "Rework completed on {{bundleCode}} ({{quantity}} pcs)."
+    },
+    "BUNDLE_READY_FOR_PACKING": {
+      "title": "Ready for Packing",
+      "message": "{{quantity}} QC-released pcs on {{bundleCode}} ready to pack."
+    },
+    "DISPATCH_APPROVAL_REQUESTED": {
+      "title": "Dispatch Approval Needed",
+      "message": "Shipment manifest awaits Factory Manager approval."
+    },
+    "DISPATCH_APPROVED": {
+      "title": "Dispatch Approved",
+      "message": "Shipment approved and ready for Store execution."
+    },
+    "DISPATCH_COMPLETED": {
+      "title": "Dispatch Completed",
+      "message": "Shipment dispatched with gate-pass {{gatePass}}."
+    },
+    "BOTTLENECK_CRITICAL": {
+      "title": "Critical Bottleneck",
+      "message": "{{stage}} on {{lineName}} ({{jobCode}}) needs immediate action."
+    },
+    "BOTTLENECK_WARNING": {
+      "title": "Bottleneck Warning",
+      "message": "{{stage}} on {{lineName}} ({{jobCode}}) is slowing down."
+    },
+    "MACHINE_STOPPAGE_REPORTED": {
+      "title": "Machine Stoppage Reported",
+      "message": "Stoppage reported on {{lineName}}."
+    }
+  }
+}

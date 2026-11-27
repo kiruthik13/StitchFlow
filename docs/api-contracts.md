@@ -89,3 +89,16 @@ All endpoints return structured JSON and stable `errorCode` keys for frontend `i
 | `GET / PUT` | `/api/v1/planning/{sam,workforce,bottlenecks,delivery-predictions}` | SAM, workforce, rework-aware bottlenecks, delivery predictions |
 | `GET / POST` | `/api/v1/analytics/dashboard`, `/analytics/jobs/:id/queues`, `/simulations/what-if` | Role dashboard aggregates, queue clearance, what-if capacity estimate |
 | `GET` | `/api/v1/reports/jobs`, `/reports/jobs/export`, `/reports/jobs.pdf`, `/reports/jobs.xls` | Paged job reports and CSV/PDF/XLS exports |
+
+## 6. Notifications & Push Device Registration
+
+| Method | Path | Auth / Scope | Behavior |
+|---|---|---|---|
+| `GET` | `/api/v1/notifications` | Authenticated (Recipient-only) | Paginated notification feed (`category`, `unreadOnly`, `actionRequired`, `cursor`) |
+| `GET` | `/api/v1/notifications/unread-count` | Authenticated (Recipient-only) | Unread and action-required counts |
+| `GET` | `/api/v1/notifications/:id` | Authenticated (Recipient-only) | Single notification detail |
+| `PATCH` | `/api/v1/notifications/:id/read` | Authenticated (Recipient-only) | Mark notification as read |
+| `PATCH` | `/api/v1/notifications/read-all` | Authenticated (Recipient-only) | Mark all notifications as read |
+| `GET / PATCH` | `/api/v1/notifications/preferences` | Authenticated (Recipient-only) | Read or update per-category `inAppEnabled` / `pushEnabled` |
+| `POST` | `/api/v1/notifications/devices/register` | Authenticated (Recipient-only) | Register/refresh Expo/FCM push token & preferred language |
+| `DELETE` | `/api/v1/notifications/devices/:id` | Authenticated (Recipient-only) | Deactivate device push token on logout |

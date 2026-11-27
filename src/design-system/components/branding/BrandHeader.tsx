@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../../store/themeStore';
 import { useAuthStore } from '../../../store/authStore';
+import { useNotificationStore } from '../../../store/notificationStore';
 import { BrandMark } from './BrandMark';
 import { AppText } from '../AppText';
 import { StatusBadge } from '../StatusBadge';
@@ -23,12 +24,14 @@ export interface BrandHeaderProps {
 export function BrandHeader({
   subtitle,
   showNotification = true,
-  unreadCount = 2,
+  unreadCount,
   onNotificationPress,
   rightEl,
 }: BrandHeaderProps) {
   const { tokens } = useThemeStore();
   const { user, isDemoMode } = useAuthStore();
+  const storeUnread = useNotificationStore((s) => s.unreadCount);
+  const badgeCount = unreadCount ?? storeUnread;
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useTranslation('common');
@@ -37,7 +40,7 @@ export function BrandHeader({
     if (onNotificationPress) {
       onNotificationPress();
     } else {
-      router.push('/(app)/approvals');
+      router.push('/(app)/notifications' as never);
     }
   };
 
@@ -87,8 +90,8 @@ export function BrandHeader({
               style={[styles.iconButton, { backgroundColor: tokens.surfaceSecondary }]}
             >
               <Bell size={18} color={tokens.textPrimary} strokeWidth={2.2} />
-              {unreadCount > 0 && (
-                <View style={[styles.notifBadge, { backgroundColor: tokens.signatureLime }]} />
+              {badgeCount > 0 && (
+                <View style={[styles.notifBadge, { backgroundColor: tokens.danger }]} />
               )}
             </TouchableOpacity>
           )}

@@ -20,7 +20,8 @@
 | Area | Status | Evidence & Notes |
 |---|---|---|
 | **Frontend Mobile App** | **IMPLEMENTED AND VERIFIED** | Expo SDK 58, Expo Router v3, TypeScript (`npm run ts-check` → 0 errors). Portrait industrial UI with Light/Dark Industrial Royal Blue tokens. |
-| **Backend REST API** | **IMPLEMENTED AND VERIFIED** | NestJS 10 (`/api/v1/`), `nest build` → 0 errors, `17/17` Jest suites (`79/79` tests pass). |
+| **Backend REST API** | **IMPLEMENTED AND VERIFIED** | NestJS 10 (`/api/v1/`), `nest build` → 0 errors, `18/18` Jest suites (`84/84` tests pass). |
+| **Notification & Push System** | **IMPLEMENTED BUT NOT VERIFIED (Device Push)** | Transactional outbox (`0023`), dynamic `RecipientResolverService`, `/notifications/*` API, Notification Center UI, Realtime inbox, and `expo-notifications` Android channels/FCM token registration. Physical Android push delivery pending EAS build + device test. |
 | **Database Migrations** | **IMPLEMENTED BUT NOT VERIFIED (Full Suite)** | 22 SQL migrations (`202611260001`–`202611260022`) exist in `supabase/migrations/`. Remote Supabase has live operational records, though physical-device E2E across all 22 migrations remains pending. |
 | **Seven Role Dashboards** | **IMPLEMENTED AND VERIFIED** | `MDDashboard`, `FMDashboard`, `SupervisorDashboard`, `OperatorDashboard`, `QCDashboard`, `StoreDashboard`, `PackingDashboard` redesigned using `src/design-system/components/dashboard/` and `useLiveDashboardData.ts`. |
 | **Multi-Factory Hierarchy** | **IMPLEMENTED AND VERIFIED** | Canonical `app/(app)/md/factory/[id].tsx` (6-tab drilldown), `app/(app)/md/line/[id].tsx`, `GET /factories`, `GET /factories/:id/hierarchy`, `GET /factories/:id/lines/:lineId`. |

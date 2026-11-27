@@ -80,3 +80,5 @@ All routes use Expo Router v3 file-based routing (`typedRoutes: true` in `app.js
 | `/(app)/masters` | `app/(app)/masters/index.tsx` | FM | Buyers, styles, lines, locations, stages | — | `GET/POST/PATCH /masters/*` | Verified | Implemented |
 | `/(app)/management/users` | `app/(app)/management/users.tsx` | MD, FM | Employee roster, pending approvals, status | — | `GET/POST /users/roster`, `PATCH /users/:id/approval`, `/status` | Verified | Implemented |
 | `/(app)/management/tags` | `app/(app)/management/tags.tsx` | FM, Sup | Tag print queue & ZPL/TSPL reprint | — | `GET /bundles/print-queue`, `GET /bundles/:id/tag-payload`, `POST /bundles/:id/reprint` | Verified | Implemented (HW pending) |
+| `/(app)/notifications` | `app/(app)/notifications/index.tsx` | All 7 roles | Notification Center (All / Unread / Action Required, categories, deep-links) | — | `GET /notifications`, `PATCH /notifications/:id/read`, `/read-all` | Verified | Implemented |
+| `/(app)/notifications/preferences` | `app/(app)/notifications/preferences.tsx` | All 7 roles | Per-category In-App & Mobile Push toggles | — | `GET/PATCH /notifications/preferences` | Verified | Implemented |

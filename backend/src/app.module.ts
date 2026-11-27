@@ -12,6 +12,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { FactoriesModule } from './modules/factories/factories.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 
@@ -25,6 +26,7 @@ import { PermissionsGuard } from './common/guards/permissions.guard';
     UsersModule,
     OrganizationsModule,
     FactoriesModule,
+    NotificationsModule,
     InventoryModule,
     WorkflowModule,
     CuttingScenarioModule,

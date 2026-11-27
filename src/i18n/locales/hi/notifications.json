@@ -1,0 +1,47 @@
+{
+  "unread": "अपठित",
+  "actionRequired": "कार्रवाई आवश्यक",
+  "markAllRead": "सभी को पठित चिह्नित करें",
+  "preferences": "सूचना प्राथमिकताएं",
+  "inAppAlerts": "इन-ऐप सूचनाएं",
+  "mobilePushAlerts": "मोबाइल पुश सूचनाएं",
+  "today": "आज",
+  "yesterday": "कल",
+  "earlier": "पहले",
+  "emptyTitle": "अभी कोई सूचना नहीं",
+  "categories": {
+    "work_orders": "कार्य आदेश",
+    "production": "उत्पादन",
+    "quality": "गुणवत्ता नियंत्रण",
+    "inventory": "इन्वेंटरी",
+    "packing_dispatch": "पैकिंग और डिस्पैच",
+    "intelligence": "उत्पादन बुद्धिमत्ता",
+    "admin": "प्रशासन"
+  },
+  "events": {
+    "JOB_APPROVAL_REQUESTED": {
+      "title": "कार्य आदेश स्वीकृति आवश्यक",
+      "message": "जॉब {{jobCode}} फैक्ट्री मैनेजर की स्वीकृति की प्रतीक्षा कर रही है।"
+    },
+    "JOB_APPROVED": {
+      "title": "कार्य आदेश स्वीकृत",
+      "message": "जॉब {{jobCode}} उत्पादन के लिए स्वीकृत हो गई है।"
+    },
+    "QC_INSPECTION_REQUESTED": {
+      "title": "QC जांच आवश्यक",
+      "message": "बंडल {{bundleCode}} QC जांच के लिए तैयार है।"
+    },
+    "QC_REWORK_REQUESTED": {
+      "title": "रीवर्क असाइन किया गया",
+      "message": "{{bundleCode}} पर {{rework}} पीस में रीवर्क आवश्यक है।"
+    },
+    "BUNDLE_READY_FOR_PACKING": {
+      "title": "पैकिंग के लिए तैयार",
+      "message": "{{bundleCode}} पर {{quantity}} पीस पैकिंग के लिए तैयार हैं।"
+    },
+    "BOTTLENECK_CRITICAL": {
+      "title": "गंभीर उत्पादन बाधा",
+      "message": "{{lineName}} ({{jobCode}}) - {{stage}} पर तुरंत ध्यान दें।"
+    }
+  }
+}

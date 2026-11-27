@@ -1,6 +1,8 @@
 import '../src/i18n';
 import React, { useEffect } from 'react';
 import { useFactoryUpdates } from '../src/services/api/useFactoryUpdates';
+import { useNotificationUpdates } from '../src/services/api/useNotificationUpdates';
+import { ForegroundNotificationBanner } from '../src/design-system/components/notifications/ForegroundNotificationBanner';
 import { AppState, Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -29,6 +31,7 @@ const queryClient = new QueryClient({
 
 function FactoryUpdates() {
   useFactoryUpdates();
+  useNotificationUpdates();
   return null;
 }
 
@@ -65,6 +68,7 @@ export default function RootLayout() {
             <Stack.Screen name="(auth)" />
             <Stack.Screen name="(app)" />
           </Stack>
+          <ForegroundNotificationBanner />
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

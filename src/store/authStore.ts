@@ -184,6 +184,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   logout: async () => {
     const { isDemoMode } = get();
     if (!isDemoMode) {
+      const { unregisterCurrentDevice } = await import('../services/notifications/pushService');
+      await unregisterCurrentDevice();
       await apiRequest('/auth/logout', { method: 'POST' }).catch(() => {});
     }
     await saveStoredSession(null);
