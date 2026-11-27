@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
   Alert,
+  Share,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -90,6 +91,7 @@ export default function ScanTabScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraActive, setCameraActive] = useState(false);
   const [liveBundle, setLiveBundle] = useState<LiveBundle | null>(null);
+  const [unregisteredDecode, setUnregisteredDecode] = useState<ProcessedBarcode | null>(null);
   const [lastProcessed, setLastProcessed] = useState<ProcessedBarcode | null>(null);
   const [reticleMode, setReticleMode] = useState<'2d' | '1d'>('2d');
   const [stageQuantities, setStageQuantities] = useState<Record<string, string>>({});
@@ -159,6 +161,7 @@ export default function ScanTabScreen() {
     setCameraActive(false);
     setTorchOn(false);
     setLiveBundle(null);
+    setUnregisteredDecode(null);
     setSteps([]);
     setStageQuantities({});
     try {
@@ -192,7 +195,8 @@ export default function ScanTabScreen() {
     } catch (error) {
       if (error instanceof ApiError) {
         if (error.statusCode === 404) {
-          Alert.alert(t('errors:bundleNotFound'));
+          setUnregisteredDecode(processed);
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
         } else if (error.statusCode === 0) {
           Alert.alert(t('errors:networkError'));
         } else if (error.statusCode === 401 || error.statusCode === 403) {
@@ -522,13 +526,49 @@ export default function ScanTabScreen() {
           <AppCard padding={spacing[3]} style={{ marginBottom: spacing[3] }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
               <StatusBadge label={lastProcessed.symbology} variant="brand" size="sm" />
-              <AppText variant="caption" color="secondary">
-                {lastProcessed.inputSource.toUpperCase()}
-              </AppText>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing[2] }}>
+                {lastProcessed.checksumValid !== undefined && (
+                  <StatusBadge
+                    label={lastProcessed.checksumValid ? 'CHECKSUM OK' : 'CHECKSUM ERR'}
+                    variant={lastProcessed.checksumValid ? 'success' : 'danger'}
+                    size="sm"
+                  />
+                )}
+                <AppText variant="caption" color="secondary">
+                  {lastProcessed.inputSource.toUpperCase()}
+                </AppText>
+              </View>
             </View>
-            <AppText variant="codeSmall" mono color="secondary" numberOfLines={1} style={{ marginTop: spacing[1] }}>
+            <AppText variant="codeSmall" mono color="secondary" numberOfLines={2} style={{ marginTop: spacing[1] }}>
               {lastProcessed.rawValue}
             </AppText>
+            {unregisteredDecode && (
+              <View style={{ marginTop: spacing[2], padding: spacing[2], borderRadius: radii.md, backgroundColor: tokens.brandLight }}>
+                <AppText variant="caption" bold style={{ color: tokens.brand }}>
+                  Barcode decoded successfully. This barcode is not registered in StitchFlow.
+                </AppText>
+              </View>
+            )}
+            <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[2] }}>
+              <AppButton
+                title={t('common:share', { defaultValue: 'Share / Copy' })}
+                variant="outline"
+                size="sm"
+                onPress={() => void Share.share({ message: lastProcessed.rawValue })}
+              />
+              {!isDemoMode && (
+                <AppButton
+                  title={t('production:openScannerCamera')}
+                  variant="outline"
+                  size="sm"
+                  onPress={() => {
+                    setUnregisteredDecode(null);
+                    setLiveBundle(null);
+                    void openCamera();
+                  }}
+                />
+              )}
+            </View>
             {lastProcessed.gs1 && (
               <View style={{ marginTop: spacing[1.5], gap: 2 }}>
                 {Object.entries(lastProcessed.gs1.ais).map(([ai, val]) => (
