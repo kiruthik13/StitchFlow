@@ -60,11 +60,19 @@ node --env-file=.env dist/scripts/verify-live-e2e.js
 
 ---
 
-## 4. Android Build (EAS)
+## 4. Android Build (EAS) & Performance Targets
 
-Configured in [eas.json](file:///c:/Users/Kathik/Downloads/StitchFlow-main/eas.json) (both `preview` and `production` set `EXPO_PUBLIC_DEMO_MODE=false` and point to the Railway API):
-- **Internal Preview APK**: `npx eas build --platform android --profile preview`
-- **Production AAB**: `npx eas build --platform android --profile production`
+Configured in [eas.json](file:///c:/Users/Kathik/Downloads/StitchFlow-main/eas.json) (all release/preview profiles set `EXPO_PUBLIC_DEMO_MODE=false` and point to the Railway API):
+- **Internal Universal APK** (broad compatibility): `npx eas build --platform android --profile preview`
+- **Internal ARM64 APK** (smaller size target `< 50 MB`): `npx eas build --platform android --profile preview-arm64`
+- **Production AAB** (Play Store per-ABI split): `npx eas build --platform android --profile production`
+
+### Implemented Runtime Optimizations (4 GB RAM Minimum Benchmark)
+- **Metro `inlineRequires: true`** in [metro.config.js](file:///c:/Users/Kathik/Downloads/StitchFlow-main/metro.config.js) to defer JS module evaluation on cold start.
+- **Lazy-loaded 7 Role Dashboards** via `React.lazy` + `Suspense` in [app/(app)/(tabs)/index.tsx](file:///c:/Users/Kathik/Downloads/StitchFlow-main/app/(app)/(tabs)/index.tsx).
+- **Bounded React Query Cache** (`staleTime: 5m`, `gcTime: 5m`, `refetchOnWindowFocus: false`) in [app/_layout.tsx](file:///c:/Users/Kathik/Downloads/StitchFlow-main/app/_layout.tsx).
+- **Camera Lifecycle Release** on both screen blur (`useFocusEffect`) and `AppState` backgrounding in `scan.tsx` and `BundleEvidencePanel.tsx`.
+- **Virtualized Lists & Memoization** (`FlatList` `windowSize={5}`, `removeClippedSubviews`, `React.memo` on `JobRow`, `StagePipeline`, `QualitySummaryCard`).
 
 ### Physical Device Verification Checklist (Pending Execution)
 1. **Camera & Torch**: Open Scanner tab, grant camera permission, scan QR + Code-128 bundle tags in low light with torch toggled.

@@ -17,6 +17,17 @@
         "buildType": "apk"
       }
     },
+    "preview-arm64": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://stitchflow-backend-production-e577ff0c.up.railway.app/api/v1",
+        "EXPO_PUBLIC_DEMO_MODE": "false"
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease -PreactNativeArchitectures=arm64-v8a"
+      }
+    },
     "production": {
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://stitchflow-backend-production-e577ff0c.up.railway.app/api/v1",

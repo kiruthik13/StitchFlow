@@ -17,7 +17,13 @@ SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { staleTime: 1000 * 60 * 5, retry: 1 },
+    queries: {
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 5,
+      retry: 1,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: true,
+    },
   },
 });
 
@@ -27,18 +33,21 @@ function FactoryUpdates() {
 }
 
 export default function RootLayout() {
-  const { initialize: initTheme, mode } = useThemeStore();
-  const { initialize: initAuth } = useAuthStore();
-  const { initialize: initLang } = useLanguageStore();
+  const initializeTheme = useThemeStore((s) => s.initialize);
+  const mode = useThemeStore((s) => s.mode);
+  const initializeAuth = useAuthStore((s) => s.initialize);
+  const initializeLang = useLanguageStore((s) => s.initialize);
 
   useEffect(() => {
-    Promise.all([initTheme(), initAuth(), initLang()]);
-  }, []);
+    void Promise.all([initializeTheme(), initializeAuth(), initializeLang()]);
+  }, [initializeTheme, initializeAuth, initializeLang]);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
     focusManager.setFocused(AppState.currentState === 'active');
-    const subscription = AppState.addEventListener('change', state => focusManager.setFocused(state === 'active'));
+    const subscription = AppState.addEventListener('change', (state) => {
+      focusManager.setFocused(state === 'active');
+    });
     return () => {
       subscription.remove();
       focusManager.setFocused(undefined);

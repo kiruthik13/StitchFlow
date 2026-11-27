@@ -1,5 +1,5 @@
-import React, { useCallback, useRef, useState } from 'react';
-import { Alert, Image, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, AppState, Image, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useFocusEffect } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -41,6 +41,16 @@ export function BundleEvidencePanel({ bundleId }: { bundleId: string }) {
     setCameraReady(false);
     setImage(null);
   }, []));
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') {
+        setTakingPhoto(false);
+        setCameraReady(false);
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   const evidence = useQuery({
     queryKey: key,

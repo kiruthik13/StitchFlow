@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
+  AppState,
   View,
   ScrollView,
   StyleSheet,
@@ -115,6 +116,16 @@ export default function ScanTabScreen() {
     setCameraActive(false);
     setTorchOn(false);
   }, []));
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') {
+        setCameraActive(false);
+        setTorchOn(false);
+      }
+    });
+    return () => sub.remove();
+  }, []);
 
   const openCamera = async () => {
     const access = permission?.granted ? permission : await requestPermission();

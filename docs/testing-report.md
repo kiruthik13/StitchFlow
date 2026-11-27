@@ -48,7 +48,7 @@
 | Test / Check | Status | Reason |
 |---|---|---|
 | **ESLint (`npm run lint`)** | **NOT EXECUTED** | No ESLint configuration file in root; no `lint` script in `backend/package.json`. |
-| **Physical Android APK Device Test** | **NOT EXECUTED** | Requires physical Android device install from EAS preview APK. |
+| **Physical Android APK Device Test (4/6/8/12 GB RAM)** | **NOT EXECUTED** | Requires physical Android devices (4 GB min benchmark) to measure ARM64 APK size (`< 50 MB` target), runtime RAM (`< 250 MB` target), cold startup (`< 3s` target), and scroll FPS. |
 | **Camera & Torch Barcode Scan** | **NOT EXECUTED** | Requires physical device camera + printed QR/Code-128 tags. |
 | **USB/Bluetooth HID Wedge Scanner** | **NOT EXECUTED** | Requires physical HID scanner hardware with `\r`/`\n` suffix. |
 | **Thermal Tag Printer (ZPL/TSPL)** | **NOT EXECUTED** | Requires physical Zebra/TSC printer or Print Bridge / RawBT target. |

@@ -17,7 +17,7 @@ export interface PipelineStageItem {
   tone?: 'brand' | 'success' | 'warning' | 'danger';
 }
 
-export function StagePipeline({
+export const StagePipeline = React.memo(function StagePipeline({
   stages,
   maxTotal,
 }: {
@@ -59,9 +59,9 @@ export function StagePipeline({
       </View>
     </AppCard>
   );
-}
+});
 
-export function QualitySummaryCard({
+export const QualitySummaryCard = React.memo(function QualitySummaryCard({
   inspected,
   passed,
   rework,
@@ -141,7 +141,7 @@ export function QualitySummaryCard({
       ) : null}
     </AppCard>
   );
-}
+});
 
 export function ProductionTrendChart({
   bars,

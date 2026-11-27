@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { View, FlatList, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../../src/store/authStore';
 import { apiJobs } from '../../../src/services/repositories/jobRepository';
@@ -38,15 +38,33 @@ export default function JobsIndexScreen() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
 
-  const filtered = jobs.filter((j) => {
-    const matchStatus = filter === 'all' || j.status === filter;
-    const matchSearch =
-      search === '' ||
-      j.jobCode.toLowerCase().includes(search.toLowerCase()) ||
-      j.styleName.toLowerCase().includes(search.toLowerCase()) ||
-      j.buyerName.toLowerCase().includes(search.toLowerCase());
-    return matchStatus && matchSearch;
-  });
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return jobs.filter((j) => {
+      const matchStatus = filter === 'all' || j.status === filter;
+      const matchSearch =
+        q === '' ||
+        j.jobCode.toLowerCase().includes(q) ||
+        j.styleName.toLowerCase().includes(q) ||
+        j.buyerName.toLowerCase().includes(q);
+      return matchStatus && matchSearch;
+    });
+  }, [jobs, filter, search]);
+
+  const renderItem = useCallback(
+    ({ item }: { item: Job }) => (
+      <JobRow
+        job={item}
+        showDemoMetrics={demo}
+        onPress={() => router.push(`/(app)/jobs/${item.id}`)}
+        tokens={tokens}
+      />
+    ),
+    [demo, router, tokens],
+  );
+
+  const keyExtractor = useCallback((j: Job) => j.id, []);
+  const separator = useCallback(() => <View style={{ height: spacing[2] }} />, []);
 
   return (
     <View style={[styles.container, { backgroundColor: tokens.background }]}>
@@ -68,8 +86,12 @@ export default function JobsIndexScreen() {
       </View>
       <FlatList
         data={filtered}
-        keyExtractor={(j) => j.id}
+        keyExtractor={keyExtractor}
         contentContainerStyle={styles.list}
+        initialNumToRender={10}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === 'android'}
         refreshing={!demo && query.isRefetching && !query.isFetchingNextPage}
         onRefresh={!demo ? () => void query.refetch() : undefined}
         onEndReached={() => {
@@ -83,14 +105,14 @@ export default function JobsIndexScreen() {
         ListEmptyComponent={<EmptyState title={t(!demo && query.isLoading ? 'common:loading'
           : !demo && query.isError ? (query.error instanceof ApiError && query.error.statusCode === 0
             ? 'errors:networkError' : 'errors:serverError') : 'production:noJobsFound')} />}
-        renderItem={({ item }) => <JobRow job={item} showDemoMetrics={demo} onPress={() => router.push(`/(app)/jobs/${item.id}`)} tokens={tokens} />}
-        ItemSeparatorComponent={() => <View style={{ height: spacing[2] }} />}
+        renderItem={renderItem}
+        ItemSeparatorComponent={separator}
       />
     </View>
   );
 }
 
-function JobRow({ job, onPress, tokens, showDemoMetrics }: { job: Job; onPress: () => void; tokens: any; showDemoMetrics: boolean }) {
+const JobRow = React.memo(function JobRow({ job, onPress, tokens, showDemoMetrics }: { job: Job; onPress: () => void; tokens: any; showDemoMetrics: boolean }) {
   const prog = Math.round(((showDemoMetrics ? job.packingQty : job.cuttingQty) / job.orderQuantity) * 100);
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
@@ -120,7 +142,7 @@ function JobRow({ job, onPress, tokens, showDemoMetrics }: { job: Job; onPress: 
       </AppCard>
     </TouchableOpacity>
   );
-}
+});
 
 function Stat({ label, value, tokens }: { label: string; value: string; tokens: any }) {
   return (

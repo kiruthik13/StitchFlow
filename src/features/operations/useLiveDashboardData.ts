@@ -64,7 +64,8 @@ export function useLiveDashboardData(options?: {
   includeCartons?: boolean;
   factoryId?: string;
 }) {
-  const { user, isDemoMode } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const isDemoMode = useAuthStore((s) => s.isDemoMode);
   const enabled = !isDemoMode && !!user;
   const fid = options?.factoryId ?? user?.factoryId;
 
