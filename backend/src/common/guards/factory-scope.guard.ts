@@ -15,7 +15,7 @@ export class FactoryScopeGuard implements CanActivate {
 
     const requestedFactoryId: string | undefined =
       request.params?.factoryId ||
-      request.params?.id && request.baseUrl?.includes('/factories')
+      request.params?.id && (request.baseUrl?.includes('/factories') || request.originalUrl?.includes('/factories') || request.path?.includes('/factories'))
         ? request.params?.id || request.params?.factoryId
         : request.query?.factoryId || request.body?.factoryId;
 

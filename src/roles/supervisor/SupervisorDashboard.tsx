@@ -1,24 +1,30 @@
-import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
 import { LiveWorkPanel } from '../../features/operations/LiveWorkPanels';
+import { useLiveDashboardData } from '../../features/operations/useLiveDashboardData';
 import React from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDemoStore } from '../../store/demoStore';
+import {
+  DashboardHeader,
+  DashboardSection,
+  ProductionProgressCard,
+  CompactMetricCard,
+  StagePipeline,
+  PriorityActionCard,
+  WorkOrderPreview,
+  ShiftIndicator,
+  DashboardSkeleton,
+} from '../../design-system/components/dashboard';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
 import { StatusBadge } from '../../design-system/components/StatusBadge';
-import { MetricCard } from '../../design-system/components/MetricCard';
-import { ShiftProgressCard } from '../../design-system/components/ShiftProgressCard';
-import { BrandHeader } from '../../design-system/components/branding/BrandHeader';
-import { JobTicketCard } from '../../design-system/components/JobTicketCard';
 import { QuickOperationsGrid, QuickOperation } from '../../design-system/components/QuickOperationsGrid';
 import { spacing } from '../../design-system/tokens/spacing';
 import { radii } from '../../design-system/tokens/radii';
-import { TODAY_SHIFT } from '../../fixtures/mockData';
 import {
   ClipboardList,
   Users,
@@ -26,152 +32,156 @@ import {
   Tag,
   AlertTriangle,
   Layers,
-  ArrowRight,
-  TrendingUp,
+  Scissors,
+  ScanLine,
 } from 'lucide-react-native';
 
 export function SupervisorDashboard() {
-  const { tokens, mode } = useThemeStore();
-  const { user } = useAuthStore();
-  const { jobs } = useDemoStore();
+  const { tokens } = useThemeStore();
+  const { user, isDemoMode } = useAuthStore();
+  const { jobs: demoJobs } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['production', 'common', 'quality']);
 
-  const supervisorOps: QuickOperation[] = [
-    {
-      id: 'assignment',
-      icon: <ClipboardList size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:workAssignment'),
-      onPress: () => router.push('/(app)/operations/work-assignment'),
-    },
-    {
-      id: 'tailor-map',
-      icon: <Users size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:tailorMapping'),
-      onPress: () => router.push('/(app)/operations/tailor-mapping'),
-    },
-    {
-      id: 'sam-monitor',
-      icon: <Timer size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:samMonitor'),
-      onPress: () => router.push('/(app)/operations/sam-monitor'),
-    },
-    {
-      id: 'tag-reprint',
-      icon: <Tag size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:tagReprints'),
-      onPress: () => router.push('/(app)/operations/tag-reprint'),
-    },
-  ];
+  const live = useLiveDashboardData({ includeJobs: true });
+  const activeJobsList = isDemoMode ? demoJobs : (live.jobs.data ?? []);
 
-  const liveDashboard = !useAuthStore(state => state.isDemoMode);
+  const m = isDemoMode
+    ? {
+        activeJobs: demoJobs.filter((j) => j.status === 'active').length,
+        ordered: demoJobs.reduce((s, j) => s + j.orderQuantity, 0),
+        cut: demoJobs.reduce((s, j) => s + j.cuttingQty, 0),
+        inspected: demoJobs.reduce((s, j) => s + j.packingQty + j.reworkQty, 0),
+        rework: demoJobs.reduce((s, j) => s + j.reworkQty, 0),
+        released: demoJobs.reduce((s, j) => s + j.packingQty, 0),
+        packed: demoJobs.reduce((s, j) => s + j.packingQty, 0),
+      }
+    : live.metrics.data;
+
+  const supervisorOps: QuickOperation[] = [
+    { id: 'assignment', icon: <ClipboardList size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:workAssignment'), onPress: () => router.push('/(app)/operations/work-assignment') },
+    { id: 'tailor-map', icon: <Users size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:tailorMapping'), onPress: () => router.push('/(app)/operations/tailor-mapping') },
+    { id: 'sam-monitor', icon: <Timer size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:samMonitor'), onPress: () => router.push('/(app)/operations/sam-monitor') },
+    { id: 'tag-reprint', icon: <Tag size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:tagReprints'), onPress: () => router.push('/(app)/operations/tag-reprint') },
+    { id: 'report-issue', icon: <AlertTriangle size={20} color={tokens.warningText} strokeWidth={2.2} />, label: t('production:reportMachineStoppage') || 'Report Issue', onPress: () => router.push('/(app)/operations/report-issue') },
+    { id: 'scan-floor', icon: <ScanLine size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('common:scanBarcode'), onPress: () => router.push('/(app)/(tabs)/scan') },
+  ];
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <BrandHeader
-        subtitle={liveDashboard ? user?.name : `${user?.lineName ?? 'Line 1'} · ${user?.factoryName ?? 'Tirupur Unit 1'}`}
+      <DashboardHeader
+        subtitle={`${user?.lineName ?? 'Line 1'} · ${user?.factoryName ?? 'Factory'}`}
+        unreadCount={m?.rework ?? 0}
       />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          !isDemoMode ? (
+            <RefreshControl
+              refreshing={live.metrics.isRefetching}
+              onRefresh={() => {
+                void live.metrics.refetch();
+                void live.jobs.refetch();
+              }}
+              tintColor={tokens.brand}
+            />
+          ) : undefined
+        }
       >
-        {liveDashboard ? <LiveDashboardPanel /> : <>
-        {/* Shift KPIs 2x2 Bento Grid */}
-        <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          {t('production:lineKPIs')}
-        </AppText>
-        <View style={styles.kpiGrid}>
-          <View style={styles.kpiCol}>
-            <MetricCard
-              label={t('production:lineEfficiency')}
-              value="77%"
-              trend={{ value: '+2.1%', isPositive: true }}
-              icon={<TrendingUp size={14} color={tokens.warning} strokeWidth={2.4} />}
-              variant="warning"
-            />
-            <MetricCard
-              label={t('production:wipPieces')}
-              value="1,200"
-              unit="pcs"
-              icon={<Layers size={14} color={tokens.info} strokeWidth={2.4} />}
-              variant="default"
-            />
-          </View>
-          <View style={styles.kpiCol}>
-            <MetricCard
-              label={t('production:packedOutput')}
-              value="760"
-              unit="pcs"
-              icon={<ClipboardList size={14} color={tokens.success} strokeWidth={2.4} />}
-              variant="success"
-            />
-            <MetricCard
-              label={t('quality:reworkQueue')}
-              value="45"
-              unit="pcs"
-              trend={{ value: '-5 pcs', isPositive: true }}
-              icon={<AlertTriangle size={14} color={tokens.danger} strokeWidth={2.4} />}
-              variant="danger"
-            />
-          </View>
-        </View>
+        <ShiftIndicator label={`${t('common:roles.supervisor')}`} lineName={user?.lineName ?? 'Line 1'} />
 
-        {/* Shift Progress */}
-        <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          {t('production:shiftScheduleProgress')}
-        </AppText>
-        <ShiftProgressCard shift={TODAY_SHIFT} />
+        {!isDemoMode && live.metrics.isLoading ? (
+          <DashboardSkeleton />
+        ) : m ? (
+          <>
+            <DashboardSection title={t('production:lineKPIs')} />
+            <ProductionProgressCard
+              title={t('production:floorOutputProgress')}
+              subtitle={t('production:shiftOutputVsTarget')}
+              actual={m.cut}
+              target={m.ordered}
+            />
 
-        {/* Bottleneck Alert Banner */}
-        <TouchableOpacity
-          onPress={() => router.push('/(app)/operations/sam-monitor')}
-          activeOpacity={0.8}
-          style={{ marginTop: spacing[3], marginBottom: spacing[1] }}
-        >
-          <View
-            style={[
-              styles.bottleneckBanner,
-              {
-                backgroundColor: tokens.dangerLight,
-                borderColor: tokens.danger,
-              },
-            ]}
-          >
-            <View style={styles.alertIconWrap}>
-              <AlertTriangle size={18} color={tokens.danger} strokeWidth={2.4} />
+            <View style={styles.grid}>
+              <CompactMetricCard
+                label={t('production:activeJobs')}
+                value={m.activeJobs}
+                tone="brand"
+                icon={<Layers size={15} color={tokens.brand} />}
+                onPress={() => router.push('/(app)/jobs')}
+              />
+              <CompactMetricCard
+                label={t('production:cuttingPieces')}
+                value={m.cut}
+                tone="default"
+                icon={<Scissors size={15} color={tokens.textPrimary} />}
+              />
+              <CompactMetricCard
+                label={t('production:actualInspected')}
+                value={m.inspected}
+                tone="success"
+                icon={<ClipboardList size={15} color={tokens.successText} />}
+              />
+              <CompactMetricCard
+                label={t('quality:reworkQueue')}
+                value={m.rework}
+                tone={m.rework > 0 ? 'danger' : 'success'}
+                icon={<AlertTriangle size={15} color={m.rework > 0 ? tokens.dangerText : tokens.successText} />}
+              />
             </View>
-            <View style={{ flex: 1 }}>
-              <AppText variant="label" bold style={{ color: tokens.danger }}>
-                {t('production:bottleneckAlertIroning')}
-              </AppText>
-              <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
-                {t('production:bottleneckAlertSub')}
-              </AppText>
+
+            <DashboardSection title={t('production:activeStages')} />
+            <StagePipeline
+              maxTotal={Math.max(1, m.ordered)}
+              stages={[
+                { key: 'cut', label: t('production:cuttingPieces'), quantity: m.cut, tone: 'brand' },
+                { key: 'insp', label: t('production:actualInspected'), quantity: m.inspected, tone: 'brand' },
+                { key: 'rel', label: t('production:bundleWorkflow_release'), quantity: m.released, tone: 'success' },
+                { key: 'pack', label: t('production:packingPieces'), quantity: m.packed, tone: 'success' },
+              ]}
+            />
+
+            {m.rework > 0 && (
+              <>
+                <DashboardSection title={t('production:bottleneckAlertIroning') || 'Floor Attention'} />
+                <PriorityActionCard
+                  title={t('quality:reworkQueue')}
+                  subtitle={t('production:bottleneckAlertSub')}
+                  count={m.rework}
+                  tone="danger"
+                  onPress={() => router.push('/(app)/operations/sam-monitor')}
+                />
+              </>
+            )}
+
+            <DashboardSection title={t('production:supervisorActions')} />
+            <QuickOperationsGrid operations={supervisorOps} columns={3} />
+
+            <DashboardSection
+              title={t('production:lineJobsAndOrders')}
+              count={activeJobsList.length}
+              actionLabel={t('common:viewAll')}
+              onAction={() => router.push('/(app)/jobs')}
+            />
+            <View style={{ gap: spacing[2] }}>
+              {activeJobsList.slice(0, 4).map((job) => (
+                <WorkOrderPreview
+                  key={job.id}
+                  code={job.jobCode}
+                  title={job.styleName || job.buyerName}
+                  subtitle={`${job.lineName || 'Line'} · ${job.orderQuantity.toLocaleString()} ${t('common:pieces')}`}
+                  statusLabel={job.status.toUpperCase()}
+                  statusVariant={job.status === 'active' ? 'success' : 'warning'}
+                  progressPct={job.orderQuantity > 0 ? Math.round((job.cuttingQty / job.orderQuantity) * 100) : 0}
+                  onPress={() => router.push(`/(app)/jobs/${job.id}`)}
+                />
+              ))}
             </View>
-            <ArrowRight size={16} color={tokens.danger} strokeWidth={2.2} />
-          </View>
-        </TouchableOpacity>
-
-        {/* Quick Operations Links */}
-        <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          {t('production:supervisorActions')}
-        </AppText>
-        <QuickOperationsGrid operations={supervisorOps} columns={2} />
-
-        {/* Line Job Status */}
-        <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          {t('production:lineJobsAndOrders')}
-        </AppText>
-        {jobs.map((job) => (
-          <JobTicketCard
-            key={job.id}
-            job={job}
-            onPress={() => router.push(`/(app)/jobs/${job.id}`)}
-          />
-        ))}
-        </>}
+          </>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -296,5 +306,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: spacing[2.5],
+    marginTop: spacing[2.5],
   },
 });

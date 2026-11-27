@@ -27,8 +27,8 @@ export function BrandHeader({
   onNotificationPress,
   rightEl,
 }: BrandHeaderProps) {
-  const { tokens, mode } = useThemeStore();
-  const { user } = useAuthStore();
+  const { tokens } = useThemeStore();
+  const { user, isDemoMode } = useAuthStore();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { t } = useTranslation('common');
@@ -66,14 +66,15 @@ export function BrandHeader({
               variant="caption"
               color="secondary"
               numberOfLines={1}
-              style={styles.subtitleText}
+              style={[styles.subtitleText, { flexShrink: 1 }]}
             >
               {subtitle || defaultSubtitle}
             </AppText>
-            {/* Never display a fake LIVE status when in demo mode (Section 21) */}
-            <View style={styles.statusPill}>
-              <StatusBadge label={t('demoModeBadge')} variant="brand" size="sm" dot />
-            </View>
+            {isDemoMode && (
+              <View style={styles.statusPill}>
+                <StatusBadge label={t('demoModeBadge')} variant="brand" size="sm" dot />
+              </View>
+            )}
           </View>
         </View>
 

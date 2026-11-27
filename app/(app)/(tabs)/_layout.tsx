@@ -27,7 +27,7 @@ export default function TabsLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: mode === 'dark' ? tokens.signatureLime : tokens.brand,
+        tabBarActiveTintColor: tokens.brand,
         tabBarInactiveTintColor: tokens.textSecondary,
         tabBarStyle: {
           backgroundColor: tokens.surface,
@@ -93,14 +93,14 @@ export default function TabsLayout() {
                       style={[
                         styles.scannerCircle,
                         {
-                          backgroundColor: tokens.brand,
+                          backgroundColor: tokens.brandButton,
                           shadowColor: tokens.primaryDeep,
                         },
                       ]}
                     >
                       <ScanLine
                         size={26}
-                        color={mode === 'dark' ? '#11161E' : '#FFFFFF'}
+                        color={tokens.brandButtonText}
                         strokeWidth={2.4}
                       />
                     </View>

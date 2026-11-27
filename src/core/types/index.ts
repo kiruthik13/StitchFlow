@@ -60,6 +60,12 @@ export interface Factory {
   totalLines: number;
   activeLines: number;
   capacity: number;
+  unitsCount?: number;
+  activeJobsCount?: number;
+  orderedQty?: number;
+  cutQty?: number;
+  packedQty?: number;
+  openIssuesCount?: number;
 }
 
 export interface User {

@@ -1,21 +1,29 @@
-import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
 import { LiveWorkPanel } from '../../features/operations/LiveWorkPanels';
+import { useLiveDashboardData } from '../../features/operations/useLiveDashboardData';
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDemoStore } from '../../store/demoStore';
+import {
+  DashboardHeader,
+  DashboardSection,
+  ProductionProgressCard,
+  CompactMetricCard,
+  PriorityActionCard,
+  DashboardQuickAction,
+  WorkOrderPreview,
+  DashboardSkeleton,
+} from '../../design-system/components/dashboard';
+import { AppButton } from '../../design-system/components/AppButton';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
-import { AppButton } from '../../design-system/components/AppButton';
-import { MetricCard } from '../../design-system/components/MetricCard';
 import { StatusBadge } from '../../design-system/components/StatusBadge';
 import { GarmentTicketCard } from '../../design-system/components/GarmentTicketCard';
 import { BottomScanAction } from '../../design-system/components/BottomScanAction';
-import { BrandHeader } from '../../design-system/components/branding/BrandHeader';
 import { spacing } from '../../design-system/tokens/spacing';
 import { radii } from '../../design-system/tokens/radii';
 import { QC_INSPECTIONS, CARTONS } from '../../fixtures/mockData';
@@ -24,29 +32,37 @@ import {
   Truck,
   History,
   ShieldCheck,
-  CheckCircle2,
+  PackageCheck,
   Box,
+  ScanLine,
 } from 'lucide-react-native';
 
 export function PackingDashboard() {
-  const { tokens, mode } = useThemeStore();
-  const { user } = useAuthStore();
-  const { bundles } = useDemoStore();
+  const { tokens } = useThemeStore();
+  const { user, isDemoMode } = useAuthStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['packing', 'common']);
-  const [selectedSize, setSelectedSize] = useState('L');
 
-  const packingBundle = bundles.find((b) => b.status === 'packing') ?? bundles[2];
+  const live = useLiveDashboardData({ includeCartons: true, includeQuality: true });
   const packingQCInspection = QC_INSPECTIONS.find((q) => q.status === 'passed');
+  const cartonList = isDemoMode ? CARTONS : (live.cartons.data ?? []);
 
-  const liveDashboard = !useAuthStore(state => state.isDemoMode);
+  const m = isDemoMode
+    ? {
+        released: packingQCInspection?.releasedQty ?? 180,
+        packed: 140,
+        dispatched: 80,
+      }
+    : live.metrics.data;
+
+  const pendingToPack = m ? Math.max(0, m.released - m.packed) : 0;
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <BrandHeader
-        subtitle={liveDashboard ? user?.name : `Packing Station · ${user?.lineName ?? 'Line 1'}`}
-        rightEl={liveDashboard ? undefined : 
+      <DashboardHeader
+        subtitle={`${t('common:roles.packing-staff')} · ${user?.lineName ?? 'Packing Line'}`}
+        rightEl={
           <AppButton
             title={t('packing:newCarton')}
             size="sm"
@@ -58,194 +74,110 @@ export function PackingDashboard() {
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
-      >
-        {liveDashboard ? <LiveDashboardPanel /> : <>
-        {/* Packing Fulfilment Hero Strip */}
-        <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          {t('packing:todayOutput')}
-        </AppText>
-        <AppCard variant="forest" padding={spacing[4]}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing[3] }}>
-            <View>
-              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>
-                {t('packing:packedTotal')}
-              </AppText>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                <AppText
-                  style={{
-                    color: '#FFFFFF',
-                    fontSize: 40,
-                    lineHeight: 50,
-                    fontWeight: '800',
-                    includeFontPadding: false,
-                    fontVariant: ['tabular-nums'],
-                  }}
-                >
-                  196
-                </AppText>
-                <AppText variant="bodySmall" style={{ color: 'rgba(255, 255, 255, 0.76)', marginLeft: 6 }}>
-                  pcs (+16)
-                </AppText>
-              </View>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>
-                {t('packing:qcReleased')}
-              </AppText>
-              <AppText
-                style={{
-                  color: '#34C765',
-                  fontSize: 26,
-                  lineHeight: 34,
-                  fontWeight: '800',
-                  includeFontPadding: false,
-                  fontVariant: ['tabular-nums'],
-                }}
-              >
-                180 pcs
-              </AppText>
-              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)', fontSize: 11 }}>
-                {t('packing:authorizedLimit')}
-              </AppText>
-            </View>
-          </View>
-
-          <View
-            style={{
-              flexDirection: 'row',
-              borderTopWidth: 1,
-              borderTopColor: 'rgba(255, 255, 255, 0.16)',
-              paddingTop: spacing[2.5],
-              justifyContent: 'space-around',
-            }}
-          >
-            <View style={{ alignItems: 'center' }}>
-              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>{t('packing:totalCartons')}</AppText>
-              <AppText variant="label" bold style={{ color: '#FFFFFF', fontVariant: ['tabular-nums'] }}>3 boxes</AppText>
-            </View>
-            <View style={{ width: 1, backgroundColor: 'rgba(255, 255, 255, 0.16)' }} />
-            <View style={{ alignItems: 'center' }}>
-              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.72)' }}>{t('packing:sealedCartons')}</AppText>
-              <AppText variant="label" bold style={{ color: '#34C765', fontVariant: ['tabular-nums'] }}>2 boxes</AppText>
-            </View>
-          </View>
-        </AppCard>
-
-        {/* {t('packing:qcSafeguardTitle')} */}
-        <View
-          style={[
-            styles.releaseNote,
-            {
-              marginTop: spacing[3],
-              backgroundColor: tokens.brandLight,
-              borderColor: tokens.border,
-            },
-          ]}
-        >
-          <View style={styles.releaseHeader}>
-            <ShieldCheck size={18} color={tokens.brand} strokeWidth={2.4} />
-            <AppText variant="label" bold style={{ color: mode === 'dark' ? tokens.brand : tokens.primaryDeep }}>
-              QC Release Verification Safeguard
-            </AppText>
-          </View>
-          <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
-            {t('packing:maxPackableQty', { qty: packingQCInspection?.releasedQty ?? 180 })}
-          </AppText>
-          <AppText variant="caption" bold style={{ color: tokens.danger, marginTop: 1, fontSize: 11 }}>
-            {t('packing:doNotPackReworkWarning', { rework: packingQCInspection?.reworkQty ?? 15, rejected: packingQCInspection?.rejectedQty ?? 5 })}
-          </AppText>
-        </View>
-
-        {/* Quick Operations for Packing */}
-        <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          {t('packing:packingWorkflows')}
-        </AppText>
-        <View style={styles.chipRow}>
-          <TouchableOpacity
-            style={[styles.chip, { backgroundColor: tokens.surface, borderColor: tokens.border }]}
-            onPress={() => router.push('/(app)/cartons/create')}
-            activeOpacity={0.7}
-          >
-            <PackagePlus size={16} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />
-            <AppText variant="label" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.brand }}>
-              {t('packing:createCarton')}
-            </AppText>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.chip, { backgroundColor: tokens.surface, borderColor: tokens.border }]}
-            onPress={() => router.push('/(app)/packing/handover')}
-            activeOpacity={0.7}
-          >
-            <Truck size={16} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />
-            <AppText variant="label" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.brand }}>
-              {t('packing:storeHandover')}
-            </AppText>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.chip, { backgroundColor: tokens.surface, borderColor: tokens.border }]}
-            onPress={() => router.push('/(app)/packing/history')}
-            activeOpacity={0.7}
-          >
-            <History size={16} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />
-            <AppText variant="label" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.brand }}>
-              {t('packing:packingHistory')}
-            </AppText>
-          </TouchableOpacity>
-        </View>
-
-        {/* Garment Hang-Tag Ticket */}
-        {packingBundle && (
-          <>
-            <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-              {t('packing:readyTicket')}
-            </AppText>
-            <GarmentTicketCard
-              bundle={packingBundle}
-              selectedSize={selectedSize}
-              onSizeSelect={setSelectedSize}
-              showPackAction
-              onPackAction={() => router.push(`/(app)/bundles/${packingBundle.id}`)}
+        refreshControl={
+          !isDemoMode ? (
+            <RefreshControl
+              refreshing={live.metrics.isRefetching}
+              onRefresh={() => {
+                void live.metrics.refetch();
+                void live.cartons.refetch();
+                void live.qualityBundles.refetch();
+              }}
+              tintColor={tokens.brand}
             />
-          </>
-        )}
+          ) : undefined
+        }
+      >
+        {!isDemoMode && live.metrics.isLoading ? (
+          <DashboardSkeleton />
+        ) : m ? (
+          <>
+            <DashboardSection title={t('packing:todayOutput')} />
+            <ProductionProgressCard
+              title={t('packing:packedTotal')}
+              subtitle={t('packing:authorizedLimit')}
+              actual={m.packed}
+              target={m.released}
+            />
 
-        {/* Cartons Created */}
-        <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          {t('packing:packedCartons')}
-        </AppText>
-        {CARTONS.map((c) => (
-          <TouchableOpacity
-            key={c.id}
-            onPress={() => router.push(`/(app)/cartons/${c.id}`)}
-            activeOpacity={0.8}
-            style={{ marginBottom: spacing[2] }}
-          >
-            <AppCard padding={spacing[3.5]}>
-              <View style={styles.jobCompact}>
-                <View style={{ flex: 1 }}>
-                  <AppText variant="code" mono bold style={{ color: tokens.textPrimary }}>
-                    {c.cartonCode}
-                  </AppText>
-                  <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
-                    {c.styleName} · {c.color} · Size {c.size}
-                  </AppText>
-                  <AppText variant="caption" color="secondary">
-                    Qty: {c.quantity} pcs · Packed by: {c.packedBy}
-                  </AppText>
-                </View>
-                <StatusBadge
-                  label={c.status.toUpperCase()}
-                  variant={c.status === 'sealed' ? 'success' : 'warning'}
-                  size="sm"
-                  dot
+            <View style={styles.grid}>
+              <CompactMetricCard
+                label={t('packing:qcReleased')}
+                value={m.released}
+                tone="brand"
+                icon={<ShieldCheck size={15} color={tokens.brand} />}
+              />
+              <CompactMetricCard
+                label={t('packing:packedTotal')}
+                value={m.packed}
+                tone="success"
+                icon={<PackageCheck size={15} color={tokens.successText} />}
+              />
+              <CompactMetricCard
+                label={t('packing:authorizedLimit')}
+                value={pendingToPack}
+                tone={pendingToPack > 0 ? 'warning' : 'success'}
+                icon={<Box size={15} color={pendingToPack > 0 ? tokens.warningText : tokens.successText} />}
+              />
+              <CompactMetricCard
+                label={t('packing:totalCartons')}
+                value={cartonList.length}
+                tone="default"
+                icon={<Truck size={15} color={tokens.textPrimary} />}
+                onPress={() => router.push('/(app)/packing/handover')}
+              />
+            </View>
+
+            <View style={{ marginTop: spacing[3] }}>
+              <PriorityActionCard
+                title={t('packing:qcReleased')}
+                subtitle={t('packing:maxPackableQty', { qty: m.released })}
+                count={pendingToPack}
+                tone="brand"
+                onPress={() => router.push('/(app)/cartons/create')}
+              />
+            </View>
+
+            <DashboardSection title={t('packing:packingWorkflows')} />
+            <View style={styles.grid}>
+              <DashboardQuickAction
+                icon={<PackagePlus size={18} color={tokens.brand} />}
+                label={t('packing:createCarton')}
+                onPress={() => router.push('/(app)/cartons/create')}
+              />
+              <DashboardQuickAction
+                icon={<Truck size={18} color={tokens.brand} />}
+                label={t('packing:storeHandover')}
+                onPress={() => router.push('/(app)/packing/handover')}
+              />
+              <DashboardQuickAction
+                icon={<History size={18} color={tokens.brand} />}
+                label={t('packing:packingHistory')}
+                onPress={() => router.push('/(app)/packing/history')}
+              />
+              <DashboardQuickAction
+                icon={<ScanLine size={18} color={tokens.brand} />}
+                label={t('packing:scanBundleToPack')}
+                onPress={() => router.push('/(app)/(tabs)/scan')}
+              />
+            </View>
+
+            <DashboardSection title={t('packing:packedCartons')} count={cartonList.length} />
+            <View style={{ gap: spacing[2] }}>
+              {cartonList.slice(0, 4).map((c: any) => (
+                <WorkOrderPreview
+                  key={c.id}
+                  code={c.cartonCode ?? c.barcode}
+                  title={c.styleName || c.jobCode || 'Carton'}
+                  subtitle={`${c.quantity} ${t('common:pieces')}`}
+                  statusLabel={(c.status ?? (c.receivedAt ? 'HANDED OVER' : 'PACKED')).toUpperCase()}
+                  statusVariant={c.receivedAt || c.status === 'sealed' ? 'success' : 'warning'}
+                  onPress={() => router.push(`/(app)/cartons/${c.id}`)}
                 />
-              </View>
-            </AppCard>
-          </TouchableOpacity>
-        ))}
-        </>}
+              ))}
+            </View>
+          </>
+        ) : null}
       </ScrollView>
 
       <BottomScanAction
@@ -346,5 +278,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: spacing[2.5],
+    marginTop: spacing[2.5],
   },
 });

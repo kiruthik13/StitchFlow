@@ -49,7 +49,22 @@ export class ApiMasterRepository implements IMasterRepository {
   }
 
   async getFactories(): Promise<Factory[]> {
-    return apiRequest<Factory[]>('/factories');
+    const rows = await apiRequest<Array<Record<string, unknown>>>('/factories');
+    return rows.map((r) => ({
+      id: String(r.id),
+      name: String(r.name ?? ''),
+      code: String(r.code ?? ''),
+      location: String(r.location ?? ''),
+      totalLines: Number(r.totalLines ?? r.total_lines ?? 0),
+      activeLines: Number(r.activeLines ?? r.active_lines ?? 0),
+      capacity: Number(r.capacity ?? 0),
+      unitsCount: r.unitsCount !== undefined ? Number(r.unitsCount) : undefined,
+      activeJobsCount: r.activeJobsCount !== undefined ? Number(r.activeJobsCount) : undefined,
+      orderedQty: r.orderedQty !== undefined ? Number(r.orderedQty) : undefined,
+      cutQty: r.cutQty !== undefined ? Number(r.cutQty) : undefined,
+      packedQty: r.packedQty !== undefined ? Number(r.packedQty) : undefined,
+      openIssuesCount: r.openIssuesCount !== undefined ? Number(r.openIssuesCount) : undefined,
+    })) as Factory[];
   }
 }
 

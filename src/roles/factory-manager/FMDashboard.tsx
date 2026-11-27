@@ -1,28 +1,34 @@
-import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, FlatList } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { apiJobs } from '../../services/repositories/jobRepository';
+import { useLiveDashboardData } from '../../features/operations/useLiveDashboardData';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDemoStore } from '../../store/demoStore';
+import {
+  DashboardHeader,
+  DashboardSection,
+  ProductionProgressCard,
+  CompactMetricCard,
+  StagePipeline,
+  PriorityActionCard,
+  WorkOrderPreview,
+  DashboardQuickAction,
+  ShiftIndicator,
+  DashboardSkeleton,
+} from '../../design-system/components/dashboard';
 import { AppText } from '../../design-system/components/AppText';
-import { AppCard } from '../../design-system/components/AppCard';
 import { AppButton } from '../../design-system/components/AppButton';
-import { BrandHeader } from '../../design-system/components/branding/BrandHeader';
-import { ProductionOutputCard } from '../../design-system/components/ProductionOutputCard';
-import { MetricCard } from '../../design-system/components/MetricCard';
-import { ProductionLineRow } from '../../design-system/components/ProductionLineRow';
-import { QuickOperationsGrid, QuickOperation } from '../../design-system/components/QuickOperationsGrid';
-import { JobTicketCard } from '../../design-system/components/JobTicketCard';
 import { FilterBar } from '../../design-system/components/FilterBar';
 import { EmptyState } from '../../design-system/components/EmptyState';
+import { JobTicketCard } from '../../design-system/components/JobTicketCard';
+import { QuickOperationsGrid, QuickOperation } from '../../design-system/components/QuickOperationsGrid';
 import { spacing } from '../../design-system/tokens/spacing';
 import { radii } from '../../design-system/tokens/radii';
-import { TODAY_SHIFT, ALERTS } from '../../fixtures/mockData';
 import {
   Plus,
   ClipboardList,
@@ -33,312 +39,203 @@ import {
   UserCheck,
   Tag,
   BarChart3,
-  TrendingUp,
-  AlertCircle,
-  Layers,
+  Scissors,
   RotateCcw,
+  Truck,
 } from 'lucide-react-native';
 
 export function FMDashboard() {
-  const { tokens, mode } = useThemeStore();
-  const { user } = useAuthStore();
-  const { jobs } = useDemoStore();
+  const { tokens } = useThemeStore();
+  const { user, isDemoMode } = useAuthStore();
+  const { jobs: demoJobs } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { t } = useTranslation(['production', 'common', 'quality', 'reports']);
+  const { t } = useTranslation(['production', 'common', 'quality', 'reports', 'inventory']);
+
+  const live = useLiveDashboardData({ includeJobs: true });
+  const activeJobsList = isDemoMode ? demoJobs : (live.jobs.data ?? []);
+
+  const m = isDemoMode
+    ? {
+        jobs: demoJobs.length,
+        activeJobs: demoJobs.filter((j) => j.status === 'active').length,
+        drafts: demoJobs.filter((j) => j.status === 'draft').length,
+        pastTarget: demoJobs.filter((j) => j.status === 'on-hold').length,
+        ordered: demoJobs.reduce((s, j) => s + j.orderQuantity, 0),
+        cut: demoJobs.reduce((s, j) => s + j.cuttingQty, 0),
+        inspected: demoJobs.reduce((s, j) => s + j.packingQty + j.reworkQty + j.rejectedQty, 0),
+        rework: demoJobs.reduce((s, j) => s + j.reworkQty, 0),
+        rejected: demoJobs.reduce((s, j) => s + j.rejectedQty, 0),
+        released: demoJobs.reduce((s, j) => s + j.packingQty, 0),
+        packed: demoJobs.reduce((s, j) => s + j.packingQty, 0),
+        dispatched: demoJobs.reduce((s, j) => s + Math.floor(j.packingQty * 0.6), 0),
+        pendingShipments: 1,
+        incomingTransfers: 0,
+      }
+    : live.metrics.data;
 
   const ops: QuickOperation[] = [
-    {
-      id: 'create-job',
-      icon: <Plus size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.4} />,
-      label: t('production:createJob'),
-      onPress: () => router.push('/(app)/jobs/create'),
-    },
-    {
-      id: 'view-jobs',
-      icon: <ClipboardList size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:workOrders'),
-      onPress: () => router.push('/(app)/jobs'),
-    },
-    {
-      id: 'masters',
-      icon: <FolderKanban size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:masters'),
-      onPress: () => router.push('/(app)/masters'),
-    },
-    {
-      id: 'planning',
-      icon: <Timer size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:samPlan'),
-      onPress: () => router.push('/(app)/planning/sam-entry'),
-    },
-    {
-      id: 'workforce',
-      icon: <Users size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:lineStrength'),
-      onPress: () => router.push('/(app)/planning/workforce'),
-    },
-    {
-      id: 'approvals',
-      icon: <CheckCircle2 size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:approvals'),
-      badge: 2,
-      onPress: () => router.push('/(app)/approvals'),
-    },
-    {
-      id: 'users',
-      icon: <UserCheck size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:floorAccess'),
-      onPress: () => router.push('/(app)/management/users'),
-    },
-    {
-      id: 'tags',
-      icon: <Tag size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:tagReprints'),
-      onPress: () => router.push('/(app)/management/tags'),
-    },
-    {
-      id: 'reports',
-      icon: <BarChart3 size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('reports:reports'),
-      onPress: () => router.push('/(app)/(tabs)/reports'),
-    },
+    { id: 'create-job', icon: <Plus size={20} color={tokens.brand} strokeWidth={2.4} />, label: t('production:createJob'), onPress: () => router.push('/(app)/jobs/create') },
+    { id: 'view-jobs', icon: <ClipboardList size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:workOrders'), onPress: () => router.push('/(app)/jobs') },
+    { id: 'approvals', icon: <CheckCircle2 size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:approvals'), badge: m?.drafts, onPress: () => router.push('/(app)/approvals') },
+    { id: 'masters', icon: <FolderKanban size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:masters'), onPress: () => router.push('/(app)/masters') },
+    { id: 'planning', icon: <Timer size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:samPlan'), onPress: () => router.push('/(app)/planning/sam-entry') },
+    { id: 'workforce', icon: <Users size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:lineStrength'), onPress: () => router.push('/(app)/planning/workforce') },
+    { id: 'users', icon: <UserCheck size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:floorAccess'), onPress: () => router.push('/(app)/management/users') },
+    { id: 'tags', icon: <Tag size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:tagReprints'), onPress: () => router.push('/(app)/management/tags') },
+    { id: 'reports', icon: <BarChart3 size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('reports:reports'), onPress: () => router.push('/(app)/(tabs)/reports') },
   ];
-
-  const liveDashboard = !useAuthStore(state => state.isDemoMode);
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      {/* 1. Premium StitchFlow Brand Header with Logo, Subtitle & Demo Status */}
-      <BrandHeader subtitle={liveDashboard ? user?.name : `${user?.factoryName ?? 'Factory Unit 1'} · ${t('common:shift')} A`} />
+      <DashboardHeader
+        subtitle={`${user?.factoryName ?? 'Factory'} · ${t('common:roles.factory-manager')}`}
+        unreadCount={(m?.drafts ?? 0) + (m?.pastTarget ?? 0)}
+      />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          !isDemoMode ? (
+            <RefreshControl
+              refreshing={live.metrics.isRefetching}
+              onRefresh={() => {
+                void live.metrics.refetch();
+                void live.jobs.refetch();
+              }}
+              tintColor={tokens.brand}
+            />
+          ) : undefined
+        }
       >
-        {liveDashboard ? <LiveDashboardPanel /> : <>
-        {/* 2. Personalized Greeting & Shift Context */}
-        <View style={styles.welcomeSection}>
-          <AppText variant="h2" bold style={{ color: tokens.textPrimary, letterSpacing: -0.4 }}>
-            {t('common:goodMorning', { name: user?.name?.split(' ')[0] ?? 'Manager' })}
-          </AppText>
-          <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
-            {t('production:shiftAActiveLines')}
-          </AppText>
-        </View>
+        <ShiftIndicator label={`${user?.factoryName ?? 'Factory Unit 1'}`} lineName={t('common:shift') + ' A'} />
 
-        {/* 3. Production Output Hero Card */}
-        <SectionTitle title={t('production:productionOutput')} subtitle={t('production:shiftOutputVsTarget')} />
-        <ProductionOutputCard
-          actualQty={TODAY_SHIFT.actualQty}
-          targetQty={TODAY_SHIFT.targetQty}
-          unit="pcs"
-          title={t('production:floorOutputProgress')}
-          subtitle={t('production:lineTargetSummary', { target: TODAY_SHIFT.targetQty.toLocaleString() })}
-          pacePerHour={TODAY_SHIFT.pacePerHour}
-        />
+        {!isDemoMode && live.metrics.isLoading ? (
+          <DashboardSkeleton />
+        ) : m ? (
+          <>
+            {/* Priority Action Center */}
+            {(m.drafts > 0 || m.pastTarget > 0) && (
+              <>
+                <DashboardSection title={t('production:approvals')} />
+                <View style={{ gap: spacing[2] }}>
+                  {m.drafts > 0 && (
+                    <PriorityActionCard
+                      title={t('production:approvals')}
+                      subtitle={t('production:scheduledJobs')}
+                      count={m.drafts}
+                      tone="warning"
+                      onPress={() => router.push('/(app)/approvals')}
+                    />
+                  )}
+                  {m.pastTarget > 0 && (
+                    <PriorityActionCard
+                      title={t('production:highRiskOrders')}
+                      subtitle={t('production:delayBufferAlerts')}
+                      count={m.pastTarget}
+                      tone="danger"
+                      onPress={() => router.push('/(app)/jobs')}
+                    />
+                  )}
+                </View>
+              </>
+            )}
 
-        {/* 4. Differentiated Floor Health Composition */}
-        <SectionTitle title={t('production:floorHealthMetrics')} subtitle={t('production:realtimeBalance')} />
-        <View style={styles.bentoGrid}>
-          <View style={styles.bentoCol}>
-            {/* Highlighted Efficiency Block */}
-            <View
-              style={[
-                styles.healthTile,
-                {
-                  backgroundColor: tokens.brandLight,
-                  borderColor: mode === 'dark' ? '#334E7A' : '#C4D4EE',
-                },
-              ]}
-            >
-              <View style={styles.healthTop}>
-                <AppText variant="caption" color="secondary" uppercase style={styles.healthLabel}>
-                  {t('production:lineEfficiency')}
-                </AppText>
-                <TrendingUp size={15} color={tokens.brand} strokeWidth={2.4} />
-              </View>
-              <AppText
-                variant="kpi"
-                style={[
-                  styles.healthValue,
-                  { color: mode === 'dark' ? tokens.brand : tokens.primaryDeep },
-                ]}
-              >
-                {`${Math.round(jobs.reduce((s, j) => s + j.efficiency, 0) / (jobs.length || 1))}%`}
-              </AppText>
-              <View style={[styles.healthPill, { backgroundColor: tokens.successLight }]}>
-                <AppText variant="caption" bold style={{ color: tokens.success, fontSize: 10 }}>
-                  ▲ +4.2%
-                </AppText>
-              </View>
-            </View>
-
-            {/* Defect Rate Block */}
-            <View
-              style={[
-                styles.healthTile,
-                {
-                  backgroundColor: tokens.surface,
-                  borderColor: tokens.border,
-                },
-              ]}
-            >
-              <View style={styles.healthTop}>
-                <AppText variant="caption" color="secondary" uppercase style={styles.healthLabel}>
-                  {t('production:defectRate')}
-                </AppText>
-                <AlertCircle size={15} color={tokens.warning} strokeWidth={2.4} />
-              </View>
-              <AppText variant="kpi" style={[styles.healthValue, { color: tokens.textPrimary }]}>
-                {`${((jobs.reduce((s, j) => s + j.rejectedQty, 0) / (jobs.reduce((s, j) => s + j.cuttingQty, 0) || 1)) * 100).toFixed(1)}%`}
-              </AppText>
-              <View style={[styles.healthPill, { backgroundColor: tokens.successLight }]}>
-                <AppText variant="caption" bold style={{ color: tokens.success, fontSize: 10 }}>
-                  ▲ -0.4%
-                </AppText>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.bentoCol}>
-            {/* Work In Progress Block */}
-            <View
-              style={[
-                styles.healthTile,
-                {
-                  backgroundColor: tokens.surface,
-                  borderColor: tokens.border,
-                },
-              ]}
-            >
-              <View style={styles.healthTop}>
-                <AppText variant="caption" color="secondary" uppercase style={styles.healthLabel}>
-                  {t('production:workInProgress')}
-                </AppText>
-                <Layers size={15} color={tokens.info} strokeWidth={2.4} />
-              </View>
-              <View style={styles.healthValRow}>
-                <AppText variant="kpi" style={[styles.healthValue, { color: tokens.textPrimary }]}>
-                  {jobs.reduce((s, j) => s + Math.max(0, j.cuttingQty - j.packingQty), 0).toLocaleString()}
-                </AppText>
-                <AppText variant="caption" color="secondary" style={{ marginLeft: 4 }}>
-                  pcs
-                </AppText>
-              </View>
-              <AppText variant="caption" color="secondary" style={{ fontSize: 11 }}>
-                {t('common:activeJobsCount', { count: jobs.filter((j) => j.status === 'active').length })}
-              </AppText>
-            </View>
-
-            {/* Rework Queue Block */}
-            <View
-              style={[
-                styles.healthTile,
-                {
-                  backgroundColor: tokens.warningLight,
-                  borderColor: mode === 'dark' ? '#5A4628' : '#E8CFA0',
-                },
-              ]}
-            >
-              <View style={styles.healthTop}>
-                <AppText variant="caption" color="secondary" uppercase style={styles.healthLabel}>
-                  {t('quality:reworkQueue')}
-                </AppText>
-                <RotateCcw size={15} color={tokens.warning} strokeWidth={2.4} />
-              </View>
-              <View style={styles.healthValRow}>
-                <AppText variant="kpi" style={[styles.healthValue, { color: tokens.warning }]}>
-                  {jobs.reduce((s, j) => s + j.reworkQty, 0).toLocaleString()}
-                </AppText>
-                <AppText variant="caption" color="secondary" style={{ marginLeft: 4 }}>
-                  pcs
-                </AppText>
-              </View>
-              <View style={[styles.healthPill, { backgroundColor: tokens.surface }]}>
-                <AppText variant="caption" bold style={{ color: tokens.success, fontSize: 10 }}>
-                  ▲ -{TODAY_SHIFT.reworkQty} shift
-                </AppText>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* 5. Production Line Status — Structured Editorial List */}
-        <View style={styles.titleRow}>
-          <SectionTitle title={t('production:linePerformance')} subtitle={t('production:activeStages')} />
-          <TouchableOpacity onPress={() => router.push('/(app)/planning/workforce')}>
-            <AppText variant="caption" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.brand }}>
-              {t('common:viewAll')} ({jobs.length})
-            </AppText>
-          </TouchableOpacity>
-        </View>
-        <AppCard padding={0} style={{ marginBottom: spacing[1] }}>
-          {jobs.slice(0, 3).map((j, idx, arr) => (
-            <ProductionLineRow
-              key={j.id}
-              lineId={j.lineId}
-              lineName={`${j.lineName} — ${j.styleName}`}
-              actualQty={j.sewingOutQty}
-              targetQty={j.orderQuantity}
-              status={j.efficiency >= 80 ? 'running' : 'delayed'}
-              embedded
-              isLast={idx === arr.length - 1}
-              onPress={() => router.push(`/(app)/jobs/${j.id}`)}
+            {/* Target vs Actual Output */}
+            <DashboardSection title={t('production:productionOutput')} />
+            <ProductionProgressCard
+              title={t('production:floorOutputProgress')}
+              subtitle={t('production:shiftOutputVsTarget')}
+              actual={m.packed}
+              target={m.ordered}
             />
-          ))}
-        </AppCard>
 
-        {/* 6. Quick Operations Grid — Compact Industrial Action Tiles */}
-        <SectionTitle title={t('production:factoryOperations')} subtitle={t('production:managementControls')} />
-        <QuickOperationsGrid operations={ops} columns={3} />
-
-        {/* 7. Active Work Orders — Garment Hang-Tag Ticket Styling */}
-        <View style={styles.titleRow}>
-          <SectionTitle title={t('production:activeWorkOrders')} subtitle={t('production:scheduledJobs')} />
-          <TouchableOpacity onPress={() => router.push('/(app)/jobs')}>
-            <AppText variant="caption" bold style={{ color: mode === 'dark' ? tokens.signatureLime : tokens.brand }}>
-              {t('common:viewAll')} ({jobs.length})
-            </AppText>
-          </TouchableOpacity>
-        </View>
-
-        {jobs
-          .filter((j) => j.status === 'active')
-          .slice(0, 3)
-          .map((job) => (
-            <JobTicketCard
-              key={job.id}
-              job={job}
-              onPress={() => router.push(`/(app)/jobs/${job.id}`)}
-            />
-          ))}
-
-        {/* 8. Plant Alerts */}
-        <SectionTitle title={t('production:plantAlerts')} subtitle={t('production:floorExceptions')} />
-        {ALERTS.slice(0, 2).map((alert) => (
-          <View
-            key={alert.id}
-            style={[
-              styles.alertRow,
-              {
-                borderLeftColor: alert.severity === 'critical' ? tokens.danger : tokens.warning,
-                backgroundColor: tokens.surface,
-                borderColor: tokens.border,
-              },
-            ]}
-          >
-            <View style={{ flex: 1 }}>
-              <AppText variant="label" bold style={{ color: tokens.textPrimary }}>
-                {alert.title}
-              </AppText>
-              <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
-                {alert.message}
-              </AppText>
+            {/* 2x2 Factory Metrics */}
+            <View style={styles.grid}>
+              <CompactMetricCard
+                label={t('production:activeJobs')}
+                value={m.activeJobs}
+                tone="brand"
+                icon={<ClipboardList size={15} color={tokens.brand} />}
+                onPress={() => router.push('/(app)/jobs')}
+              />
+              <CompactMetricCard
+                label={t('production:cuttingPieces')}
+                value={m.cut}
+                tone="default"
+                icon={<Scissors size={15} color={tokens.textPrimary} />}
+              />
+              <CompactMetricCard
+                label={t('quality:reworkQueue')}
+                value={m.rework}
+                tone={m.rework > 0 ? 'warning' : 'success'}
+                icon={<RotateCcw size={15} color={m.rework > 0 ? tokens.warningText : tokens.successText} />}
+              />
+              <CompactMetricCard
+                label={t('production:actualDispatched')}
+                value={m.dispatched}
+                tone="success"
+                icon={<Truck size={15} color={tokens.successText} />}
+                onPress={() => router.push('/(app)/store/dispatch')}
+              />
             </View>
-          </View>
-        ))}
-        </>}
+
+            {/* Stage Pipeline */}
+            <DashboardSection title={t('production:activeStages')} />
+            <StagePipeline
+              maxTotal={Math.max(1, m.ordered)}
+              stages={[
+                { key: 'cut', label: t('production:cuttingPieces'), quantity: m.cut, tone: 'brand' },
+                { key: 'qc', label: t('production:actualInspected'), quantity: m.inspected, tone: 'brand' },
+                { key: 'rel', label: t('production:bundleWorkflow_release'), quantity: m.released, tone: 'success' },
+                { key: 'pack', label: t('production:packingPieces'), quantity: m.packed, tone: 'success' },
+                { key: 'disp', label: t('production:actualDispatched'), quantity: m.dispatched, tone: 'brand' },
+              ]}
+            />
+
+            {/* Active Work Orders */}
+            <DashboardSection
+              title={t('production:activeWorkOrders')}
+              count={activeJobsList.length}
+              actionLabel={t('common:viewAll')}
+              onAction={() => router.push('/(app)/jobs')}
+            />
+            <View style={{ gap: spacing[2] }}>
+              {activeJobsList.slice(0, 3).map((job) => (
+                <WorkOrderPreview
+                  key={job.id}
+                  code={job.jobCode}
+                  title={job.styleName || job.buyerName}
+                  subtitle={`${job.lineName || 'Line'} · ${job.orderQuantity.toLocaleString()} ${t('common:pieces')}`}
+                  statusLabel={job.status.toUpperCase()}
+                  statusVariant={job.status === 'active' ? 'success' : job.status === 'on-hold' ? 'danger' : 'warning'}
+                  progressPct={job.orderQuantity > 0 ? Math.round((job.packingQty / job.orderQuantity) * 100) : 0}
+                  onPress={() => router.push(`/(app)/jobs/${job.id}`)}
+                />
+              ))}
+            </View>
+
+            {/* Quick Management Grid */}
+            <DashboardSection title={t('production:factoryOperations')} />
+            <QuickOperationsGrid operations={ops} columns={3} />
+
+            {/* Dispatch Shortcut */}
+            <View style={[styles.grid, { marginTop: spacing[2] }]}>
+              <DashboardQuickAction
+                icon={<Truck size={18} color={tokens.brand} />}
+                label={t('inventory:dispatchManifest')}
+                badge={m.pendingShipments}
+                onPress={() => router.push('/(app)/store/dispatch')}
+              />
+              <DashboardQuickAction
+                icon={<Plus size={18} color={tokens.brand} />}
+                label={t('production:createJob')}
+                onPress={() => router.push('/(app)/jobs/create')}
+              />
+            </View>
+          </>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -506,5 +403,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[3],
     borderBottomWidth: 1,
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: spacing[2.5],
+    marginTop: spacing[2.5],
   },
 });

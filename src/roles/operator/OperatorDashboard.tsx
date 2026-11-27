@@ -1,23 +1,31 @@
-import { LiveDashboardPanel } from '../../features/operations/LiveDashboardPanels';
 import { LiveWorkPanel } from '../../features/operations/LiveWorkPanels';
 import { OfflineSyncBanner } from '../../features/operations/OfflineSyncBanner';
+import { useLiveDashboardData } from '../../features/operations/useLiveDashboardData';
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
+import { View, ScrollView, StyleSheet, RefreshControl, TouchableOpacity, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDemoStore } from '../../store/demoStore';
+import {
+  DashboardHeader,
+  DashboardSection,
+  ProductionProgressCard,
+  CompactMetricCard,
+  PriorityActionCard,
+  WorkOrderPreview,
+  ActivityTimeline,
+  ShiftIndicator,
+  DashboardSkeleton,
+} from '../../design-system/components/dashboard';
+import { BottomScanAction } from '../../design-system/components/BottomScanAction';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
-import { GarmentTicketCard } from '../../design-system/components/GarmentTicketCard';
-import { BottomScanAction } from '../../design-system/components/BottomScanAction';
 import { StatusBadge } from '../../design-system/components/StatusBadge';
 import { FilterBar } from '../../design-system/components/FilterBar';
 import { EmptyState } from '../../design-system/components/EmptyState';
-import { PressableScale } from '../../design-system/components/PressableScale';
-import { BrandHeader } from '../../design-system/components/branding/BrandHeader';
 import { QuickOperationsGrid, QuickOperation } from '../../design-system/components/QuickOperationsGrid';
 import { spacing } from '../../design-system/tokens/spacing';
 import { radii } from '../../design-system/tokens/radii';
@@ -27,213 +35,141 @@ import {
   Cpu,
   CircleDot,
   Flame,
-  AlertTriangle,
   CheckCircle2,
-  Clock,
-  Barcode,
+  RotateCcw,
 } from 'lucide-react-native';
 
 export function OperatorDashboard() {
-  const { tokens, mode } = useThemeStore();
-  const { user } = useAuthStore();
-  const { bundles, recentScans } = useDemoStore();
+  const { tokens } = useThemeStore();
+  const { user, isDemoMode } = useAuthStore();
+  const { bundles: demoBundles, recentScans } = useDemoStore();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['production', 'common', 'quality']);
 
-  const myBundle = bundles.find((b) => b.operatorId === user?.id) ?? bundles[0];
+  const live = useLiveDashboardData({ includeBundles: true });
+  const activeBundles = isDemoMode ? demoBundles : (live.bundles.data ?? []);
+  const myBundle = isDemoMode
+    ? demoBundles.find((b) => b.operatorId === user?.id) ?? demoBundles[0]
+    : activeBundles[0];
+
+  const m = isDemoMode
+    ? {
+        activeJobs: 3,
+        ordered: 320,
+        cut: 267,
+        rework: REWORK_TASKS.length,
+      }
+    : live.metrics.data;
 
   const operatorOps: QuickOperation[] = [
-    {
-      id: 'cutting',
-      icon: <Scissors size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:cuttingEntry'),
-      onPress: () => router.push('/(app)/operations/cutting-entry'),
-    },
-    {
-      id: 'sewing',
-      icon: <Cpu size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:sewingEntry'),
-      onPress: () => router.push('/(app)/operations/sewing-entry'),
-    },
-    {
-      id: 'kaja',
-      icon: <CircleDot size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:kajaEntry'),
-      onPress: () => router.push('/(app)/operations/kaja-entry'),
-    },
-    {
-      id: 'ironing',
-      icon: <Flame size={20} color={mode === 'dark' ? tokens.signatureLime : tokens.brand} strokeWidth={2.2} />,
-      label: t('production:ironingEntry'),
-      onPress: () => router.push('/(app)/operations/ironing-entry'),
-    },
+    { id: 'cutting', icon: <Scissors size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:cuttingEntry'), onPress: () => router.push('/(app)/operations/cutting-entry') },
+    { id: 'sewing', icon: <Cpu size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:sewingEntry'), onPress: () => router.push('/(app)/operations/sewing-entry') },
+    { id: 'kaja', icon: <CircleDot size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:kajaEntry'), onPress: () => router.push('/(app)/operations/kaja-entry') },
+    { id: 'ironing', icon: <Flame size={20} color={tokens.brand} strokeWidth={2.2} />, label: t('production:ironingEntry'), onPress: () => router.push('/(app)/operations/ironing-entry') },
   ];
-
-  const liveDashboard = !useAuthStore(state => state.isDemoMode);
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <BrandHeader
-        subtitle={liveDashboard ? user?.name : `${t('common:roles.operator')} · ${user?.lineName ?? 'Line 1'} (${t('common:morning')} ${t('common:shift')})`}
+      <DashboardHeader
+        subtitle={`${t('common:roles.operator')} · ${user?.lineName ?? 'Line 1'}`}
+        unreadCount={m?.rework ?? 0}
       />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          !isDemoMode ? (
+            <RefreshControl
+              refreshing={live.metrics.isRefetching}
+              onRefresh={() => {
+                void live.metrics.refetch();
+                void live.bundles.refetch();
+              }}
+              tintColor={tokens.brand}
+            />
+          ) : undefined
+        }
       >
-        {liveDashboard ? (
+        {!isDemoMode && <OfflineSyncBanner />}
+        <ShiftIndicator label={t('common:morning') + ' ' + t('common:shift')} lineName={user?.lineName ?? 'Line 1'} />
+
+        {!isDemoMode && live.metrics.isLoading ? (
+          <DashboardSkeleton />
+        ) : m ? (
           <>
-            <OfflineSyncBanner />
-            <LiveDashboardPanel />
-          </>
-        ) : <>
-        {/* Output Today — High-Contrast Forest Workstation Strip */}
-        <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          {t('production:myOutputToday')}
-        </AppText>
-        <AppCard variant="forest" padding={spacing[4]}>
-          <View style={styles.opHeroTop}>
-            <View>
-              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>
-                {t('common:completed')}
-              </AppText>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                <AppText
-                  style={{
-                    color: '#FFFFFF',
-                    fontSize: 40,
-                    lineHeight: 50,
-                    fontWeight: '800',
-                    includeFontPadding: false,
-                    fontVariant: ['tabular-nums'],
-                  }}
-                >
-                  267
-                </AppText>
-                <AppText variant="bodySmall" style={{ color: 'rgba(255, 255, 255, 0.76)', marginLeft: 6 }}>
-                  / 320 pcs
-                </AppText>
-              </View>
-            </View>
-            <View style={[styles.pacePill, { backgroundColor: 'rgba(52, 199, 101, 0.20)' }]}>
-              <CheckCircle2 size={14} color="#34C765" strokeWidth={2.4} />
-              <AppText variant="caption" bold style={{ color: '#FFFFFF', marginLeft: 4 }}>
-                83% pace
-              </AppText>
-            </View>
-          </View>
+            <DashboardSection title={t('production:myOutputToday')} />
+            <ProductionProgressCard
+              title={t('production:myOutputToday')}
+              subtitle={t('production:shiftTarget')}
+              actual={m.cut}
+              target={m.ordered}
+            />
 
-          <View style={styles.opTrack}>
-            <View style={[styles.opFill, { width: '83%', backgroundColor: '#34C765' }]} />
-          </View>
-
-          <View style={styles.opMetaRow}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-              <Clock size={13} color="rgba(255, 255, 255, 0.76)" />
-              <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.88)' }}>
-                {t('production:pcsRemaining', { count: 53 })}
-              </AppText>
-            </View>
-            <AppText variant="caption" style={{ color: 'rgba(255, 255, 255, 0.76)' }}>
-              {t('production:shiftTarget')}: 320 pcs
-            </AppText>
-          </View>
-        </AppCard>
-
-        {/* Current Active Assignment */}
-        {myBundle && (
-          <>
-            <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-              {t('production:currentAssignment')}
-            </AppText>
-            <GarmentTicketCard bundle={myBundle} />
-          </>
-        )}
-
-        {/* Operator Quick Operations — Station Entries */}
-        <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          {t('production:stationOperations')}
-        </AppText>
-        <QuickOperationsGrid operations={operatorOps} columns={2} />
-
-        {/* Report Issue Action */}
-        <PressableScale
-          scaleTo={0.98}
-          haptic="medium"
-          style={[styles.issueCard, { backgroundColor: tokens.dangerLight, borderColor: tokens.danger }]}
-          onPress={() => router.push('/(app)/operations/report-issue')}
-        >
-          <AlertTriangle size={18} color={tokens.danger} strokeWidth={2.2} />
-          <View style={{ flex: 1, marginLeft: spacing[2] }}>
-            <AppText variant="label" bold style={{ color: tokens.danger }}>
-              {t('production:reportMachineStoppage')}
-            </AppText>
-            <AppText variant="caption" color="secondary" style={{ marginTop: 1 }}>
-              {t('production:alertSupervisorImmediately')}
-            </AppText>
-          </View>
-        </PressableScale>
-
-        {/* Rework Tasks */}
-        <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-          {t('production:myReworkTasks')}
-        </AppText>
-        {REWORK_TASKS.slice(0, 2).map((rw) => (
-          <AppCard key={rw.id} padding={spacing[3.5]} style={{ marginBottom: spacing[2] }}>
-            <View style={styles.riskRow}>
-              <View style={{ flex: 1 }}>
-                <AppText variant="label" bold mono style={{ color: tokens.textPrimary }}>
-                  {rw.bundleCode}
-                </AppText>
-                <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
-                  {rw.defectDescription}
-                </AppText>
-                <AppText variant="caption" color="secondary">
-                  {t('common:quantity')}: {rw.quantity} {t('common:pieces')} · {t('common:date')}: {rw.dueDate}
-                </AppText>
-              </View>
-              <StatusBadge
-                label={rw.status.toUpperCase()}
-                variant={rw.status === 'in-progress' ? 'warning' : 'neutral'}
-                size="sm"
-                dot
+            <View style={styles.grid}>
+              <CompactMetricCard
+                label={t('production:activeJobs')}
+                value={m.activeJobs}
+                tone="brand"
+                icon={<CheckCircle2 size={15} color={tokens.brand} />}
+                onPress={() => router.push('/(app)/jobs')}
+              />
+              <CompactMetricCard
+                label={t('production:myReworkTasks')}
+                value={m.rework}
+                tone={m.rework > 0 ? 'warning' : 'success'}
+                icon={<RotateCcw size={15} color={m.rework > 0 ? tokens.warningText : tokens.successText} />}
               />
             </View>
-          </AppCard>
-        ))}
 
-        {/* Recent Scans */}
-        {recentScans.length > 0 && (
-          <>
-            <AppText variant="caption" color="secondary" uppercase bold style={styles.sectionTitle}>
-              Recent Scans
-            </AppText>
-            {recentScans.slice(0, 3).map((code, i) => (
-              <View
-                key={i}
-                style={[
-                  styles.scanRow,
-                  { borderColor: tokens.border, backgroundColor: tokens.surface },
-                ]}
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Barcode size={14} color={tokens.textSecondary} />
-                  <AppText variant="code" mono bold style={{ color: tokens.textPrimary, marginLeft: spacing[2] }}>
-                    {code}
-                  </AppText>
-                </View>
-                <AppText variant="caption" color="secondary">Logged</AppText>
-              </View>
-            ))}
+            {myBundle && (
+              <>
+                <DashboardSection title={t('production:currentAssignment')} />
+                <WorkOrderPreview
+                  code={myBundle.bundleCode}
+                  title={myBundle.styleName || myBundle.jobCode}
+                  subtitle={`${myBundle.color || ''} ${myBundle.size || ''} · ${myBundle.quantity} ${t('common:pieces')}`}
+                  statusLabel={(myBundle.currentStage || myBundle.status).toUpperCase()}
+                  statusVariant="info"
+                  progressPct={myBundle.quantity > 0 ? Math.round((myBundle.completedQty / myBundle.quantity) * 100) : 0}
+                  onPress={() => router.push(`/(app)/bundles/${myBundle.id}`)}
+                />
+              </>
+            )}
+
+            <DashboardSection title={t('production:stationOperations')} />
+            <QuickOperationsGrid operations={operatorOps} columns={2} />
+
+            <View style={{ marginTop: spacing[3] }}>
+              <PriorityActionCard
+                title={t('production:reportMachineStoppage')}
+                subtitle={t('production:alertSupervisorImmediately')}
+                tone="danger"
+                onPress={() => router.push('/(app)/operations/report-issue')}
+              />
+            </View>
+
+            {recentScans.length > 0 && (
+              <>
+                <DashboardSection title={t('common:scanBarcode')} count={recentScans.length} />
+                <ActivityTimeline
+                  items={recentScans.slice(0, 4).map((code, i) => ({
+                    id: `scan-${i}`,
+                    title: code,
+                    subtitle: t('common:completed'),
+                    tone: 'success',
+                  }))}
+                />
+              </>
+            )}
           </>
-        )}
-        </>}
+        ) : null}
       </ScrollView>
 
       <BottomScanAction
         onPress={() => router.push('/(app)/(tabs)/scan')}
-        label="Scan Barcode / QR to Work"
+        label={t('common:scanBarcode')}
       />
     </View>
   );
@@ -398,5 +334,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
+  },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: spacing[2.5],
+    marginTop: spacing[2.5],
   },
 });
