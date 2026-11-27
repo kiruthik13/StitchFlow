@@ -2,9 +2,11 @@ import {
   computeOtsuThreshold,
   decodeCode11Runs,
   decodeFlattermarkenPositions,
+  decodeFlattermarkenTemplateFromGrayscale,
   decodeIndustrial2Of5Runs,
   decodeMsiRuns,
   decodePharmacode1TrackRuns,
+  decodePharmacode2TrackFromGrayscale,
   decodePharmacode2TrackTracks,
   decodeSpecializedFromGrayscale,
   extractRunLengths,
@@ -137,5 +139,24 @@ describe('Specialized 1D Barcode Image & Scanline Decoders', () => {
     const { gray, width, height } = renderScanlineImage('111001', 3, 20);
     const imgRuns = extractRunLengths(gray.subarray(10 * width, 11 * width));
     expect(decodePharmacode1TrackRuns(imgRuns)).toMatchObject({ decoded: true, value: '5' });
+  });
+
+  it('decodes controlled-template Flattermarken with leading/internal zeros and rejects noisy fabric textures', () => {
+    // Controlled 3-digit Flattermarken template: '1' (1000), '0' (0011), '5' (1100) at 4px pitch
+    const templateModules = '100000111100';
+    const { gray, width, height } = renderScanlineImage(templateModules, 4, 20);
+    const res = decodeFlattermarkenTemplateFromGrayscale(gray, width, height, {
+      expectedDigits: 3,
+      pitchPx: 4,
+    });
+    expect(res).toMatchObject({ decoded: true, symbology: 'FLATTERMARKEN', value: '105' });
+
+    // Reject uncalibrated/noisy garment texture without fabricating a result
+    const fabricNoise = new Uint8Array(240 * 40);
+    for (let i = 0; i < fabricNoise.length; i++) {
+      fabricNoise[i] = 115 + ((i * 37) % 25); // low-contrast weave texture
+    }
+    expect(decodeSpecializedFromGrayscale(fabricNoise, 240, 40).decoded).toBe(false);
+    expect(decodePharmacode2TrackFromGrayscale(fabricNoise, 240, 40)).toBeNull();
   });
 });

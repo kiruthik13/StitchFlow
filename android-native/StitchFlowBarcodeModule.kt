@@ -133,10 +133,10 @@ class StitchFlowBarcodeModule(private val reactContext: ReactApplicationContext)
       if (includeRoi) {
         val bw = bitmap.width
         val bh = bitmap.height
-        val roiX = (bw * 0.125).toInt()
-        val roiY = (bh * 0.325).toInt()
-        val roiW = min(480, max(1, (bw * 0.75).toInt()))
-        val roiH = min(120, max(1, (bh * 0.35).toInt()))
+        val roiX = (bw * 0.075).toInt()
+        val roiY = (bh * 0.275).toInt()
+        val roiW = min(720, max(1, (bw * 0.85).toInt()))
+        val roiH = min(240, max(1, (bh * 0.45).toInt()))
         val clampedW = min(roiW, bw - roiX)
         val clampedH = min(roiH, bh - roiY)
         if (clampedW > 8 && clampedH > 8) {

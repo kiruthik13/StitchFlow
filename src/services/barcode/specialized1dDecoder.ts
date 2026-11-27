@@ -454,6 +454,44 @@ export function decodeFlattermarkenPositions(cells: boolean[]): SpecializedDecod
 }
 
 /**
+ * Controlled-template Flattermarken optical decoder.
+ * Requires a fixed registration anchor (startX) and known pitchPx & expectedDigits
+ * because Flattermarken has no clock track for invisible zero positions.
+ */
+export function decodeFlattermarkenTemplateFromGrayscale(
+  gray: Uint8Array,
+  width: number,
+  height: number,
+  options: { expectedDigits: number; pitchPx: number; startX?: number },
+): SpecializedDecodeResult | null {
+  if (options.expectedDigits < 1 || options.pitchPx < 2) return null;
+  const y = Math.floor(height * 0.5);
+  const line = gray.subarray(y * width, (y + 1) * width);
+  const threshold = computeOtsuThreshold(line);
+
+  let startX = options.startX;
+  if (startX === undefined) {
+    for (let x = 0; x < width; x++) {
+      if (line[x] < threshold) {
+        startX = x;
+        break;
+      }
+    }
+  }
+  if (startX === undefined) return null;
+
+  const totalSlots = options.expectedDigits * 4;
+  if (startX + totalSlots * options.pitchPx > width) return null;
+
+  const cells: boolean[] = [];
+  for (let s = 0; s < totalSlots; s++) {
+    const cx = Math.min(width - 1, Math.floor(startX + (s + 0.5) * options.pitchPx));
+    cells.push(line[cx] < threshold);
+  }
+  return decodeFlattermarkenPositions(cells);
+}
+
+/**
  * Unified scanline runner across grayscale image buffer (tries multiple horizontal rows).
  */
 export function decodeSpecializedFromGrayscale(
