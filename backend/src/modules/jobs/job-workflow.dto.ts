@@ -11,7 +11,7 @@ export class DecisionInput {
 }
 
 export class GenerateBundleInput {
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   requestId!: string;
 
   @Matches(/\S/)
@@ -34,7 +34,7 @@ export class BarcodeInput {
 }
 
 export class ReprintInput {
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   requestId!: string;
 
   @Matches(/\S/)

@@ -13,7 +13,7 @@ class RouteStepInput {
   @Matches(/^[a-z][a-z0-9-]{0,31}$/)
   stageCode!: string;
 
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   lineId!: string;
 
   @IsIn(['operator', 'supervisor'])
@@ -28,7 +28,7 @@ class RouteStepInput {
 }
 
 class DutyAssignmentInput {
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   assignmentId!: string;
 
   @IsIn(['qc', 'rework', 'packing'])

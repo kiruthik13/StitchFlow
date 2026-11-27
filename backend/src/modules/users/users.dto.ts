@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsOptional, IsString, IsUUID, MaxLength, MinLength, Matches } from 'class-validator';
 import { RoleCode } from '../../common/types/auth-user.type';
 
 export class ApproveEmployeeDto {
@@ -16,12 +16,12 @@ export class ApproveEmployeeDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   factoryId?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   lineId?: string;
 
   @ApiPropertyOptional()
@@ -53,7 +53,7 @@ export class ProvisionRosterDto {
   email!: string;
 
   @ApiProperty()
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   factoryId!: string;
 }
 

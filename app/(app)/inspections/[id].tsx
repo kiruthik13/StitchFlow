@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useDemoStore } from '../../../src/store/demoStore';
+import { useAuthStore } from '../../../src/store/authStore';
+import { apiBundles } from '../../../src/services/repositories/bundleRepository';
+import { ApiQCRepository } from '../../../src/services/repositories/qcRepository';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppText } from '../../../src/design-system/components/AppText';
 import { AppCard } from '../../../src/design-system/components/AppCard';
@@ -14,9 +18,10 @@ import { QuantityStepper } from '../../../src/design-system/components/QuantityS
 import { ConfirmSheet } from '../../../src/design-system/components/ConfirmSheet';
 import { EmptyState } from '../../../src/design-system/components/EmptyState';
 import { spacing } from '../../../src/design-system/tokens/spacing';
-import { QCStatus, QCDefect } from '../../../src/core/types';
+import { QCDefect } from '../../../src/core/types';
 
 type InspPhase = 'pending' | 'inspecting' | 'decision' | 'done';
+const apiQC = new ApiQCRepository();
 
 const DEFECT_CODES = [
   { code: 'D001', desc: 'Stitch skip', severity: 'major' as const },
@@ -30,11 +35,19 @@ const DEFECT_CODES = [
 export default function InspectionDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { tokens } = useThemeStore();
-  const { bundles, updateQCInspection, qcInspections } = useDemoStore();
+  const { bundles } = useDemoStore();
+  const { isDemoMode } = useAuthStore();
+  const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['quality', 'common', 'errors']);
 
-  const bundle = bundles.find((b) => b.id === id);
+  const liveBundleQuery = useQuery({
+    queryKey: ['inspection-bundle', id],
+    enabled: !isDemoMode && !!id,
+    queryFn: () => apiBundles.getBundleById(id),
+  });
+
+  const bundle = isDemoMode ? bundles.find((b) => b.id === id) : liveBundleQuery.data;
   const [phase, setPhase] = useState<InspPhase>('pending');
   const [passedQty, setPassedQty] = useState(0);
   const [reworkQty, setReworkQty] = useState(0);
@@ -42,6 +55,33 @@ export default function InspectionDetailScreen() {
   const [defects, setDefects] = useState<QCDefect[]>([]);
   const [showRelease, setShowRelease] = useState(false);
 
+  const qcMutation = useMutation({
+    mutationFn: async () => {
+      if (!bundle) throw new Error('Bundle not found');
+      await apiQC.updateInspection(bundle.id, { passedQty, reworkQty, rejectedQty });
+      if (passedQty > 0) {
+        await apiQC.releasePieces(bundle.id, passedQty);
+      }
+    },
+    onSuccess: () => {
+      setShowRelease(false);
+      setPhase('done');
+      queryClient.invalidateQueries({ queryKey: ['inspection-bundle', id] });
+      queryClient.invalidateQueries({ queryKey: ['quality-bundles'] });
+    },
+    onError: (err: Error) => {
+      setShowRelease(false);
+      Alert.alert(t('errors:serverError'), err.message);
+    },
+  });
+
+  if (!isDemoMode && liveBundleQuery.isLoading) {
+    return (
+      <View style={[styles.flex, { backgroundColor: tokens.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={tokens.brand} />
+      </View>
+    );
+  }
   if (!bundle) return <EmptyState title={t('errors:bundleNotFound')} />;
 
   const totalInspected = passedQty + reworkQty + rejectedQty;
@@ -57,9 +97,12 @@ export default function InspectionDetailScreen() {
   };
 
   const submitDecision = () => {
-    const status: QCStatus = reworkQty > 0 || rejectedQty > 0 ? 'rework' : 'passed';
-    setShowRelease(false);
-    setPhase('done');
+    if (isDemoMode) {
+      setShowRelease(false);
+      setPhase('done');
+      return;
+    }
+    qcMutation.mutate();
   };
 
   const sevColor = (sev: string) => {
@@ -206,8 +249,8 @@ export default function InspectionDetailScreen() {
             </AppText>
             {reworkQty > 0 && <AppText variant="body" color="secondary" center>{reworkQty} pcs sent for rework</AppText>}
             {rejectedQty > 0 && <AppText variant="body" color="danger" center>{rejectedQty} pcs rejected</AppText>}
-            <AppText variant="caption" style={{ color: tokens.warning, marginTop: spacing[3] }}>
-              Demo mode — not saved to server
+            <AppText variant="caption" style={{ color: isDemoMode ? tokens.warning : tokens.success, marginTop: spacing[3] }}>
+              {isDemoMode ? 'Demo mode — not saved to server' : t('common:savedToServer', { defaultValue: 'Saved to server' })}
             </AppText>
           </AppCard>
         )}

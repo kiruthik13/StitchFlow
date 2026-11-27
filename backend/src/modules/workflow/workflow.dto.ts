@@ -1,15 +1,15 @@
-import { IsDateString, IsInt, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import { IsDateString, IsInt, IsOptional, IsUUID, Max, Min, Matches } from 'class-validator';
 
 export class BundleRequest {
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   bundleId!: string;
 
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   requestId!: string;
 }
 
 export class StageCompletion extends BundleRequest {
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   stepId!: string;
 
   @IsOptional()

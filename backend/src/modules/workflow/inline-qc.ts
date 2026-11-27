@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, Matches } from 'class-validator';
 import { CurrentUser, RequirePermissions } from '../../common/decorators/auth.decorators';
 import { AuthenticatedUser } from '../../common/types/auth-user.type';
 import { DatabaseService } from '../../database/database.service';
@@ -19,9 +19,9 @@ import { FactoryQuery } from '../jobs/jobs.dto';
 import { factoryScope, jobScopeParams } from '../jobs/jobs.service';
 
 export class InlineAuditInput {
-  @ApiProperty() @IsUUID() factoryId!: string;
-  @ApiPropertyOptional() @IsOptional() @IsUUID() lineId?: string;
-  @ApiPropertyOptional() @IsOptional() @IsUUID() bundleId?: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) factoryId!: string;
+  @ApiPropertyOptional() @IsOptional() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) lineId?: string;
+  @ApiPropertyOptional() @IsOptional() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) bundleId?: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(160) stationName!: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(160) operatorName!: string;
   @ApiProperty() @Type(() => Number) @IsInt() @Min(1) @Max(1000) sampleQty!: number;

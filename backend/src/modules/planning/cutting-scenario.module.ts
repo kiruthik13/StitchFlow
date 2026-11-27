@@ -4,7 +4,7 @@ import { WorkflowQueuesController, WorkflowQueuesService } from './workflow-queu
 import { BadRequestException, Body, Controller, Injectable, Module, NotFoundException, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsDefined, IsInt, IsNumber, IsUUID, Max, Min, ValidateNested } from 'class-validator';
+import { IsDefined, IsInt, IsNumber, IsUUID, Max, Min, ValidateNested, Matches } from 'class-validator';
 import { CurrentUser, RequirePermissions } from '../../common/decorators/auth.decorators';
 import { AuthenticatedUser } from '../../common/types/auth-user.type';
 import { DatabaseService } from '../../database/database.service';
@@ -48,7 +48,7 @@ export class CuttingCapacityInput {
 }
 
 export class CuttingScenarioInput {
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   jobId!: string;
 
   @IsInt()

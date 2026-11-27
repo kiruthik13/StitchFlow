@@ -11,10 +11,10 @@ import { FactoryQuery } from '../jobs/jobs.dto';
 import { factoryScope, jobScopeParams } from '../jobs/jobs.service';
 
 class ShipmentInput {
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   factoryId!: string;
 
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   requestId!: string;
 
   @IsArray()

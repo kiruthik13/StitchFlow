@@ -37,11 +37,11 @@ export class RegisterEmployeeDto {
   password!: string;
 
   @ApiProperty({ description: 'Organization UUID' })
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   organizationId!: string;
 
   @ApiProperty({ description: 'Factory UUID' })
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   factoryId!: string;
 
   @ApiPropertyOptional()

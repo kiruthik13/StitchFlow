@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, Matches } from 'class-validator';
 import { CurrentUser, RequirePermissions } from '../../common/decorators/auth.decorators';
 import { AuthenticatedUser } from '../../common/types/auth-user.type';
 import { DatabaseService } from '../../database/database.service';
@@ -23,7 +23,7 @@ import { FactoryQuery } from '../jobs/jobs.dto';
 import { factoryScope, jobScopeParams } from '../jobs/jobs.service';
 
 export class ReportIssueInput {
-  @ApiProperty() @IsUUID() factoryId!: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) factoryId!: string;
   @ApiProperty({ enum: ['machine', 'needle', 'fabric', 'power', 'trims', 'other'] })
   @IsIn(['machine', 'needle', 'fabric', 'power', 'trims', 'other']) category!: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(80) machineCode!: string;
@@ -32,8 +32,8 @@ export class ReportIssueInput {
 }
 
 export class CreateWorkAssignmentInput {
-  @ApiProperty() @IsUUID() factoryId!: string;
-  @ApiProperty() @IsUUID() bundleId!: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) factoryId!: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) bundleId!: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(160) operatorName!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(64) operatorEmployeeId?: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(80) stageName!: string;

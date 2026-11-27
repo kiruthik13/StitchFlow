@@ -16,7 +16,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsBoolean, IsEmail, IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsInt, IsNumber, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, Matches } from 'class-validator';
 import { CurrentUser, RequirePermissions } from '../../common/decorators/auth.decorators';
 import { AuthenticatedUser } from '../../common/types/auth-user.type';
 import { DatabaseService } from '../../database/database.service';
@@ -25,7 +25,7 @@ import { FactoryQuery } from './jobs.dto';
 import { factoryScope, jobScopeParams } from './jobs.service';
 
 export class CuttingMasterInput {
-  @ApiProperty() @IsUUID() factoryId!: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) factoryId!: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(48) code!: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(160) name!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(32) phone?: string;
@@ -41,7 +41,7 @@ export class CuttingMasterUpdateInput {
 }
 
 export class ContactInput {
-  @ApiProperty() @IsUUID() factoryId!: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) factoryId!: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(48) code!: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(160) name!: string;
   @ApiPropertyOptional({ enum: ['buyer', 'supplier', 'logistics', 'internal', 'other'] })
@@ -63,7 +63,7 @@ export class ContactUpdateInput {
 }
 
 export class RankInput {
-  @ApiProperty() @IsUUID() factoryId!: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) factoryId!: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(48) code!: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(160) name!: string;
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsInt() @Min(1) @Max(100) levelOrder?: number;
@@ -79,8 +79,8 @@ export class RankUpdateInput {
 }
 
 export class TailorMappingInput {
-  @ApiProperty() @IsUUID() factoryId!: string;
-  @ApiProperty() @IsUUID() lineId!: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) factoryId!: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) lineId!: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(160) operatorName!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(64) employeeId?: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(160) operationName!: string;
@@ -92,7 +92,7 @@ export class TailorMappingInput {
 }
 
 export class TailorMappingUpdateInput {
-  @ApiPropertyOptional() @IsOptional() @IsUUID() lineId?: string;
+  @ApiPropertyOptional() @IsOptional() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) lineId?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MinLength(1) @MaxLength(160) operatorName?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(64) employeeId?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MinLength(1) @MaxLength(160) operationName?: string;
@@ -105,7 +105,7 @@ export class TailorMappingUpdateInput {
 }
 
 export class ConfigUpsertInput {
-  @ApiProperty() @IsUUID() factoryId!: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) factoryId!: string;
   @ApiProperty() @IsString() @MinLength(1) @MaxLength(80) configKey!: string;
   @ApiProperty() @IsString() @MaxLength(1000) configValue!: string;
   @ApiPropertyOptional() @IsOptional() @IsString() @MaxLength(300) description?: string;

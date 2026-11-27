@@ -31,10 +31,10 @@ class MeasurementSpecInput {
 }
 
 class MeasurementInput {
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   requestId!: string;
 
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   specId!: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
@@ -44,7 +44,7 @@ class MeasurementInput {
 }
 
 class UploadId {
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   requestId!: string;
 }
 

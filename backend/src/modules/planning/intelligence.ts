@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsInt, IsNumber, IsObject, IsOptional, IsUUID, Max, Min } from 'class-validator';
+import { IsInt, IsNumber, IsObject, IsOptional, IsUUID, Max, Min, Matches } from 'class-validator';
 import { CurrentUser, RequirePermissions } from '../../common/decorators/auth.decorators';
 import { AuthenticatedUser } from '../../common/types/auth-user.type';
 import { DatabaseService } from '../../database/database.service';
@@ -19,15 +19,15 @@ import { FactoryQuery } from '../jobs/jobs.dto';
 import { factoryScope, jobScopeParams } from '../jobs/jobs.service';
 
 export class UpsertSamPlanInput {
-  @ApiProperty() @IsUUID() factoryId!: string;
-  @ApiProperty() @IsUUID() styleId!: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) factoryId!: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) styleId!: string;
   @ApiProperty() @IsObject() operationBreakdown!: Record<string, number>;
   @ApiProperty() @Type(() => Number) @IsNumber({ maxDecimalPlaces: 2 }) @Min(0.1) @Max(1000) totalSam!: number;
 }
 
 export class UpsertWorkforcePlanInput {
-  @ApiProperty() @IsUUID() factoryId!: string;
-  @ApiProperty() @IsUUID() lineId!: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) factoryId!: string;
+  @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) lineId!: string;
   @ApiProperty() @Type(() => Number) @IsInt() @Min(1) @Max(5000) plannedOperators!: number;
   @ApiProperty() @Type(() => Number) @IsInt() @Min(0) @Max(5000) presentOperators!: number;
   @ApiPropertyOptional() @IsOptional() @Type(() => Number) @IsInt() @Min(0) @Max(2000) helpersCount?: number;

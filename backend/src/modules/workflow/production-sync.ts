@@ -1,7 +1,7 @@
 import { Body, Controller, ForbiddenException, HttpException, Injectable, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { ArrayMaxSize, ArrayNotEmpty, ArrayUnique, IsArray, IsDateString, IsIn, IsInt, IsUUID, Max, Min, ValidateIf, ValidateNested } from 'class-validator';
+import { ArrayMaxSize, ArrayNotEmpty, ArrayUnique, IsArray, IsDateString, IsIn, IsInt, IsUUID, Max, Min, ValidateIf, ValidateNested, Matches } from 'class-validator';
 import { CurrentUser, RequirePermissions } from '../../common/decorators/auth.decorators';
 import { AuthenticatedUser } from '../../common/types/auth-user.type';
 import { CuttingOutputService } from '../jobs/cutting-output';
@@ -11,14 +11,14 @@ class ProductionReplayEvent {
   @IsIn(['cutting', 'stage'])
   kind!: 'cutting' | 'stage';
 
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   requestId!: string;
 
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   bundleId!: string;
 
   @ValidateIf((value: ProductionReplayEvent) => value.kind === 'stage')
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   stepId?: string;
 
   @IsInt()
@@ -31,7 +31,7 @@ class ProductionReplayEvent {
 }
 
 class ProductionReplayInput {
-  @IsUUID()
+  @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' })
   actorId!: string;
 
   @IsArray()

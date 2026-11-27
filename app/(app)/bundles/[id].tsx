@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useDemoStore } from '../../../src/store/demoStore';
 import { useAuthStore } from '../../../src/store/authStore';
+import { apiBundles } from '../../../src/services/repositories/bundleRepository';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppText } from '../../../src/design-system/components/AppText';
 import { AppCard } from '../../../src/design-system/components/AppCard';
@@ -22,7 +24,8 @@ export default function BundleDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { tokens } = useThemeStore();
   const { bundles, submitProductionQty } = useDemoStore();
-  const { user } = useAuthStore();
+  const { user, isDemoMode } = useAuthStore();
+  const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['common', 'production', 'errors']);
   const [qty, setQty] = useState(0);
@@ -30,16 +33,50 @@ export default function BundleDetailScreen() {
   const [submitted, setSubmitted] = useState(false);
   const [selectedSize, setSelectedSize] = useState('');
 
-  const bundle = bundles.find((b) => b.id === id);
+  const liveQuery = useQuery({
+    queryKey: ['bundle-detail', id],
+    enabled: !isDemoMode && !!id,
+    queryFn: () => apiBundles.getBundleById(id),
+  });
+
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      if (!bundle) throw new Error('Bundle not found');
+      return apiBundles.updateBundleStatus(bundle.id, bundle.status, qty);
+    },
+    onSuccess: () => {
+      setShowConfirm(false);
+      setSubmitted(true);
+      queryClient.invalidateQueries({ queryKey: ['bundle-detail', id] });
+      queryClient.invalidateQueries({ queryKey: ['bundles'] });
+    },
+    onError: (err: Error) => {
+      setShowConfirm(false);
+      Alert.alert(t('errors:serverError'), err.message);
+    },
+  });
+
+  const bundle = isDemoMode ? bundles.find((b) => b.id === id) : liveQuery.data;
+  if (!isDemoMode && liveQuery.isLoading) {
+    return (
+      <View style={[styles.flex, { backgroundColor: tokens.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={tokens.brand} />
+      </View>
+    );
+  }
   if (!bundle) return <EmptyState title={t('errors:bundleNotFound')} />;
 
   const perms = getPermissions(user?.role ?? 'operator');
   const canSubmit = perms.canScan && !submitted;
 
   const handleSubmit = () => {
-    const ok = submitProductionQty(bundle.id, qty, bundle.currentStage);
-    setShowConfirm(false);
-    if (ok) setSubmitted(true);
+    if (isDemoMode) {
+      const ok = submitProductionQty(bundle.id, qty, bundle.currentStage);
+      setShowConfirm(false);
+      if (ok) setSubmitted(true);
+      return;
+    }
+    submitMutation.mutate();
   };
 
   return (
@@ -103,7 +140,9 @@ export default function BundleDetailScreen() {
           <AppCard padding={spacing[4]} style={{ alignItems: 'center', marginBottom: spacing[3] }}>
             <AppText style={{ fontSize: 40, marginBottom: spacing[2] }}>✅</AppText>
             <AppText variant="h4" bold center>{qty} pcs submitted!</AppText>
-            <AppText variant="caption" color="secondary" center>Demo only — not saved to server</AppText>
+            <AppText variant="caption" color="secondary" center>
+              {isDemoMode ? 'Demo only — not saved to server' : t('common:savedToServer', { defaultValue: 'Saved to server' })}
+            </AppText>
           </AppCard>
         )}
 
