@@ -29,8 +29,20 @@ export class GenerateBundleInput {
 }
 
 export class BarcodeInput {
-  @Matches(/^[A-Za-z0-9_-]{4,64}$/)
+  @Matches(/^[\x20-\x7E\x1D]{1,512}$/, { message: 'Barcode must be 1 to 512 printable ASCII or GS1 characters' })
   barcode!: string;
+
+  @IsOptional()
+  @MaxLength(64)
+  symbology?: string;
+
+  @IsOptional()
+  @IsIn(['camera', 'bluetooth_hid', 'usb_hid', 'hid', 'manual'])
+  inputSource?: 'camera' | 'bluetooth_hid' | 'usb_hid' | 'hid' | 'manual';
+
+  @IsOptional()
+  @MaxLength(512)
+  rawPayload?: string;
 }
 
 export class ReprintInput {

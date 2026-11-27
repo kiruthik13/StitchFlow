@@ -4,7 +4,8 @@ import { AuthenticatedUser } from '../../common/types/auth-user.type';
 import { DatabaseService } from '../../database/database.service';
 import { AuditService } from '../audit/audit.service';
 import { FactoryQuery } from './jobs.dto';
-import { DecisionInput, GenerateBundleInput, ReprintInput } from './job-workflow.dto';
+import { BarcodeInput, DecisionInput, GenerateBundleInput, ReprintInput } from './job-workflow.dto';
+import { extractLookupCandidates } from './barcode-processor';
 import { factoryScope, jobReadScope, jobScopeParams } from './jobs.service';
 
 const bundleProjection = `
@@ -126,6 +127,90 @@ export class JobWorkflowService {
       WHERE ${jobReadScope} AND ${predicate}`, [...jobScopeParams(user), value]);
     if (!rows[0]) throw new NotFoundException('Bundle not found');
     return rows[0];
+  }
+
+  async resolveUniversalBarcode(user: AuthenticatedUser, input: BarcodeInput) {
+    const { cleaned, candidates, gs1 } = extractLookupCandidates(input.barcode);
+    if (!cleaned || candidates.length === 0) {
+      throw new BadRequestException('Invalid empty barcode');
+    }
+    const upperCandidates = candidates.map((c) => c.toUpperCase());
+
+    // 1. Registered production bundle
+    const { rows: bundleRows } = await this.db.query(
+      `${bundleProjection}
+       WHERE ${jobReadScope} AND UPPER(b.barcode) = ANY($4::text[])
+       LIMIT 1`,
+      [...jobScopeParams(user), upperCandidates],
+    );
+    if (bundleRows[0]) {
+      return {
+        ...bundleRows[0],
+        entityType: 'bundle',
+        symbology: input.symbology ?? null,
+        gs1: gs1 ?? null,
+      };
+    }
+
+    // 2. Registered export/packing carton
+    const { rows: cartonRows } = await this.db.query(
+      `SELECT c.id, c.barcode, c.quantity, c.bundle_id AS "bundleId",
+              b.barcode AS "bundleCode", j.job_code AS "jobCode", f.id AS "factoryId"
+       FROM public.bundle_cartons c
+       JOIN public.bundles b ON b.id = c.bundle_id
+       JOIN public.jobs j ON j.id = b.job_id
+       JOIN public.factories f ON f.id = j.factory_id
+       WHERE ${jobReadScope} AND UPPER(c.barcode) = ANY($4::text[])
+       LIMIT 1`,
+      [...jobScopeParams(user), upperCandidates],
+    );
+    if (cartonRows[0]) {
+      return {
+        ...cartonRows[0],
+        entityType: 'carton',
+        symbology: input.symbology ?? null,
+        gs1: gs1 ?? null,
+      };
+    }
+
+    // 3. Registered work order (job_code)
+    const { rows: jobRows } = await this.db.query(
+      `SELECT j.id, j.job_code AS "jobCode", j.status, j.order_quantity AS "orderQuantity",
+              j.factory_id AS "factoryId"
+       FROM public.jobs j
+       JOIN public.factories f ON f.id = j.factory_id
+       WHERE ${jobReadScope} AND UPPER(j.job_code) = ANY($4::text[])
+       LIMIT 1`,
+      [...jobScopeParams(user), upperCandidates],
+    );
+    if (jobRows[0]) {
+      return {
+        ...jobRows[0],
+        entityType: 'job',
+        symbology: input.symbology ?? null,
+        gs1: gs1 ?? null,
+      };
+    }
+
+    // 4. Registered storage location
+    const { rows: locRows } = await this.db.query(
+      `SELECT sl.id, sl.code, sl.name, sl.factory_id AS "factoryId"
+       FROM public.storage_locations sl
+       JOIN public.factories f ON f.id = sl.factory_id
+       WHERE ${factoryScope} AND UPPER(sl.code) = ANY($4::text[])
+       LIMIT 1`,
+      [...jobScopeParams(user), upperCandidates],
+    );
+    if (locRows[0]) {
+      return {
+        ...locRows[0],
+        entityType: 'location',
+        symbology: input.symbology ?? null,
+        gs1: gs1 ?? null,
+      };
+    }
+
+    throw new NotFoundException('Barcode is not registered in StitchFlow');
   }
 
   async printQueue(user: AuthenticatedUser, query: FactoryQuery) {

@@ -12,7 +12,7 @@
 |---|---|---|---|
 | **Frontend TypeScript** | `npm run ts-check` (`tsc --noEmit`) | **PASSED** (exit 0) | 0 type errors across `app/` and `src/` |
 | **Backend Build** | `cd backend && npm run build` (`nest build`) | **PASSED** (exit 0) | Clean NestJS compilation |
-| **Backend Unit & Security Suites** | `cd backend && npm test -- --runInBand` | **PASSED** (exit 0) | **18/18 suites passed, 84/84 tests passed** in `15.116 s` (includes `test/notifications.spec.ts`) |
+| **Backend Unit & Security Suites** | `cd backend && npm test -- --runInBand` | **PASSED** (exit 0) | **19/19 suites passed, 89/89 tests passed** in `20.969 s` (includes `notifications.spec.ts` & `barcode-scanner.spec.ts`) |
 
 ### Executed Backend Jest Suites (17 Suites / 79 Tests)
 1. `test/phase1-security.spec.ts` — Auth guards, RBAC, `FactoryScopeGuard`

@@ -16,6 +16,7 @@ import { BundleEvidencePanel } from '../../../src/features/operations/BundleEvid
 import { BundleDutyPanel } from '../../../src/features/operations/BundleDutyPanel';
 import { ApiError, apiRequest } from '../../../src/services/api/apiClient';
 import { hidScannerAdapter, validateBarcodeFormat } from '../../../src/services/adapters/hidScannerAdapter';
+import { ProcessedBarcode, ScannerInputSource } from '../../../src/services/barcode/barcodeProcessor';
 import { useScanInput } from '../../../src/hooks/useScanInput';
 import * as Haptics from 'expo-haptics';
 import {
@@ -89,6 +90,8 @@ export default function ScanTabScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraActive, setCameraActive] = useState(false);
   const [liveBundle, setLiveBundle] = useState<LiveBundle | null>(null);
+  const [lastProcessed, setLastProcessed] = useState<ProcessedBarcode | null>(null);
+  const [reticleMode, setReticleMode] = useState<'2d' | '1d'>('2d');
   const [stageQuantities, setStageQuantities] = useState<Record<string, string>>({});
   const [steps, setSteps] = useState<LiveStep[]>([]);
   const [busy, setBusy] = useState(false);
@@ -101,13 +104,13 @@ export default function ScanTabScreen() {
   });
 
   useEffect(() => {
-    return hidScannerAdapter.onBarcodeScanned((barcode) => {
+    return hidScannerAdapter.onBarcodeScanned((barcode, processed) => {
       setHidConnected(true);
       setManualCode(barcode);
       if (isDemoMode) {
         resolveCode(barcode);
       } else {
-        void lookupLive(barcode);
+        void lookupLive(processed?.rawValue ?? barcode, { inputSource: processed?.inputSource ?? 'hid' });
       }
     });
   }, [isDemoMode]);
@@ -136,16 +139,21 @@ export default function ScanTabScreen() {
     setCameraActive(true);
   };
 
-  const lookupLive = async (value: string) => {
+  const lookupLive = async (
+    value: string,
+    opts?: { expoType?: string; inputSource?: ScannerInputSource },
+  ) => {
     if (inFlight.current) return;
-    const validation = validateBarcodeFormat(value);
-    if (!validation.valid) {
+    const validation = validateBarcodeFormat(value, opts);
+    if (!validation.valid || !validation.processed) {
       setCameraActive(false);
       setTorchOn(false);
       Alert.alert(t('errors:validationError'), validation.reason ?? '');
       return;
     }
-    const barcode = validation.normalized;
+    const processed = validation.processed;
+    const barcode = processed.normalizedValue;
+    setLastProcessed(processed);
     inFlight.current = true;
     setBusy(true);
     setCameraActive(false);
@@ -154,12 +162,30 @@ export default function ScanTabScreen() {
     setSteps([]);
     setStageQuantities({});
     try {
-      const bundle = await apiRequest<LiveBundle>('/barcodes/resolve', {
-        method: 'POST', body: JSON.stringify({ barcode }),
+      const resolved = await apiRequest<LiveBundle & { entityType?: string }>('/barcodes/resolve', {
+        method: 'POST',
+        body: JSON.stringify({
+          barcode,
+          symbology: processed.symbology,
+          inputSource: processed.inputSource,
+          rawPayload: processed.rawValue,
+        }),
       });
-      setLiveBundle(bundle);
+      if (resolved.entityType && resolved.entityType !== 'bundle') {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+        if (resolved.entityType === 'job' && resolved.id) {
+          router.push(`/(app)/jobs/${resolved.id}` as never);
+        } else if (resolved.entityType === 'carton' && resolved.id) {
+          router.push(`/(app)/cartons/${resolved.id}` as never);
+        } else {
+          Alert.alert(resolved.entityType.toUpperCase(), barcode);
+        }
+        return;
+      }
+      setLiveBundle(resolved);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       try {
-        setSteps(await apiRequest<LiveStep[]>(`/production/bundles/${bundle.id}/route`));
+        setSteps(await apiRequest<LiveStep[]>(`/production/bundles/${resolved.id}/route`));
       } catch {
         setSteps([]);
       }
@@ -331,8 +357,14 @@ export default function ScanTabScreen() {
             style={StyleSheet.absoluteFill}
             facing="back"
             enableTorch={torchOn}
-            barcodeScannerSettings={{ barcodeTypes: ['qr', 'code128', 'code39', 'ean13', 'ean8', 'upc_a', 'upc_e', 'itf14'] }}
-            onBarcodeScanned={busy ? undefined : ({ data }) => void lookupLive(data)}
+            barcodeScannerSettings={{
+              barcodeTypes: [
+                'qr', 'code128', 'code39', 'code93', 'itf14',
+                'ean13', 'ean8', 'upc_a', 'upc_e', 'codabar',
+                'datamatrix', 'pdf417', 'aztec',
+              ],
+            }}
+            onBarcodeScanned={busy ? undefined : ({ data, type }) => void lookupLive(data, { expoType: type, inputSource: 'camera' })}
           />}
           {/* Laser Corner Reticles */}
           <View style={[styles.bracketTL, { borderColor: tokens.brand }]} />
@@ -473,13 +505,41 @@ export default function ScanTabScreen() {
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing[2] }}>
             <AppText variant="caption" color="secondary">
-              {`CAM: ${permission?.granted ? 'OK' : 'PENDING'} · HID: ${hidConnected ? 'READY' : 'WEDGE'}`}
+              {`CAM: ${permission?.granted ? 'OK' : 'PENDING'} · HID: ${hidConnected ? 'READY' : 'WEDGE'} · ${reticleMode.toUpperCase()}`}
             </AppText>
-            <TouchableOpacity onPress={() => hidScannerAdapter.sendSimulatedScan(DEMO_CODES[0])}>
-              <AppText variant="caption" color="brand" bold>HID TEST</AppText>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: spacing[3] }}>
+              <TouchableOpacity onPress={() => setReticleMode(m => m === '2d' ? '1d' : '2d')}>
+                <AppText variant="caption" color="brand" bold>{reticleMode === '2d' ? '1D MODE' : '2D MODE'}</AppText>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => hidScannerAdapter.sendSimulatedScan(DEMO_CODES[0])}>
+                <AppText variant="caption" color="brand" bold>HID TEST</AppText>
+              </TouchableOpacity>
+            </View>
           </View>
         </AppCard>
+
+        {lastProcessed && (
+          <AppCard padding={spacing[3]} style={{ marginBottom: spacing[3] }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+              <StatusBadge label={lastProcessed.symbology} variant="brand" size="sm" />
+              <AppText variant="caption" color="secondary">
+                {lastProcessed.inputSource.toUpperCase()}
+              </AppText>
+            </View>
+            <AppText variant="codeSmall" mono color="secondary" numberOfLines={1} style={{ marginTop: spacing[1] }}>
+              {lastProcessed.rawValue}
+            </AppText>
+            {lastProcessed.gs1 && (
+              <View style={{ marginTop: spacing[1.5], gap: 2 }}>
+                {Object.entries(lastProcessed.gs1.ais).map(([ai, val]) => (
+                  <AppText key={ai} variant="caption" mono style={{ color: tokens.textPrimary }}>
+                    {`AI (${ai}): ${val}`}
+                  </AppText>
+                ))}
+              </View>
+            )}
+          </AppCard>
+        )}
 
         {!isDemoMode && liveBundle && (
           <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>

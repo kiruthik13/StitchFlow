@@ -7,8 +7,8 @@ export interface ScanCaptureMeta {
 }
 
 /**
- * Hook for capturing input from an external hardware scanner (USB/Bluetooth HID keyboard wedge).
- * Hardware scanners typically emit keystrokes < 50ms apart followed by Enter (\r or \n).
+ * Hook for capturing input from an external hardware scanner (USB OTG / Bluetooth HID keyboard wedge).
+ * Hardware scanners typically emit keystrokes < 60ms apart followed by Enter (\r / \n) or Tab (\t).
  */
 export function useScanInput(onScan: (code: string, meta: ScanCaptureMeta) => void) {
   const [buffer, setBuffer] = useState('');
@@ -17,8 +17,8 @@ export function useScanInput(onScan: (code: string, meta: ScanCaptureMeta) => vo
 
   const handleKeyInput = useCallback((char: string) => {
     const now = Date.now();
-    if (char === '\n' || char === '\r' || char === 'Enter') {
-      const check = validateBarcodeFormat(buffer);
+    if (char === '\n' || char === '\r' || char === '\t' || char === 'Enter' || char === 'Tab') {
+      const check = validateBarcodeFormat(buffer, { inputSource: 'hid' });
       if (check.valid) {
         const intervals = intervalsRef.current;
         const avgKeystrokeMs = intervals.length
