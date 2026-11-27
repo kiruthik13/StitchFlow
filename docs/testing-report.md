@@ -40,10 +40,12 @@
 ### Executed Real Image Decoding Results (`bwip-js` Independent PNG Fixtures)
 | Fixture | Symbology | Expected | Actual | Decoder | Exact Match | Latency |
 |---|---|---|---|---|---|---|
-| `TC-22_code11.png` | Code-11 | `12` | `12` (`checksumValid: true`) | `stitchflow-1d-cv` | Yes | `4.81 ms` |
-| `TC-23_msi.png` | MSI / MSI Plessey | `12` | `12` (`checksumValid: true`) | `stitchflow-1d-cv` | Yes | `0.86 ms` |
-| `TC-24_pharmacode.png` | Pharmacode 1-Track | `12` | `12` | `stitchflow-1d-cv` | Yes | `0.75 ms` |
-| `TC-26_industrial2of5.png` | Industrial 2 of 5 | `12` | `12` | `stitchflow-1d-cv` | Yes | `0.42 ms` |
+| `TC-22_code11.png` | Code-11 | `12` | `12` (`checksumValid: true`) | `stitchflow-1d-cv` | Yes | `1.44 ms` |
+| `TC-23_msi.png` | MSI / MSI Plessey | `12` | `12` (`checksumValid: true`) | `stitchflow-1d-cv` | Yes | `0.92 ms` |
+| `TC-24_pharmacode.png` | Pharmacode 1-Track | `12` | `12` | `stitchflow-1d-cv` | Yes | `0.42 ms` |
+| `TC-25_pharmacode2.png` | Pharmacode 2-Track | `32` | `32` | `stitchflow-1d-cv` | Yes | `1.56 ms` |
+| `TC-26_industrial2of5.png` | Industrial 2 of 5 | `12` | `12` | `stitchflow-1d-cv` | Yes | `0.67 ms` |
+| `TC-01_code128.png` | Code-128 (false-positive check) | `null` (rejected) | `decoded: false` | `stitchflow-1d-cv` | Yes | `1.11 ms` |
 
 ## 2. Earlier Live API Verification (Commit `e583aab`)
 

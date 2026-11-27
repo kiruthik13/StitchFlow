@@ -94,8 +94,8 @@ describe('Specialized 1D Barcode Image & Scanline Decoders', () => {
       value: '12',
     });
 
-    // 2-Track: [full(3), top(1), bottom(2)] = 3*9 + 1*3 + 2*1 = 32
-    expect(decodePharmacode2TrackTracks([true, true, false], [true, false, true])).toMatchObject({
+    // 2-Track: [full(3), bottom(1), top(2)] = 3*9 + 1*3 + 2*1 = 32
+    expect(decodePharmacode2TrackTracks([true, false, true], [true, true, false])).toMatchObject({
       decoded: true,
       symbology: 'PHARMACODE_2T',
       value: '32',

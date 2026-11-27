@@ -301,7 +301,7 @@ export function decodePharmacode1TrackRuns(rawRuns: RunLength[]): SpecializedDec
 
 /**
  * Pharmacode Two-Track takes upper and lower scanline presence per bar position:
- * 1 = top only, 2 = bottom only, 3 = full height (both).
+ * 1 = bottom only, 2 = top only, 3 = full height (both).
  */
 export function decodePharmacode2TrackTracks(
   topBars: boolean[],
@@ -315,7 +315,7 @@ export function decodePharmacode2TrackTracks(
     const t = topBars[i];
     const b = bottomBars[i];
     if (!t && !b) return null;
-    const digit = t && b ? 3 : t ? 1 : 2;
+    const digit = t && b ? 3 : b ? 1 : 2;
     const power = topBars.length - 1 - i;
     value += digit * Math.pow(3, power);
   }
@@ -327,6 +327,51 @@ export function decodePharmacode2TrackTracks(
     orientation: 'forward',
     decoder: 'stitchflow-1d-cv',
   };
+}
+
+/**
+ * 2D ROI extractor for Pharmacode Two-Track from grayscale image buffer.
+ */
+export function decodePharmacode2TrackFromGrayscale(
+  gray: Uint8Array,
+  width: number,
+  height: number,
+): SpecializedDecodeResult | null {
+  if (width < 20 || height < 20) return null;
+  const threshold = computeOtsuThreshold(gray);
+  const topY = Math.floor(height * 0.25);
+  const botY = Math.floor(height * 0.75);
+  const topRow = gray.subarray(topY * width, (topY + 1) * width);
+  const botRow = gray.subarray(botY * width, (botY + 1) * width);
+
+  const activeCol = new Array<boolean>(width);
+  for (let x = 0; x < width; x++) {
+    activeCol[x] = topRow[x] < threshold || botRow[x] < threshold;
+  }
+
+  const topBars: boolean[] = [];
+  const bottomBars: boolean[] = [];
+  let x = 0;
+  while (x < width) {
+    if (!activeCol[x]) {
+      x++;
+      continue;
+    }
+    const start = x;
+    while (x < width && activeCol[x]) x++;
+    const span = x - start;
+    if (span < 2) continue;
+    let topDark = 0;
+    let botDark = 0;
+    for (let k = start; k < x; k++) {
+      if (topRow[k] < threshold) topDark++;
+      if (botRow[k] < threshold) botDark++;
+    }
+    topBars.push(topDark > span * 0.4);
+    bottomBars.push(botDark > span * 0.4);
+  }
+
+  return decodePharmacode2TrackTracks(topBars, bottomBars);
 }
 
 // ============================================================================
