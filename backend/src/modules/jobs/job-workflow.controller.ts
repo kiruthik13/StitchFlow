@@ -80,7 +80,9 @@ export class BarcodesController {
   @Post('resolve')
   @RequirePermissions('CAN_LOOKUP_BARCODE')
   resolve(@CurrentUser() user: AuthenticatedUser, @Body() body: BarcodeInput) {
-    return this.workflow.find(user, 'BND-' + body.barcode.slice(4).toLowerCase(), 'barcode');
+    const trimmed = body.barcode.trim();
+    const normalized = /^BND-/i.test(trimmed) ? 'BND-' + trimmed.slice(4).toLowerCase() : trimmed;
+    return this.workflow.find(user, normalized, 'barcode');
   }
 }
 

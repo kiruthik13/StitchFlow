@@ -29,7 +29,7 @@ export class GenerateBundleInput {
 }
 
 export class BarcodeInput {
-  @Matches(/^BND-[0-9a-f]{32}$/i)
+  @Matches(/^[A-Za-z0-9_-]{4,64}$/)
   barcode!: string;
 }
 

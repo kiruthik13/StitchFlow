@@ -140,6 +140,8 @@ export default function ScanTabScreen() {
     if (inFlight.current) return;
     const validation = validateBarcodeFormat(value);
     if (!validation.valid) {
+      setCameraActive(false);
+      setTorchOn(false);
       Alert.alert(t('errors:validationError'), validation.reason ?? '');
       return;
     }
@@ -156,11 +158,27 @@ export default function ScanTabScreen() {
         method: 'POST', body: JSON.stringify({ barcode }),
       });
       setLiveBundle(bundle);
-      setSteps(await apiRequest<LiveStep[]>(`/production/bundles/${bundle.id}/route`));
+      try {
+        setSteps(await apiRequest<LiveStep[]>(`/production/bundles/${bundle.id}/route`));
+      } catch {
+        setSteps([]);
+      }
     } catch (error) {
-      Alert.alert(t(error instanceof ApiError && error.statusCode === 404
-        ? 'errors:bundleNotFound' : error instanceof ApiError && error.statusCode === 0
-          ? 'errors:networkError' : 'errors:scanFailed'));
+      if (error instanceof ApiError) {
+        if (error.statusCode === 404) {
+          Alert.alert(t('errors:bundleNotFound'));
+        } else if (error.statusCode === 0) {
+          Alert.alert(t('errors:networkError'));
+        } else if (error.statusCode === 401 || error.statusCode === 403) {
+          Alert.alert(t('errors:unauthorized'), error.message);
+        } else if (error.statusCode === 400) {
+          Alert.alert(t('errors:validationError'), error.message);
+        } else {
+          Alert.alert(t('errors:scanFailed'), error.message);
+        }
+      } else {
+        Alert.alert(t('errors:scanFailed'));
+      }
     } finally {
       inFlight.current = false;
       setBusy(false);
@@ -288,7 +306,7 @@ export default function ScanTabScreen() {
               Optical QR / 1D & HID Scanner
             </AppText>
           </View>
-          <StatusBadge label={t('common:demoModeBadge')} variant="warning" size="sm" />
+          {isDemoMode && <StatusBadge label={t('common:demoModeBadge')} variant="warning" size="sm" />}
         </View>
       </View>
 

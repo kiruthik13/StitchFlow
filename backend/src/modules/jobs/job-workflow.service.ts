@@ -121,8 +121,9 @@ export class JobWorkflowService {
   }
 
   async find(user: AuthenticatedUser, value: string, field: 'id' | 'barcode') {
+    const predicate = field === 'barcode' ? 'UPPER(b.barcode) = UPPER($4)' : 'b.id = $4';
     const { rows } = await this.db.query(`${bundleProjection}
-      WHERE ${jobReadScope} AND b.${field} = $4`, [...jobScopeParams(user), value]);
+      WHERE ${jobReadScope} AND ${predicate}`, [...jobScopeParams(user), value]);
     if (!rows[0]) throw new NotFoundException('Bundle not found');
     return rows[0];
   }
