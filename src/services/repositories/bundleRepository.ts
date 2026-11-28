@@ -40,6 +40,30 @@ export class MockBundleRepository implements IBundleRepository {
 }
 
 export class ApiBundleRepository implements IBundleRepository {
+  private normalizeBundle(raw: Partial<Bundle> & { id: string; bundleCode: string; jobCode: string }): Bundle {
+    return {
+      id: raw.id,
+      bundleCode: raw.bundleCode ?? 'BND',
+      jobId: raw.jobId ?? '',
+      jobCode: raw.jobCode ?? 'JOB',
+      styleName: raw.styleName ?? raw.jobCode ?? '—',
+      color: raw.color ?? '—',
+      size: raw.size ?? '—',
+      quantity: Number(raw.quantity ?? 0),
+      completedQty: Number(raw.completedQty ?? 0),
+      reworkQty: Number(raw.reworkQty ?? 0),
+      rejectedQty: Number(raw.rejectedQty ?? 0),
+      currentStage: raw.currentStage ?? 'Production',
+      status: raw.status ?? 'sewing',
+      lineId: raw.lineId ?? '',
+      lineName: raw.lineName ?? 'Assigned Line',
+      operatorId: raw.operatorId,
+      operatorName: raw.operatorName,
+      cuttingDate: raw.cuttingDate ?? '—',
+      lastUpdated: raw.lastUpdated ?? new Date().toISOString(),
+    };
+  }
+
   private resolveFactoryId(factoryId?: string): string {
     const resolved = factoryId ?? useAuthStore.getState().user?.factoryId;
     if (!resolved) throw new ApiError(400, 'ERR_FACTORY_REQUIRED', 'Factory ID is required');
@@ -48,12 +72,18 @@ export class ApiBundleRepository implements IBundleRepository {
 
   async getBundles(factoryId?: string): Promise<Bundle[]> {
     const fid = this.resolveFactoryId(factoryId);
-    return apiRequest<Bundle[]>(`/bundles?factoryId=${encodeURIComponent(fid)}`);
+    const rows = await apiRequest<Array<Partial<Bundle> & { id: string; bundleCode: string; jobCode: string }>>(
+      `/bundles?factoryId=${encodeURIComponent(fid)}`,
+    );
+    return rows.map((r) => this.normalizeBundle(r));
   }
 
   async getBundleById(id: string): Promise<Bundle | null> {
     try {
-      return await apiRequest<Bundle>(`/bundles/${encodeURIComponent(id)}`);
+      const raw = await apiRequest<Partial<Bundle> & { id: string; bundleCode: string; jobCode: string }>(
+        `/bundles/${encodeURIComponent(id)}`,
+      );
+      return raw ? this.normalizeBundle(raw) : null;
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 404) return null;
       throw error;
@@ -62,10 +92,14 @@ export class ApiBundleRepository implements IBundleRepository {
 
   async getBundleByCode(code: string): Promise<Bundle | null> {
     try {
-      return await apiRequest<Bundle>('/barcodes/resolve', {
-        method: 'POST',
-        body: JSON.stringify({ barcode: code.trim().toUpperCase() }),
-      });
+      const raw = await apiRequest<Partial<Bundle> & { id: string; bundleCode: string; jobCode: string }>(
+        '/barcodes/resolve',
+        {
+          method: 'POST',
+          body: JSON.stringify({ barcode: code.trim().toUpperCase() }),
+        },
+      );
+      return raw ? this.normalizeBundle(raw) : null;
     } catch (error) {
       if (error instanceof ApiError && error.statusCode === 404) return null;
       throw error;

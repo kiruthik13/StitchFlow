@@ -66,12 +66,13 @@ export default function BundleDetailScreen() {
   }
   if (!bundle) return <EmptyState title={t('errors:bundleNotFound')} />;
 
+  const safeStatus = bundle.status ?? 'sewing';
   const perms = getPermissions(user?.role ?? 'operator');
   const canSubmit = perms.canScan && !submitted;
 
   const handleSubmit = () => {
     if (isDemoMode) {
-      const ok = submitProductionQty(bundle.id, qty, bundle.currentStage);
+      const ok = submitProductionQty(bundle.id, qty, bundle.currentStage ?? 'Production');
       setShowConfirm(false);
       if (ok) setSubmitted(true);
       return;
@@ -82,10 +83,10 @@ export default function BundleDetailScreen() {
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
       <AppHeader
-        title={bundle.bundleCode}
-        subtitle={`${bundle.styleName} · ${bundle.jobCode}`}
+        title={bundle.bundleCode ?? 'Bundle'}
+        subtitle={`${bundle.styleName || bundle.jobCode || ''} · ${bundle.jobCode ?? ''}`}
         showBack
-        rightEl={<StatusBadge label={bundle.status.replace('-', ' ').toUpperCase()} variant={bundleStatusBadge(bundle.status)} size="sm" />}
+        rightEl={<StatusBadge label={safeStatus.replace('-', ' ').toUpperCase()} variant={bundleStatusBadge(safeStatus)} size="sm" />}
       />
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
 
@@ -94,28 +95,28 @@ export default function BundleDetailScreen() {
           bundle={bundle}
           selectedSize={selectedSize || bundle.size}
           onSizeSelect={perms.canPack ? setSelectedSize : undefined}
-          showPackAction={perms.canPack && bundle.status === 'packing'}
+          showPackAction={perms.canPack && safeStatus === 'packing'}
         />
 
         {/* Bundle info */}
         <SectionLabel label="Bundle Information" />
         <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
-          <Row label="Bundle" value={bundle.bundleCode} mono />
-          <Row label="Job" value={bundle.jobCode} mono />
-          <Row label="Style" value={bundle.styleName} />
-          <Row label="Color" value={bundle.color} />
-          <Row label="Size" value={bundle.size} />
-          <Row label="Quantity" value={String(bundle.quantity)} mono />
-          <Row label="Completed" value={String(bundle.completedQty)} mono />
-          <Row label="Rework" value={String(bundle.reworkQty)} />
-          <Row label="Rejected" value={String(bundle.rejectedQty)} />
-          <Row label="Line" value={bundle.lineName} />
+          <Row label="Bundle" value={bundle.bundleCode ?? '—'} mono />
+          <Row label="Job" value={bundle.jobCode ?? '—'} mono />
+          <Row label="Style" value={bundle.styleName || bundle.jobCode || '—'} />
+          <Row label="Color" value={bundle.color ?? '—'} />
+          <Row label="Size" value={bundle.size ?? '—'} />
+          <Row label="Quantity" value={String(bundle.quantity ?? 0)} mono />
+          <Row label="Completed" value={String(bundle.completedQty ?? 0)} mono />
+          <Row label="Rework" value={String(bundle.reworkQty ?? 0)} />
+          <Row label="Rejected" value={String(bundle.rejectedQty ?? 0)} />
+          <Row label="Line" value={bundle.lineName ?? 'Assigned Line'} />
           <Row label="Operator" value={bundle.operatorName ?? '—'} />
-          <Row label="Cut Date" value={bundle.cuttingDate} isLast />
+          <Row label="Cut Date" value={bundle.cuttingDate ?? '—'} isLast />
         </AppCard>
 
         {/* Quantity entry */}
-        {canSubmit && ['sewing', 'kaja', 'ironing', 'cutting'].includes(bundle.status) && (
+        {canSubmit && ['sewing', 'kaja', 'ironing', 'cutting'].includes(safeStatus) && (
           <>
             <SectionLabel label="Production Entry" />
             <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>

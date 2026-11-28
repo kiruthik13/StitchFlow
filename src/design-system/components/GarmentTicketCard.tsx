@@ -52,8 +52,8 @@ export function GarmentTicketCard({
           </AppText>
         </View>
         <StatusBadge
-          label={bundle.status.replace('-', ' ').toUpperCase()}
-          variant={bundleStatusBadge(bundle.status)}
+          label={(bundle.status ?? 'sewing').replace('-', ' ').toUpperCase()}
+          variant={bundleStatusBadge(bundle.status ?? 'sewing')}
           size="sm"
         />
       </View>
@@ -63,13 +63,13 @@ export function GarmentTicketCard({
 
       {/* Middle section */}
       <View style={styles.middleSection}>
-        <InfoRow label={t('job')} value={bundle.jobCode} mono tokens={tokens} />
-        <InfoRow label={t('style')} value={bundle.styleName} tokens={tokens} />
-        <InfoRow label={t('color')} value={bundle.color} tokens={tokens} />
+        <InfoRow label={t('job')} value={bundle.jobCode ?? '—'} mono tokens={tokens} />
+        <InfoRow label={t('style')} value={bundle.styleName ?? bundle.jobCode ?? '—'} tokens={tokens} />
+        <InfoRow label={t('color')} value={bundle.color ?? '—'} tokens={tokens} />
         <View style={styles.row}>
-          <InfoRow label={t('quantity')} value={String(bundle.quantity)} mono tokens={tokens} />
-          <InfoRow label={t('completed')} value={String(bundle.completedQty)} mono tokens={tokens} />
-          {bundle.reworkQty > 0 && (
+          <InfoRow label={t('quantity')} value={String(bundle.quantity ?? 0)} mono tokens={tokens} />
+          <InfoRow label={t('completed')} value={String(bundle.completedQty ?? 0)} mono tokens={tokens} />
+          {(bundle.reworkQty ?? 0) > 0 && (
             <InfoRow label={t('quality:rework') || 'Rework'} value={String(bundle.reworkQty)} mono tokens={tokens} valueColor={tokens.danger} />
           )}
         </View>
