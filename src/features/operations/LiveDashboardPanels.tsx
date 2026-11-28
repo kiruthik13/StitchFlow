@@ -75,6 +75,69 @@ export function LiveDashboardPanel() {
   );
 }
 
+function parseCsvRow(line: string): string[] {
+  const cells: string[] = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      cells.push(current);
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  cells.push(current);
+  return cells;
+}
+
+function formatProfessionalJobReport(csv: string): string {
+  const lines = csv.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  if (lines.length <= 1) {
+    return 'StitchFlow — Production Jobs Report\nNo jobs found.';
+  }
+  const headers = parseCsvRow(lines[0]);
+  const idx = (name: string) => headers.indexOf(name);
+  const rows = lines.slice(1).map(parseCsvRow);
+
+  const out: string[] = [
+    'StitchFlow — Production Jobs Report',
+    `Generated : ${new Date().toLocaleString()}`,
+    `Total Jobs: ${rows.length}`,
+    '══════════════════════════════',
+  ];
+
+  rows.forEach((cols, i) => {
+    const get = (k: string, fallback = '0') => {
+      const pos = idx(k);
+      return pos >= 0 && cols[pos] !== undefined && cols[pos] !== '' ? cols[pos] : fallback;
+    };
+    const jobCode = get('job_code', `JOB-${i + 1}`);
+    const status = get('status', 'active').toUpperCase();
+    const factory = get('factory_name', '—');
+    const target = get('target_date', '—');
+    out.push(
+      `${i + 1}. ${jobCode} · ${status}`,
+      `   Factory   : ${factory}`,
+      `   Target    : ${target}`,
+      `   Order Qty : ${get('order_quantity')} pcs | Cut: ${get('cut')} pcs`,
+      `   QC        : ${get('inspected')} Inspected | ${get('released')} Released | ${get('rework')} Rework | ${get('rejected')} Rejected`,
+      `   Packing   : ${get('packed')} Packed | ${get('dispatched')} Dispatched`,
+      '──────────────────────────────',
+    );
+  });
+
+  return out.join('\n');
+}
+
 interface ReportJob {
   id: string;
   job_code: string;
@@ -112,7 +175,13 @@ export function LiveReportsPanel() {
       }
       return chunks.join('\r\n');
     },
-    onSuccess: csv => { void Share.share({ message: csv }).catch(() => {}); },
+    onSuccess: csv => {
+      const formatted = formatProfessionalJobReport(csv);
+      void Share.share({
+        title: 'StitchFlow Production Jobs Report',
+        message: formatted,
+      }).catch(() => {});
+    },
   });
   return (
     <View style={{ gap: spacing[3] }}>
