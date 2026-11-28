@@ -18,6 +18,7 @@ import {
   ClipboardCheck,
   Factory,
   Package,
+  RefreshCw,
   Settings,
   ShieldAlert,
   Wrench,
@@ -184,6 +185,19 @@ export default function NotificationsCenterScreen() {
     if (isDemoMode) markAllDemoRead();
     else markAllMutation.mutate();
   };
+
+  const handleRefresh = useCallback(() => {
+    if (isDemoMode) return;
+    void query.refetch();
+    void apiRequest<{ unreadCount: number; actionRequiredCount: number }>('/notifications/unread-count')
+      .then((res) => setCounts(res.unreadCount, res.actionRequiredCount))
+      .catch(() => {});
+  }, [isDemoMode, query, setCounts]);
+
+  const roleLabel = user?.role
+    ? t(`common:roles.${user.role}`, { defaultValue: user.role })
+    : t('common:all');
+  const hasActiveFilter = tab !== 'all' || category !== 'all';
 
   const renderItem = useCallback(
     ({ item }: { item: AppNotification }) => {
@@ -363,22 +377,58 @@ export default function NotificationsCenterScreen() {
               {section.title}
             </AppText>
           )}
-          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + spacing[6] }]}
+          contentContainerStyle={[
+            styles.listContent,
+            { paddingBottom: insets.bottom + spacing[6] },
+            sections.length === 0 && { flexGrow: 1 },
+          ]}
           initialNumToRender={12}
           maxToRenderPerBatch={10}
           windowSize={5}
           removeClippedSubviews={Platform.OS === 'android'}
           refreshing={!isDemoMode && query.isRefetching}
-          onRefresh={!isDemoMode ? () => void query.refetch() : undefined}
+          onRefresh={!isDemoMode ? handleRefresh : undefined}
           onEndReached={() => {
             if (!isDemoMode && query.hasNextPage && !query.isFetchingNextPage) {
               void query.fetchNextPage();
             }
           }}
           ListEmptyComponent={
-            <EmptyState
-              title={t('notifications:emptyTitle', { defaultValue: 'No notifications yet' })}
-            />
+            <View style={styles.emptyWrap}>
+              <EmptyState
+                icon={
+                  <View style={[styles.emptyIconCircle, { backgroundColor: tokens.surfaceSecondary, borderColor: tokens.border }]}>
+                    <Bell size={28} color={tokens.brand} strokeWidth={1.8} />
+                  </View>
+                }
+                title={t('notifications:emptyTitle', { defaultValue: 'No notifications yet' })}
+                message={
+                  hasActiveFilter
+                    ? t('notifications:emptyFilteredMessage')
+                    : t('notifications:emptyMessage', { role: roleLabel })
+                }
+              />
+              <View style={styles.emptyActions}>
+                <AppButton
+                  title={t('common:refresh')}
+                  size="sm"
+                  loading={!isDemoMode && query.isRefetching}
+                  leftIcon={<RefreshCw size={16} color={tokens.textInverse} />}
+                  onPress={handleRefresh}
+                />
+                {hasActiveFilter && (
+                  <AppButton
+                    title={t('notifications:resetFilters', { defaultValue: 'Show All' })}
+                    size="sm"
+                    variant="outline"
+                    onPress={() => {
+                      setTab('all');
+                      setCategory('all');
+                    }}
+                  />
+                )}
+              </View>
+            </View>
           }
         />
       )}
@@ -422,4 +472,14 @@ const styles = StyleSheet.create({
   itemMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing[2], marginTop: spacing[2] },
   unreadDot: { width: 8, height: 8, borderRadius: 4, marginLeft: 'auto' },
   centerBox: { padding: spacing[6], alignItems: 'center', gap: spacing[3] },
+  emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingBottom: spacing[8] },
+  emptyIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyActions: { flexDirection: 'row', gap: spacing[2], marginTop: -spacing[4] },
 });

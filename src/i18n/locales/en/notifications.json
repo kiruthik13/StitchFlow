@@ -9,6 +9,9 @@
   "yesterday": "Yesterday",
   "earlier": "Earlier",
   "emptyTitle": "No notifications yet",
+  "emptyMessage": "You're all caught up. Alerts for {{role}} will appear here when floor, quality, or dispatch events occur.",
+  "emptyFilteredMessage": "No notifications match the current filter. Tap Refresh or switch to All to view everything.",
+  "resetFilters": "Show All",
   "categories": {
     "work_orders": "Work Orders",
     "production": "Production",
