@@ -8,6 +8,7 @@ import { useThemeStore } from '../../../src/store/themeStore';
 import { useDemoStore } from '../../../src/store/demoStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { apiBundles } from '../../../src/services/repositories/bundleRepository';
+import { invalidateOperationalFlow } from '../../../src/services/api/useFactoryUpdates';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppText } from '../../../src/design-system/components/AppText';
 import { AppCard } from '../../../src/design-system/components/AppCard';
@@ -48,7 +49,7 @@ export default function BundleDetailScreen() {
       setShowConfirm(false);
       setSubmitted(true);
       queryClient.invalidateQueries({ queryKey: ['bundle-detail', id] });
-      queryClient.invalidateQueries({ queryKey: ['bundles'] });
+      invalidateOperationalFlow(queryClient);
     },
     onError: (err: Error) => {
       setShowConfirm(false);

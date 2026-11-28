@@ -6,12 +6,15 @@ import { AppButton } from '../../design-system/components/AppButton';
 import { AppCard } from '../../design-system/components/AppCard';
 import { AppText } from '../../design-system/components/AppText';
 import { spacing } from '../../design-system/tokens/spacing';
+import { useQueryClient } from '@tanstack/react-query';
 import { getQueuedProductionEvents, replayProductionQueue } from '../../services/offline/offlineQueueService';
+import { invalidateOperationalFlow } from '../../services/api/useFactoryUpdates';
 import { useAuthStore } from '../../store/authStore';
 
 export function OfflineSyncBanner() {
   const { t } = useTranslation(['common', 'errors']);
   const { isDemoMode, user } = useAuthStore();
+  const queryClient = useQueryClient();
   const [queuedCount, setQueuedCount] = useState(0);
   const [syncing, setSyncing] = useState(false);
 
@@ -37,6 +40,9 @@ export function OfflineSyncBanner() {
     try {
       const summary = await replayProductionQueue(user.id);
       setQueuedCount(summary.remaining);
+      if (summary.confirmed > 0) {
+        invalidateOperationalFlow(queryClient);
+      }
       Alert.alert(
         t('common:sync'),
         `${summary.confirmed} OK · ${summary.conflicts} conflict · ${summary.remaining} pending`,
