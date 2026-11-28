@@ -44,6 +44,9 @@ const syncedKeys = new Set([
   'users-accounts',
   'users-roster',
   'photo-evidence-bundles',
+  'planning-bottlenecks',
+  'planning-predictions',
+  'monitor-bottlenecks',
 ]);
 
 const realtimeRoles = new Set([

@@ -230,8 +230,8 @@ export class PlanningIntelligenceService {
       wipQty: number;
     }>(
       `SELECT j.job_code AS "jobCode", pl.name AS "lineName",
-              COALESCE(SUM(q.rework), 0)::integer AS "reworkQty",
-              COALESCE(SUM(b.quantity - COALESCE(q.released, 0)), 0)::integer AS "wipQty"
+              GREATEST(0, COALESCE(SUM(COALESCE(q.rework, 0) - COALESCE(q.reworked, 0)), 0))::integer AS "reworkQty",
+              GREATEST(0, COALESCE(SUM(b.quantity - COALESCE(q.released, 0) - COALESCE(q.rejected, 0)), 0))::integer AS "wipQty"
        FROM public.jobs j
        JOIN public.factories f ON f.id = j.factory_id
        JOIN public.production_lines pl ON pl.id = j.line_id
@@ -239,8 +239,9 @@ export class PlanningIntelligenceService {
        LEFT JOIN public.bundle_quality_balances q ON q.bundle_id = b.id
        WHERE ${factoryScope} AND f.id = $4 AND j.status = 'active'
        GROUP BY j.id, j.job_code, pl.name
-       HAVING COALESCE(SUM(q.rework), 0) > 0 OR COALESCE(SUM(b.quantity - COALESCE(q.released, 0)), 0) > 0
-       ORDER BY COALESCE(SUM(q.rework), 0) DESC, "wipQty" DESC LIMIT 20`,
+       HAVING GREATEST(0, COALESCE(SUM(COALESCE(q.rework, 0) - COALESCE(q.reworked, 0)), 0)) > 0
+           OR GREATEST(0, COALESCE(SUM(b.quantity - COALESCE(q.released, 0) - COALESCE(q.rejected, 0)), 0)) > 0
+       ORDER BY "reworkQty" DESC, "wipQty" DESC LIMIT 20`,
       [...jobScopeParams(user), query.factoryId],
     );
 
@@ -261,6 +262,28 @@ export class PlanningIntelligenceService {
       [...jobScopeParams(user), query.factoryId],
     );
 
+    const stageRes = await this.db.query<{
+      jobCode: string;
+      lineName: string;
+      stageCode: string;
+      queuedQty: number;
+    }>(
+      `SELECT j.job_code AS "jobCode", pl.name AS "lineName", s.stage_code AS "stageCode",
+              SUM(GREATEST(0, p.available - p.completed))::integer AS "queuedQty"
+       FROM public.bundle_route_progress p
+       JOIN public.job_route_steps s ON s.id = p.step_id
+       JOIN public.bundles b ON b.id = p.bundle_id
+       JOIN public.jobs j ON j.id = b.job_id
+       JOIN public.factories f ON f.id = j.factory_id
+       JOIN public.production_lines pl ON pl.id = s.line_id
+       WHERE ${factoryScope} AND f.id = $4 AND j.status = 'active' AND p.available > p.completed
+       GROUP BY j.job_code, pl.name, s.stage_code, s.ordinal
+       HAVING SUM(GREATEST(0, p.available - p.completed)) >= 20
+       ORDER BY "queuedQty" DESC, s.ordinal ASC LIMIT 20`,
+      [...jobScopeParams(user), query.factoryId],
+    );
+    const stageQueueRows = stageRes?.rows ?? [];
+
     const bottlenecks = [
       ...reworkRows
         .filter(r => r.reworkQty > 0)
@@ -271,22 +294,37 @@ export class PlanningIntelligenceService {
           jobCode: r.jobCode,
           piledPieces: r.wipQty,
           reworkBacklog: r.reworkQty,
+          paceGapPerHr: 0,
           severity: r.reworkQty >= 15 ? 'critical' : 'warning',
-          rootCause: `${r.reworkQty} rework pieces pending rectification and reinspection.`,
-          recommendation: 'Prioritize rework return before releasing downstream bundles.',
+          rootCause: `${r.reworkQty} pending rework pcs (unrectified) across ${r.wipQty} active WIP pcs.`,
+          recommendation: 'Prioritize rework rectification & QC reinspection before releasing downstream bundles.',
         })),
+      ...stageQueueRows.map((sq, idx) => ({
+        id: `sq-${idx}`,
+        stage: `Stage Queue · ${sq.stageCode}`,
+        lineName: sq.lineName,
+        jobCode: sq.jobCode,
+        piledPieces: sq.queuedQty,
+        reworkBacklog: 0,
+        paceGapPerHr: 0,
+        severity: sq.queuedQty >= 100 ? 'critical' : 'warning',
+        rootCause: `${sq.queuedQty} pcs queued at ${sq.stageCode} waiting for stage completion.`,
+        recommendation: `Rebalance operators on ${sq.lineName} to clear ${sq.stageCode} WIP queue.`,
+      })),
       ...slowStations.map((s, idx) => {
-        const variancePct = Math.round(((s.targetPace - s.actualPace) / Math.max(1, s.targetPace)) * 100);
+        const paceGap = Math.max(0, s.targetPace - s.actualPace);
+        const variancePct = Math.round((paceGap / Math.max(1, s.targetPace)) * 100);
         return {
           id: `st-${idx}`,
           stage: s.operationName,
           lineName: s.lineName,
-          jobCode: s.operatorName,
-          piledPieces: Math.max(0, s.targetPace - s.actualPace),
+          jobCode: `Operator: ${s.operatorName}`,
+          piledPieces: 0,
           reworkBacklog: 0,
+          paceGapPerHr: paceGap,
           severity: variancePct >= 25 ? 'critical' : 'warning',
-          rootCause: `Operator ${s.operatorName} running at ${s.actualPace} pcs/hr vs ${s.targetPace} pcs/hr target (-${variancePct}%).`,
-          recommendation: 'Pair helper or rebalance station workload.',
+          rootCause: `${s.operatorName} running at ${s.actualPace} pcs/hr vs ${s.targetPace} pcs/hr target (-${variancePct}%).`,
+          recommendation: 'Pair reserve helper or rebalance station workload.',
         };
       }),
     ];
