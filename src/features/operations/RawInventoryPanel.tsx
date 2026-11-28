@@ -7,9 +7,15 @@ import { AppButton } from '../../design-system/components/AppButton';
 import { AppCard } from '../../design-system/components/AppCard';
 import { AppInput } from '../../design-system/components/AppInput';
 import { AppText } from '../../design-system/components/AppText';
+import {
+  SectionHeader,
+  StructuredRecordCard,
+  SummaryStrip,
+} from '../../design-system/components/StructuredRecordCard';
 import { spacing } from '../../design-system/tokens/spacing';
 import { apiRequest } from '../../services/api/apiClient';
 import { useAuthStore } from '../../store/authStore';
+import { formatQuantity } from '../../utils/formatters';
 
 interface Material { id: string; sku: string; name: string; baseUnit: string; requestId: string; quantity?: number }
 interface Location { id: string; name: string; isActive?: boolean; factoryName?: string }
@@ -134,10 +140,41 @@ export function RawInventoryPanel({ mode }: { mode: 'receipt' | 'transfer' | 'co
           title={t(`inventory:rawUnit_${value}`)} size="sm" variant={unit === value ? 'primary' : 'outline'} onPress={() => setUnit(value)} />)}
         <AppButton title={t('inventory:createRawMaterial')} disabled={!sku.trim() || !name.trim() || create.isPending} onPress={() => create.mutate()} />
       </AppCard>}
-      {mode === 'receipt' && stock.data?.map(material => <AppCard key={material.id} padding={spacing[3]}>
-        <AppText variant="label">{material.sku} · {material.name}</AppText>
-        <AppText variant="bodySmall">{material.quantity} {t(`inventory:rawUnit_${material.baseUnit}`)}</AppText>
-      </AppCard>)}
+      {mode === 'receipt' && !!stock.data?.length && (
+        <>
+          <SummaryStrip
+            metrics={[
+              { label: t('inventory:stockInventoryItems'), value: stock.data.length, tone: 'brand' },
+              {
+                label: t('inventory:lowStock'),
+                value: stock.data.filter(m => Number(m.quantity ?? 0) <= 0).length,
+                tone: stock.data.some(m => Number(m.quantity ?? 0) <= 0) ? 'warning' : 'success',
+              },
+            ]}
+          />
+          <SectionHeader title={t('inventory:availableStock')} count={stock.data.length} />
+          {stock.data.map(material => {
+            const qty = Number(material.quantity ?? 0);
+            const unitLabel = t(`inventory:rawUnit_${material.baseUnit}`);
+            return (
+              <StructuredRecordCard
+                key={material.id}
+                code={material.sku}
+                title={material.name}
+                status={{
+                  label: qty > 0 ? t('inventory:availableStock').toUpperCase() : t('inventory:lowStock').toUpperCase(),
+                  variant: qty > 0 ? 'success' : 'warning',
+                  dot: true,
+                }}
+                fields={[
+                  { label: t('inventory:currentStock'), value: formatQuantity(qty, unitLabel), mono: true, tone: qty > 0 ? 'brand' : 'warning' },
+                  { label: t('common:unit'), value: unitLabel },
+                ]}
+              />
+            );
+          })}
+        </>
+      )}
       {isStore && <AppCard padding={spacing[3]}>
         <View style={{ gap: spacing[2] }}>
           {mode === 'receipt' && <AppButton title={t(issue ? 'inventory:postRawIssue' : 'inventory:goodsReceipt')} variant="outline"
@@ -160,49 +197,100 @@ export function RawInventoryPanel({ mode }: { mode: 'receipt' | 'transfer' | 'co
             onPress={() => { if (selected) submit.mutate(selected); }} />
         </View>
       </AppCard>}
-      {mode === 'count' && counts.data?.map(item => <AppCard key={item.id} padding={spacing[3]}>
-        <AppText variant="label">{item.sku} · {item.location}</AppText>
-        <AppText variant="bodySmall">{t('inventory:stockCountDifference', { expected: item.expectedQuantity, observed: item.observedQuantity })}</AppText>
-        <AppText variant="caption">{item.reason}</AppText>
-        {!item.approvedAt && user?.role === 'factory-manager' && (
-          <AppButton title={t('inventory:approveStockCount')} disabled={approveCount.isPending}
-            onPress={() => Alert.alert(t('inventory:approveStockCount'), item.sku, [
-              { text: t('common:cancel'), style: 'cancel' },
-              { text: t('common:confirm'), onPress: () => approveCount.mutate(item.id) },
-            ])} />
-        )}
-      </AppCard>)}
-      {mode === 'transfer' && transfers.data?.map(transfer => <AppCard key={transfer.id} padding={spacing[3]}>
-        <AppText variant="label">{transfer.sku} · {transfer.quantity} {t(`inventory:rawUnit_${transfer.baseUnit}`)}</AppText>
-        <AppText variant="bodySmall">{transfer.source} → {transfer.destination}</AppText>
-        <AppText variant="caption">{t(transfer.returnedAt ? 'inventory:rawTransferReturned' : transfer.receivedAt ? 'inventory:rawTransferReceived'
-          : transfer.disputedAt ? 'inventory:rawTransferDisputed' : 'inventory:rawTransferInTransit')}</AppText>
-        {isStore && !transfer.receivedAt && !transfer.disputedAt && transfer.destinationFactoryId === factory && transfer.senderId !== user?.id && (
-          receiving === transfer.id ? <>
-            <AppInput label={t('production:enterQuantity')} value={count} onChangeText={setCount} keyboardType="numeric" />
-            <AppButton title={t('common:confirm')} disabled={receive.isPending || Number(count) !== transfer.quantity}
-              onPress={() => receive.mutate(transfer.id)} />
-            <AppInput label={t('production:jobRejectionReason')} value={discrepancy} onChangeText={setDiscrepancy} />
-            <AppButton title={t('inventory:recordCutStockDiscrepancy')} variant="outline"
-              disabled={!count.trim() || !Number.isInteger(Number(count)) || Number(count) < 0
-                || Number(count) === transfer.quantity || !discrepancy.trim() || resolveTransfer.isPending}
-              onPress={() => resolveTransfer.mutate({ id: transfer.id, quantity: Number(count), restore: false })} />
-          </> : <AppButton title={t('common:confirm')} variant="outline" onPress={() => { setReceiving(transfer.id); setCount(''); setDiscrepancy(''); }} />
-        )}
-        {isStore && transfer.disputedAt && !transfer.returnedAt && transfer.senderId === user?.id && (
-          receiving === `return-${transfer.id}` ? <>
-            <AppInput label={t('production:enterQuantity')} value={count} onChangeText={setCount} keyboardType="numeric" />
-            <AppInput label={t('production:jobRejectionReason')} value={discrepancy} onChangeText={setDiscrepancy} />
-            <AppButton title={t('inventory:verifyStockReturn')} variant="outline"
-              disabled={!count.trim() || !Number.isInteger(Number(count)) || Number(count) < 0
-                || Number(count) > transfer.quantity || resolveTransfer.isPending}
-              onPress={() => resolveTransfer.mutate({ id: transfer.id, quantity: Number(count), restore: true })} />
-          </> : (
-            <AppButton title={t('inventory:verifyStockReturn')} variant="outline" disabled={resolveTransfer.isPending}
-              onPress={() => { setReceiving(`return-${transfer.id}`); setCount(String(transfer.quantity)); setDiscrepancy(''); }} />
-          )
-        )}
-      </AppCard>)}
+      {mode === 'count' && !!counts.data?.length && (
+        <>
+          <SectionHeader title={t('inventory:stockCount')} count={counts.data.length} />
+          {counts.data.map(item => {
+            const diff = Number(item.observedQuantity) - Number(item.expectedQuantity);
+            const unitLabel = t(`inventory:rawUnit_${item.baseUnit}`);
+            return (
+              <StructuredRecordCard
+                key={item.id}
+                code={item.sku}
+                title={item.location}
+                status={{
+                  label: item.approvedAt ? t('common:approved').toUpperCase() : t('common:pending').toUpperCase(),
+                  variant: item.approvedAt ? 'success' : 'warning',
+                  dot: true,
+                }}
+                fields={[
+                  { label: t('inventory:availableStock'), value: formatQuantity(item.expectedQuantity, unitLabel), mono: true },
+                  { label: t('inventory:physicalCount'), value: formatQuantity(item.observedQuantity, unitLabel), mono: true, tone: diff === 0 ? 'success' : 'warning' },
+                  { label: t('inventory:discrepancy'), value: `${diff > 0 ? '+' : ''}${diff} ${unitLabel}`, mono: true, tone: diff === 0 ? 'default' : 'danger', fullWidth: true },
+                ]}
+                highlight={item.reason ? { label: t('common:remarks'), value: item.reason, tone: 'info' } : undefined}
+              >
+                {!item.approvedAt && user?.role === 'factory-manager' && (
+                  <AppButton
+                    title={t('inventory:approveStockCount')}
+                    disabled={approveCount.isPending}
+                    onPress={() =>
+                      Alert.alert(t('inventory:approveStockCount'), item.sku, [
+                        { text: t('common:cancel'), style: 'cancel' },
+                        { text: t('common:confirm'), onPress: () => approveCount.mutate(item.id) },
+                      ])
+                    }
+                  />
+                )}
+              </StructuredRecordCard>
+            );
+          })}
+        </>
+      )}
+      {mode === 'transfer' && !!transfers.data?.length && (
+        <>
+          <SectionHeader title={t('inventory:interFactoryTransfer')} count={transfers.data.length} />
+          {transfers.data.map(transfer => {
+            const unitLabel = t(`inventory:rawUnit_${transfer.baseUnit}`);
+            const transferStatus = transfer.returnedAt
+              ? { label: t('inventory:rawTransferReturned').toUpperCase(), variant: 'neutral' as const, dot: true }
+              : transfer.receivedAt
+              ? { label: t('inventory:rawTransferReceived').toUpperCase(), variant: 'success' as const, dot: true }
+              : transfer.disputedAt
+              ? { label: t('inventory:rawTransferDisputed').toUpperCase(), variant: 'danger' as const, dot: true }
+              : { label: t('inventory:rawTransferInTransit').toUpperCase(), variant: 'info' as const, dot: true };
+
+            return (
+              <StructuredRecordCard
+                key={transfer.id}
+                code={transfer.sku}
+                title={`${transfer.source} → ${transfer.destination}`}
+                status={transferStatus}
+                fields={[
+                  { label: t('common:quantity'), value: formatQuantity(transfer.quantity, unitLabel), mono: true, tone: 'brand' },
+                  { label: t('inventory:transferDestination'), value: transfer.destination },
+                ]}
+              >
+                {isStore && !transfer.receivedAt && !transfer.disputedAt && transfer.destinationFactoryId === factory && transfer.senderId !== user?.id && (
+                  receiving === transfer.id ? <>
+                    <AppInput label={t('production:enterQuantity')} value={count} onChangeText={setCount} keyboardType="numeric" />
+                    <AppButton title={t('common:confirm')} disabled={receive.isPending || Number(count) !== transfer.quantity}
+                      onPress={() => receive.mutate(transfer.id)} />
+                    <AppInput label={t('production:jobRejectionReason')} value={discrepancy} onChangeText={setDiscrepancy} />
+                    <AppButton title={t('inventory:recordCutStockDiscrepancy')} variant="outline"
+                      disabled={!count.trim() || !Number.isInteger(Number(count)) || Number(count) < 0
+                        || Number(count) === transfer.quantity || !discrepancy.trim() || resolveTransfer.isPending}
+                      onPress={() => resolveTransfer.mutate({ id: transfer.id, quantity: Number(count), restore: false })} />
+                  </> : <AppButton title={t('common:confirm')} variant="outline" onPress={() => { setReceiving(transfer.id); setCount(''); setDiscrepancy(''); }} />
+                )}
+                {isStore && transfer.disputedAt && !transfer.returnedAt && transfer.senderId === user?.id && (
+                  receiving === `return-${transfer.id}` ? <>
+                    <AppInput label={t('production:enterQuantity')} value={count} onChangeText={setCount} keyboardType="numeric" />
+                    <AppInput label={t('production:jobRejectionReason')} value={discrepancy} onChangeText={setDiscrepancy} />
+                    <AppButton title={t('inventory:verifyStockReturn')} variant="outline"
+                      disabled={!count.trim() || !Number.isInteger(Number(count)) || Number(count) < 0
+                        || Number(count) > transfer.quantity || resolveTransfer.isPending}
+                      onPress={() => resolveTransfer.mutate({ id: transfer.id, quantity: Number(count), restore: true })} />
+                  </> : (
+                    <AppButton title={t('inventory:verifyStockReturn')} variant="outline" disabled={resolveTransfer.isPending}
+                      onPress={() => { setReceiving(`return-${transfer.id}`); setCount(String(transfer.quantity)); setDiscrepancy(''); }} />
+                  )
+                )}
+              </StructuredRecordCard>
+            );
+          })}
+        </>
+      )}
     </View>
   );
 }

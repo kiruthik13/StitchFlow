@@ -73,5 +73,22 @@
   "stockCountDifference": "இருப்புப் பதிவு {{expected}} · எண்ணியது {{observed}}",
   "approveStockCount": "இருப்பு எண்ணிக்கைக்கு ஒப்புதல் அளி",
   "rawTransferDisputed": "அளவு வேறுபாடு பதிவு செய்யப்பட்டது",
-  "rawTransferReturned": "மூல இடத்திற்குத் திரும்பியது"
+  "rawTransferReturned": "மூல இடத்திற்குத் திரும்பியது",
+  "gatePass": "கேட் பாஸ்",
+  "totalManifests": "மொத்த பட்டியல்கள்",
+  "pendingApproval": "ஒப்புதல் நிலுவையில்",
+  "readyToDispatch": "அனுப்பத் தயார்",
+  "dispatched": "அனுப்பப்பட்டது",
+  "inManifest": "பட்டியலில் உள்ளது",
+  "inStore": "கிடங்கில் உள்ளது",
+  "pendingReceipt": "பெறுதல் நிலுவையில்",
+  "cartonsCount": "பெட்டிகள்",
+  "totalPieces": "மொத்த எண்ணிக்கை",
+  "createdAt": "உருவாக்கப்பட்டது",
+  "approvedAt": "ஒப்புதல் நேரம்",
+  "dispatchedAt": "அனுப்பிய நேரம்",
+  "receivedAt": "பெற்ற நேரம்",
+  "includedJobs": "பணி எண்கள்",
+  "includedCartons": "பட்டியலில் உள்ள பெட்டிகள்",
+  "selectCartonsForManifest": "பட்டியலுக்குப் பெற்ற பெட்டிகளைத் தேர்ந்தெடுக்கவும்"
 }

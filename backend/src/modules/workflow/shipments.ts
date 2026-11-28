@@ -47,14 +47,27 @@ export class ShipmentsService {
 
   async list(user: AuthenticatedUser, query: FactoryQuery) {
     const { rows } = await this.db.query(`
-      SELECT m.id, m.carrier, m.vehicle, m.seal, m.destination, m.approved_at AS "approvedAt",
+      SELECT m.id, f.name AS "factoryName", m.carrier, m.vehicle, m.seal, m.destination,
+        m.created_at AS "createdAt", m.approved_at AS "approvedAt",
         m.dispatched_at AS "dispatchedAt", m.gate_pass AS "gatePass",
         (SELECT COUNT(*)::integer FROM public.shipment_manifest_cartons mc WHERE mc.manifest_id = m.id) AS cartons,
         (SELECT COALESCE(SUM(c.quantity),0)::float8 FROM public.shipment_manifest_cartons mc
-         JOIN public.bundle_cartons c ON c.id = mc.carton_id WHERE mc.manifest_id = m.id) AS quantity
+         JOIN public.bundle_cartons c ON c.id = mc.carton_id WHERE mc.manifest_id = m.id) AS quantity,
+        ARRAY(
+          SELECT c.barcode FROM public.shipment_manifest_cartons mc
+          JOIN public.bundle_cartons c ON c.id = mc.carton_id
+          WHERE mc.manifest_id = m.id ORDER BY c.barcode ASC
+        ) AS "cartonBarcodes",
+        ARRAY(
+          SELECT DISTINCT j.job_code FROM public.shipment_manifest_cartons mc
+          JOIN public.bundle_cartons c ON c.id = mc.carton_id
+          JOIN public.bundles b ON b.id = c.bundle_id
+          JOIN public.jobs j ON j.id = b.job_id
+          WHERE mc.manifest_id = m.id ORDER BY j.job_code ASC
+        ) AS "jobCodes"
       FROM public.shipment_manifests m JOIN public.factories f ON f.id = m.factory_id
       WHERE ${factoryScope} AND f.id = $4 AND ($5::uuid IS NULL OR m.id > $5)
-      ORDER BY m.id LIMIT 100`, [...jobScopeParams(user), query.factoryId, query.after ?? null]);
+      ORDER BY m.created_at DESC, m.id LIMIT 100`, [...jobScopeParams(user), query.factoryId, query.after ?? null]);
     return rows;
   }
 
@@ -197,13 +210,19 @@ export class ShipmentsService {
     ].join('');
 
     const text = [
-      `STITCHFLOW GATE PASS: ${manifest.gatePass}`,
-      `Factory: ${manifest.factoryName}`,
-      `Dispatched: ${manifest.dispatchedAt}`,
-      `Carrier: ${manifest.carrier} | Vehicle: ${manifest.vehicle} | Seal: ${manifest.seal}`,
-      `Destination: ${manifest.destination}`,
-      `Cartons: ${cartons.length} | Total Qty: ${totalQty}`,
-      ...cartons.map(c => `- ${c.barcode} (${c.jobCode} ${c.size}/${c.color}: ${c.quantity})`),
+      'StitchFlow — Official Dispatch Gate Pass',
+      `Gate Pass   : ${manifest.gatePass}`,
+      `Factory     : ${manifest.factoryName}`,
+      `Dispatched  : ${manifest.dispatchedAt}`,
+      `Destination : ${manifest.destination}`,
+      `Carrier     : ${manifest.carrier}`,
+      `Vehicle     : ${manifest.vehicle}  |  Seal: ${manifest.seal}`,
+      `Totals      : ${cartons.length} cartons  |  ${totalQty.toLocaleString()} pcs`,
+      '',
+      'Carton Manifest:',
+      ...cartons.map((c, idx) =>
+        `${idx + 1}. ${c.barcode}  |  ${c.jobCode}  |  ${c.size} / ${c.color}  |  ${Number(c.quantity || 0).toLocaleString()} pcs`,
+      ),
     ].join('\n');
 
     return { manifest, cartons, totalQty, html, text };

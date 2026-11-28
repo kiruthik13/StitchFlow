@@ -8,11 +8,16 @@ import { AppButton } from '../../design-system/components/AppButton';
 import { AppCard } from '../../design-system/components/AppCard';
 import { AppText } from '../../design-system/components/AppText';
 import { EmptyState } from '../../design-system/components/EmptyState';
-import { StatusBadge } from '../../design-system/components/StatusBadge';
+import {
+  DetailField,
+  StructuredRecordCard,
+  SummaryStrip,
+} from '../../design-system/components/StructuredRecordCard';
 import { spacing } from '../../design-system/tokens/spacing';
 import { apiRequest } from '../../services/api/apiClient';
 import { useAuthStore } from '../../store/authStore';
 import { useThemeStore } from '../../store/themeStore';
+import { formatQuantity } from '../../utils/formatters';
 
 interface LiveBundle {
   id: string;
@@ -99,59 +104,100 @@ export function LiveWorkPanel({ mode }: { mode: 'supervisor' | 'operator' | 'qc'
         />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: spacing[4], paddingBottom: insets.bottom + spacing[8] }}>
+      <ScrollView contentContainerStyle={{ padding: spacing[4], paddingBottom: insets.bottom + spacing[8], gap: spacing[2.5] }}>
         {mode === 'store' ? (
           <>
             {stockQuery.isLoading && <AppText>{t('common:loading')}</AppText>}
             {!stockQuery.isLoading && (stockQuery.data ?? []).length === 0 && <EmptyState title={t('common:noData')} />}
+            {!!(stockQuery.data ?? []).length && (
+              <SummaryStrip
+                metrics={[
+                  { label: t('inventory:stockInventoryItems'), value: (stockQuery.data ?? []).length, tone: 'brand' },
+                  {
+                    label: t('inventory:lowStock'),
+                    value: (stockQuery.data ?? []).filter(s => s.quantity <= 0).length,
+                    tone: (stockQuery.data ?? []).some(s => s.quantity <= 0) ? 'warning' : 'success',
+                  },
+                ]}
+              />
+            )}
             {(stockQuery.data ?? []).map((s) => (
-              <AppCard key={s.id} padding={spacing[3.5]} style={{ marginBottom: spacing[2] }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <View style={{ flex: 1 }}>
-                    <AppText variant="label" bold>{s.name}</AppText>
-                    <AppText variant="code" color="secondary">{s.sku}</AppText>
-                  </View>
-                  <StatusBadge label={`${s.quantity} ${s.baseUnit}`} variant={s.quantity > 0 ? 'success' : 'warning'} size="sm" />
-                </View>
-              </AppCard>
+              <StructuredRecordCard
+                key={s.id}
+                code={s.sku}
+                title={s.name}
+                status={{
+                  label: `${s.quantity} ${s.baseUnit}`,
+                  variant: s.quantity > 0 ? 'success' : 'warning',
+                  dot: true,
+                }}
+                fields={[
+                  { label: t('inventory:availableStock'), value: formatQuantity(s.quantity, s.baseUnit), mono: true, tone: s.quantity > 0 ? 'brand' : 'warning' },
+                  { label: t('common:unit'), value: s.baseUnit },
+                ]}
+              />
             ))}
           </>
         ) : (
           <>
             {bundlesQuery.isLoading && <AppText>{t('common:loading')}</AppText>}
             {!bundlesQuery.isLoading && items.length === 0 && <EmptyState title={t('common:noData')} />}
-            {items.map((b) => (
-              <TouchableOpacity
-                key={b.id}
-                activeOpacity={0.8}
-                style={{ marginBottom: spacing[2] }}
-                onPress={() =>
-                  router.push(
-                    mode === 'qc'
-                      ? `/(app)/inspections/${b.id}`
-                      : mode === 'packing'
-                      ? '/(app)/cartons/create'
-                      : `/(app)/bundles/${b.id}`,
-                  )
-                }
-              >
-                <AppCard padding={spacing[3.5]}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <View style={{ flex: 1 }}>
-                      <AppText variant="code" mono bold>{b.bundleCode}</AppText>
-                      <AppText variant="caption" color="secondary">
-                        {`${b.jobCode} · ${b.color} · ${b.size} · ${b.quantity}`}
-                      </AppText>
-                    </View>
-                    <StatusBadge
-                      label={mode === 'packing' ? `${b.released ?? 0} REL` : `${b.quantity} PCS`}
-                      variant={mode === 'packing' ? 'success' : 'brand'}
-                      size="sm"
-                    />
-                  </View>
-                </AppCard>
-              </TouchableOpacity>
-            ))}
+            {items.length > 0 && (
+              <SummaryStrip
+                metrics={[
+                  { label: t('common:bundles'), value: items.length, tone: 'brand' },
+                  {
+                    label: t('common:quantity'),
+                    value: formatQuantity(items.reduce((sum, b) => sum + Number(b.quantity || 0), 0)),
+                    tone: 'default',
+                  },
+                ]}
+              />
+            )}
+            {items.map((b) => {
+              const fields: DetailField[] = [
+                { label: t('common:job'), value: b.jobCode || '—', mono: true },
+                { label: t('common:quantity'), value: formatQuantity(b.quantity), mono: true, tone: 'brand' },
+                { label: t('common:size'), value: b.size || '—' },
+                { label: t('common:color'), value: b.color || '—' },
+              ];
+              if (typeof b.inspected === 'number' || typeof b.released === 'number') {
+                fields.push(
+                  { label: t('quality:inspectedQty'), value: formatQuantity(b.inspected ?? 0), mono: true },
+                  { label: t('quality:passedQty'), value: formatQuantity(b.released ?? 0), mono: true, tone: 'success' },
+                );
+              }
+              if ((b.rework ?? 0) > 0) {
+                fields.push({ label: t('quality:rework'), value: formatQuantity(b.rework ?? 0), mono: true, tone: 'danger' });
+              }
+
+              return (
+                <TouchableOpacity
+                  key={b.id}
+                  activeOpacity={0.8}
+                  onPress={() =>
+                    router.push(
+                      mode === 'qc'
+                        ? `/(app)/inspections/${b.id}`
+                        : mode === 'packing'
+                        ? '/(app)/cartons/create'
+                        : `/(app)/bundles/${b.id}`,
+                    )
+                  }
+                >
+                  <StructuredRecordCard
+                    code={b.bundleCode}
+                    title={b.jobCode}
+                    status={{
+                      label: mode === 'packing' ? `${b.released ?? 0} REL` : `${b.quantity} PCS`,
+                      variant: mode === 'packing' ? 'success' : 'brand',
+                      dot: true,
+                    }}
+                    fields={fields}
+                  />
+                </TouchableOpacity>
+              );
+            })}
           </>
         )}
       </ScrollView>

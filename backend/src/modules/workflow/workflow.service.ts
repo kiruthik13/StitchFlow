@@ -208,10 +208,12 @@ export class WorkflowService {
 
   async cartons(user: AuthenticatedUser, factoryId: string, after?: string) {
     const { rows } = await this.db.query(`
-      SELECT c.id, c.barcode, c.quantity, gen_random_uuid() AS "requestId", r.received_at AS "receivedAt", d.approved_at AS "approvedAt",
+      SELECT c.id, c.barcode, c.quantity, j.job_code AS "jobCode", s.name AS "styleName", b.size, b.color,
+        gen_random_uuid() AS "requestId", r.received_at AS "receivedAt", d.approved_at AS "approvedAt",
         d.dispatched_at AS "dispatchedAt", d.gate_pass AS "gatePass", mc.manifest_id AS "manifestId"
       FROM public.bundle_cartons c JOIN public.bundles b ON b.id = c.bundle_id
       JOIN public.jobs j ON j.id = b.job_id JOIN public.factories f ON f.id = j.factory_id
+      LEFT JOIN public.garment_styles s ON s.id = j.style_id
       LEFT JOIN public.carton_store_receipts r ON r.carton_id = c.id
       LEFT JOIN public.carton_dispatch d ON d.carton_id = c.id
       LEFT JOIN public.shipment_manifest_cartons mc ON mc.carton_id = c.id

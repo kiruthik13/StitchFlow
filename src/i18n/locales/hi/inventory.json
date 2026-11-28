@@ -73,5 +73,22 @@
   "stockCountDifference": "अपेक्षित {{expected}} · गिना गया {{observed}}",
   "approveStockCount": "स्टॉक गणना स्वीकृत करें",
   "rawTransferDisputed": "अंतर दर्ज किया गया",
-  "rawTransferReturned": "स्रोत पर वापस आया"
+  "rawTransferReturned": "स्रोत पर वापस आया",
+  "gatePass": "गेट पास",
+  "totalManifests": "कुल मैनिफ़ेस्ट",
+  "pendingApproval": "स्वीकृति लंबित",
+  "readyToDispatch": "प्रेषण के लिए तैयार",
+  "dispatched": "प्रेषित",
+  "inManifest": "मैनिफ़ेस्ट में",
+  "inStore": "भंडार में",
+  "pendingReceipt": "प्राप्ति लंबित",
+  "cartonsCount": "कार्टन",
+  "totalPieces": "कुल पीस",
+  "createdAt": "निर्मित",
+  "approvedAt": "स्वीकृत",
+  "dispatchedAt": "प्रेषित समय",
+  "receivedAt": "प्राप्त समय",
+  "includedJobs": "जॉब कोड",
+  "includedCartons": "मैनिफ़ेस्ट कार्टन",
+  "selectCartonsForManifest": "मैनिफ़ेस्ट के लिए प्राप्त कार्टन चुनें"
 }

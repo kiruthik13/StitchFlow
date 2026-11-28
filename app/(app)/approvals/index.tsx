@@ -13,7 +13,13 @@ import { AppText } from '../../../src/design-system/components/AppText';
 import { AppCard } from '../../../src/design-system/components/AppCard';
 import { AppButton } from '../../../src/design-system/components/AppButton';
 import { StatusBadge } from '../../../src/design-system/components/StatusBadge';
+import {
+  SectionHeader,
+  StructuredRecordCard,
+  SummaryStrip,
+} from '../../../src/design-system/components/StructuredRecordCard';
 import { spacing } from '../../../src/design-system/tokens/spacing';
+import { formatDateOnly, formatQuantity } from '../../../src/utils/formatters';
 
 const PENDING_APPROVALS = [
   { id: 'appr-1', type: 'Rework Release', title: 'Bundle BND-00523 Rework Pass', desc: '15 pcs rectified by Operator Kavitha. Reinspected by Meena.', requestedBy: 'Meena (QC Inspector)', urgency: 'High' },
@@ -77,31 +83,57 @@ export default function ApprovalsScreen() {
           : pending.isLoading ? <AppText>{t('common:loading')}</AppText>
           : pending.isError ? <AppButton title={t('common:refresh')} onPress={() => void pending.refetch()} />
           : !pending.data?.length ? <AppCard padding={spacing[6]}><AppText>{t('production:noJobApprovals')}</AppText></AppCard>
-          : pending.data.map(job => (
-            <AppCard key={job.id} padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
-              <AppText variant="h4" bold>{job.jobCode}</AppText>
-              <AppText variant="bodySmall" color="secondary">
-                {t('production:orderQuantity')} · {job.orderQuantity.toLocaleString()} · {job.targetDate}
-              </AppText>
-              {rejecting === job.id && (
-                <AppInput label={t('production:jobRejectionReason')} value={reason} onChangeText={setReason} />
-              )}
-              <View style={{ marginTop: spacing[3], flexDirection: 'row', gap: spacing[2] }}>
-                <View style={{ flex: 1 }}>
-                  <AppButton title={t('production:approveDraftJob')} size="sm" disabled={decide.isPending}
-                    onPress={() => decide.mutate({ id: job.id, decision: 'approved' })} />
+          : <View style={{ gap: spacing[3] }}>
+            <SummaryStrip
+              metrics={[
+                { label: t('common:pending'), value: pending.data.length, tone: 'warning' },
+                {
+                  label: t('production:orderQuantity'),
+                  value: formatQuantity(pending.data.reduce((sum, j) => sum + Number(j.orderQuantity || 0), 0)),
+                  tone: 'brand',
+                },
+              ]}
+            />
+            <SectionHeader title={t('production:floorApprovals')} count={pending.data.length} />
+            {pending.data.map(job => (
+              <StructuredRecordCard
+                key={job.id}
+                code={job.jobCode}
+                title={t('production:workOrders')}
+                status={{ label: t('common:pending').toUpperCase(), variant: 'warning', dot: true }}
+                fields={[
+                  { label: t('production:orderQuantity'), value: formatQuantity(job.orderQuantity), mono: true, tone: 'brand' },
+                  { label: t('common:date'), value: formatDateOnly(job.targetDate) },
+                ]}
+              >
+                {rejecting === job.id && (
+                  <AppInput label={t('production:jobRejectionReason')} value={reason} onChangeText={setReason} />
+                )}
+                <View style={{ flexDirection: 'row', gap: spacing[2] }}>
+                  <View style={{ flex: 1 }}>
+                    <AppButton
+                      title={t('production:approveDraftJob')}
+                      size="sm"
+                      disabled={decide.isPending}
+                      onPress={() => decide.mutate({ id: job.id, decision: 'approved' })}
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <AppButton
+                      title={t('production:rejectDraftJob')}
+                      size="sm"
+                      variant="outline"
+                      disabled={decide.isPending || (rejecting === job.id && !reason.trim())}
+                      onPress={() => {
+                        if (rejecting === job.id) decide.mutate({ id: job.id, decision: 'rejected', reason: reason.trim() });
+                        else { setRejecting(job.id); setReason(''); }
+                      }}
+                    />
+                  </View>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <AppButton title={t('production:rejectDraftJob')} size="sm" variant="outline"
-                    disabled={decide.isPending || (rejecting === job.id && !reason.trim())}
-                    onPress={() => {
-                      if (rejecting === job.id) decide.mutate({ id: job.id, decision: 'rejected', reason: reason.trim() });
-                      else { setRejecting(job.id); setReason(''); }
-                    }} />
-                </View>
-              </View>
-            </AppCard>
-          ))
+              </StructuredRecordCard>
+            ))}
+          </View>
         ) : <>
         <AppText variant="caption" color="secondary" uppercase style={{ letterSpacing: 0.8, marginBottom: spacing[2] }}>
           Pending Actions ({items.length})

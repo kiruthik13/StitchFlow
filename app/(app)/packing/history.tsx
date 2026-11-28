@@ -11,7 +11,13 @@ import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppText } from '../../../src/design-system/components/AppText';
 import { AppCard } from '../../../src/design-system/components/AppCard';
 import { StatusBadge } from '../../../src/design-system/components/StatusBadge';
+import {
+  SectionHeader,
+  StructuredRecordCard,
+  SummaryStrip,
+} from '../../../src/design-system/components/StructuredRecordCard';
 import { spacing } from '../../../src/design-system/tokens/spacing';
+import { formatDateTime, formatQuantity } from '../../../src/utils/formatters';
 
 const DEMO_LOGS = [
   { id: 'log-1', cartonCode: 'CTN-10045', job: 'JOB-1001', style: 'Polo T-Shirt', size: 'L', color: 'Navy', qty: 50, packedBy: 'Anitha Raj', time: '11:45 AM' },
@@ -22,6 +28,7 @@ interface LiveCarton {
   id: string;
   barcode: string;
   jobCode?: string;
+  styleName?: string;
   size?: string;
   color?: string;
   quantity?: number;
@@ -61,22 +68,43 @@ export default function PackingHistoryScreen() {
             </AppCard>
           ))
         ) : (
-          <>
+          <View style={{ gap: spacing[2.5] }}>
             {liveCartonsQuery.isLoading && <AppText>{t('common:loading')}</AppText>}
+            {!!(liveCartonsQuery.data ?? []).length && (
+              <>
+                <SummaryStrip
+                  metrics={[
+                    { label: t('packing:totalCartons'), value: (liveCartonsQuery.data ?? []).length, tone: 'brand' },
+                    {
+                      label: t('packing:piecesPacked'),
+                      value: formatQuantity((liveCartonsQuery.data ?? []).reduce((sum, c) => sum + Number(c.quantity ?? 0), 0)),
+                      tone: 'success',
+                    },
+                  ]}
+                />
+                <SectionHeader title={t('packing:packingHistory')} count={(liveCartonsQuery.data ?? []).length} />
+              </>
+            )}
             {(liveCartonsQuery.data ?? []).map((item) => (
-              <AppCard key={item.id} padding={spacing[4]} style={{ marginBottom: spacing[2] }}>
-                <View style={styles.rowBetween}>
-                  <View style={{ flex: 1 }}>
-                    <AppText variant="code" mono bold>{item.barcode}</AppText>
-                    <AppText variant="caption" color="secondary">
-                      {`${item.jobCode ?? ''} · ${item.size ?? '-'} · ${item.color ?? '-'} · ${item.quantity ?? 0}`}
-                    </AppText>
-                  </View>
-                  <StatusBadge label={item.receivedAt ? 'RECEIVED' : 'PACKED'} variant={item.receivedAt ? 'success' : 'brand'} size="sm" />
-                </View>
-              </AppCard>
+              <StructuredRecordCard
+                key={item.id}
+                code={item.barcode}
+                title={item.styleName || item.jobCode || item.barcode}
+                status={{
+                  label: item.receivedAt ? 'RECEIVED' : 'PACKED',
+                  variant: item.receivedAt ? 'success' : 'brand',
+                  dot: true,
+                }}
+                fields={[
+                  { label: t('common:job'), value: item.jobCode || '—', mono: true },
+                  { label: t('common:quantity'), value: formatQuantity(item.quantity ?? 0), mono: true, tone: 'brand' },
+                  { label: t('common:size'), value: item.size || '—' },
+                  { label: t('common:color'), value: item.color || '—' },
+                  ...(item.receivedAt ? [{ label: t('common:date'), value: formatDateTime(item.receivedAt), fullWidth: true }] : []),
+                ]}
+              />
             ))}
-          </>
+          </View>
         )}
       </ScrollView>
     </View>

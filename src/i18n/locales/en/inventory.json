@@ -73,5 +73,22 @@
   "stockCountDifference": "Expected {{expected}} · Counted {{observed}}",
   "approveStockCount": "Approve stock count",
   "rawTransferDisputed": "Discrepancy reported",
-  "rawTransferReturned": "Returned to source"
+  "rawTransferReturned": "Returned to source",
+  "gatePass": "Gate Pass",
+  "totalManifests": "Total Manifests",
+  "pendingApproval": "Pending Approval",
+  "readyToDispatch": "Ready to Dispatch",
+  "dispatched": "Dispatched",
+  "inManifest": "In Manifest",
+  "inStore": "In Store",
+  "pendingReceipt": "Pending Receipt",
+  "cartonsCount": "Cartons",
+  "totalPieces": "Total Pieces",
+  "createdAt": "Created",
+  "approvedAt": "Approved",
+  "dispatchedAt": "Dispatched",
+  "receivedAt": "Received",
+  "includedJobs": "Jobs",
+  "includedCartons": "Cartons in Manifest",
+  "selectCartonsForManifest": "Select Received Cartons for Manifest"
 }
