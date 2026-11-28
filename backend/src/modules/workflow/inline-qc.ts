@@ -32,7 +32,7 @@ export class InlineAuditInput {
 
 @Injectable()
 export class InlineQcService {
-  constructor(private readonly db: DatabaseService, private readonly audit: AuditService) {}
+  constructor(private readonly db: DatabaseService, private readonly audit: AuditService) { }
 
   async cleanupDuplicates(factoryId: string): Promise<number> {
     const res = await this.db.query(
@@ -162,13 +162,14 @@ export class InlineQcService {
 
   async listQualityBundles(user: AuthenticatedUser, query: FactoryQuery) {
     const { rows } = await this.db.query(
-      `SELECT b.id, b.barcode AS "bundleCode", j.job_code AS "jobCode", b.size, b.color, b.quantity,
+      `SELECT b.id, b.barcode AS "bundleCode", j.job_code AS "jobCode", s.name AS "styleName", b.size, b.color, b.quantity,
               COALESCE(q.inspected, 0)::integer AS inspected,
               COALESCE(q.passed, 0)::integer AS passed,
               COALESCE(q.rework, 0)::integer AS rework,
               COALESCE(q.rejected, 0)::integer AS rejected,
               COALESCE(q.reworked, 0)::integer AS reworked,
               COALESCE(q.released, 0)::integer AS released,
+              COALESCE((SELECT SUM(c.quantity) FROM public.bundle_cartons c WHERE c.bundle_id = b.id), 0)::integer AS packed,
               (
                 j.status = 'active'
                 AND EXISTS (SELECT 1 FROM public.job_route_steps s WHERE s.job_id = j.id)
@@ -194,6 +195,7 @@ export class InlineQcService {
        FROM public.bundles b
        JOIN public.jobs j ON j.id = b.job_id
        JOIN public.factories f ON f.id = j.factory_id
+       LEFT JOIN public.garment_styles s ON s.id = j.style_id
        LEFT JOIN public.bundle_quality_balances q ON q.bundle_id = b.id
        WHERE ${factoryScope} AND f.id = $4
        ORDER BY ready DESC, b.created_at DESC LIMIT 100`,
@@ -207,7 +209,7 @@ export class InlineQcService {
 @ApiBearerAuth()
 @Controller('quality')
 export class InlineQcController {
-  constructor(private readonly inlineQc: InlineQcService) {}
+  constructor(private readonly inlineQc: InlineQcService) { }
 
   @Get('inline-audits')
   @RequirePermissions('CAN_LOOKUP_BARCODE')
