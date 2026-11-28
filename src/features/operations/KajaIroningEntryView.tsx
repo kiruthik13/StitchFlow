@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -12,8 +12,15 @@ import { enqueueProductionEvent } from '../../services/offline/offlineQueueServi
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
 import { AppButton } from '../../design-system/components/AppButton';
+import { EmptyState } from '../../design-system/components/EmptyState';
 import { QuantityStepper } from '../../design-system/components/QuantityStepper';
+import {
+  SectionHeader,
+  StructuredRecordCard,
+  SummaryStrip,
+} from '../../design-system/components/StructuredRecordCard';
 import { spacing } from '../../design-system/tokens/spacing';
+import { formatQuantity } from '../../utils/formatters';
 
 interface LiveBundle {
   id: string;
@@ -78,11 +85,19 @@ export function KajaIroningEntryView({ type }: { type: 'kaja' | 'ironing' }) {
     ?? routeQuery.data?.find((s) => s.ready && !s.completedAt)
     ?? null;
 
+  const remainingForStep = targetStep ? Math.max(0, targetStep.available - targetStep.completed) : 0;
+
+  useEffect(() => {
+    if (isDemoMode || !targetStep) return;
+    setLiveQty(Math.max(1, remainingForStep));
+  }, [isDemoMode, targetStep?.id, remainingForStep]);
+
   const submitLive = useMutation({
     mutationFn: async () => {
       if (!activeLive || !targetStep) throw new Error('No ready stage step');
       const requestId = createUuidV4();
       const occurredAt = new Date().toISOString();
+      const qtyToSend = Math.min(Math.max(1, liveQty), Math.max(1, remainingForStep));
       try {
         return await apiRequest('/production/stages/complete', {
           method: 'POST',
@@ -90,7 +105,7 @@ export function KajaIroningEntryView({ type }: { type: 'kaja' | 'ironing' }) {
             bundleId: activeLive.id,
             stepId: targetStep.id,
             requestId,
-            quantity: liveQty,
+            quantity: qtyToSend,
             clientOccurredAt: occurredAt,
           }),
         });
@@ -101,7 +116,7 @@ export function KajaIroningEntryView({ type }: { type: 'kaja' | 'ironing' }) {
             requestId,
             bundleId: activeLive.id,
             stepId: targetStep.id,
-            quantity: liveQty,
+            quantity: qtyToSend,
             occurredAt,
             actorId: user.id,
           });
@@ -112,70 +127,124 @@ export function KajaIroningEntryView({ type }: { type: 'kaja' | 'ironing' }) {
     },
     onSuccess: () => {
       invalidateOperationalFlow(queryClient);
-      Alert.alert(title, activeLive?.bundleCode ?? '', [
+      Alert.alert(title, `${activeLive?.bundleCode ?? ''} · ${formatQuantity(liveQty)}`, [
         { text: t('common:confirm'), onPress: () => router.back() },
       ]);
     },
-    onError: (err: Error) => Alert.alert(t('errors:serverError'), err.message),
+    onError: (err: Error) => {
+      const isClientErr = err instanceof ApiError && err.statusCode >= 400 && err.statusCode < 500;
+      Alert.alert(isClientErr ? t('errors:validationError') : t('errors:serverError'), err.message);
+    },
   });
 
   if (!isDemoMode) {
-    const maxAllowed = targetStep ? Math.max(1, targetStep.available - targetStep.completed) : 1;
+    const maxAllowed = Math.max(1, remainingForStep);
+    const liveList = bundlesQuery.data ?? [];
     return (
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing[3] }}>
-          <View style={{ flexDirection: 'row', gap: spacing[2] }}>
-            {(bundlesQuery.data ?? []).slice(0, 20).map((b) => {
-              const chosen = activeLive?.id === b.id;
-              return (
-                <TouchableOpacity
-                  key={b.id}
-                  onPress={() => { setSelectedLiveBundle(b); setLiveQty(1); }}
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: chosen ? tokens.brand : tokens.surface,
-                      borderColor: chosen ? tokens.brand : tokens.border,
-                    },
-                  ]}
-                >
-                  <AppText variant="label" mono bold style={{ color: chosen ? tokens.textInverse : tokens.textPrimary }}>
-                    {b.bundleCode}
-                  </AppText>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </ScrollView>
+      <ScrollView contentContainerStyle={[styles.scroll, { gap: spacing[3] }]}>
+        <SummaryStrip
+          metrics={[
+            { label: t('common:bundles'), value: liveList.length, tone: 'brand' },
+            { label: 'Available', value: formatQuantity(targetStep?.available ?? 0), tone: 'default' },
+            { label: 'Completed', value: formatQuantity(targetStep?.completed ?? 0), tone: 'success' },
+            { label: 'Remaining', value: formatQuantity(remainingForStep), tone: remainingForStep > 0 ? 'brand' : 'default' },
+          ]}
+        />
+        {bundlesQuery.isLoading && <AppText>{t('common:loading')}</AppText>}
+        {!bundlesQuery.isLoading && liveList.length === 0 && (
+          <EmptyState title={t('common:noData')} message={`No bundles available for ${stageName}.`} />
+        )}
+        {liveList.length > 0 && (
+          <>
+            <SectionHeader title={title} count={liveList.length} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', gap: spacing[2] }}>
+                {liveList.slice(0, 20).map((b) => {
+                  const chosen = activeLive?.id === b.id;
+                  return (
+                    <TouchableOpacity
+                      key={b.id}
+                      onPress={() => { setSelectedLiveBundle(b); setLiveQty(1); }}
+                      style={[
+                        styles.chip,
+                        {
+                          backgroundColor: chosen ? tokens.brand : tokens.surface,
+                          borderColor: chosen ? tokens.brand : tokens.border,
+                        },
+                      ]}
+                    >
+                      <AppText variant="label" mono bold style={{ color: chosen ? tokens.textInverse : tokens.textPrimary }}>
+                        {b.bundleCode}
+                      </AppText>
+                      <AppText variant="caption" style={{ color: chosen ? tokens.textInverse : tokens.textSecondary }}>
+                        {b.jobCode}
+                      </AppText>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </>
+        )}
 
         {activeLive && (
-          <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
-            <AppText variant="h3" bold>{title}</AppText>
-            <AppText variant="bodySmall" color="secondary">{activeLive.bundleCode} · {activeLive.jobCode}</AppText>
-            {targetStep ? (
-              <View style={{ marginTop: spacing[3] }}>
+          <StructuredRecordCard
+            code={activeLive.bundleCode}
+            title={title}
+            subtitle={activeLive.jobCode}
+            status={{
+              label: targetStep
+                ? targetStep.ready
+                  ? targetStep.stageCode.toUpperCase()
+                  : 'WAITING UPSTREAM'
+                : 'NO ASSIGNED STEP',
+              variant: targetStep?.ready ? 'success' : 'warning',
+              dot: true,
+            }}
+            fields={[
+              { label: t('common:job'), value: activeLive.jobCode, mono: true },
+              { label: 'Available', value: formatQuantity(targetStep?.available ?? 0), mono: true },
+              { label: 'Completed', value: formatQuantity(targetStep?.completed ?? 0), mono: true },
+              { label: 'Remaining', value: formatQuantity(remainingForStep), mono: true, tone: 'brand' },
+            ]}
+            highlight={
+              !targetStep
+                ? {
+                    label: t('common:stage'),
+                    value: routeQuery.isLoading
+                      ? t('common:loading')
+                      : `No pending ${stageName} step assigned to your account on this bundle.`,
+                    tone: 'warning',
+                  }
+                : !targetStep.ready
+                ? {
+                    label: t('common:stage'),
+                    value: `Upstream stage must be completed before ${stageName} output can be recorded.`,
+                    tone: 'warning',
+                  }
+                : undefined
+            }
+          >
+            {!!targetStep && targetStep.ready && remainingForStep > 0 && (
+              <>
                 <QuantityStepper
                   label={title}
-                  value={Math.min(liveQty, maxAllowed)}
+                  value={Math.min(Math.max(1, liveQty), maxAllowed)}
                   min={1}
                   max={maxAllowed}
                   step={1}
                   onChange={setLiveQty}
                 />
-              </View>
-            ) : (
-              <AppText variant="caption" color="secondary" style={{ marginTop: spacing[2] }}>
-                {routeQuery.isLoading ? t('common:loading') : t('common:noData')}
-              </AppText>
+                <AppButton
+                  title={`${t('common:confirm')} (${formatQuantity(Math.min(Math.max(1, liveQty), maxAllowed))})`}
+                  loading={submitLive.isPending}
+                  disabled={!activeLive || !targetStep || !targetStep.ready || submitLive.isPending}
+                  onPress={() => submitLive.mutate()}
+                />
+              </>
             )}
-          </AppCard>
+          </StructuredRecordCard>
         )}
-
-        <AppButton
-          title={t('common:confirm')}
-          disabled={!activeLive || !targetStep || !targetStep.ready || submitLive.isPending}
-          onPress={() => submitLive.mutate()}
-        />
       </ScrollView>
     );
   }

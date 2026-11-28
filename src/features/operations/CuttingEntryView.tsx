@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -12,9 +12,17 @@ import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
 import { AppInput } from '../../design-system/components/AppInput';
 import { AppButton } from '../../design-system/components/AppButton';
+import { EmptyState } from '../../design-system/components/EmptyState';
 import { QuantityStepper } from '../../design-system/components/QuantityStepper';
+import {
+  SectionHeader,
+  StructuredRecordCard,
+  SummaryStrip,
+} from '../../design-system/components/StructuredRecordCard';
+import { radii } from '../../design-system/tokens/radii';
 import { spacing } from '../../design-system/tokens/spacing';
 import { JOBS } from '../../fixtures/mockData';
+import { formatQuantity } from '../../utils/formatters';
 
 interface LiveBundle {
   id: string;
@@ -56,7 +64,15 @@ export function CuttingEntryView() {
     queryFn: () => apiRequest<LiveBundle[]>(`/bundles?factoryId=${encodeURIComponent(factoryId!)}`),
   });
 
-  const activeBundle = selectedBundle ?? bundlesQuery.data?.[0] ?? null;
+  const activeBundle =
+    (selectedBundle && bundlesQuery.data?.find((b) => b.id === selectedBundle.id)) ??
+    bundlesQuery.data?.[0] ??
+    null;
+
+  useEffect(() => {
+    if (!activeBundle) return;
+    setLiveQty(activeBundle.quantity);
+  }, [activeBundle?.id, activeBundle?.quantity]);
 
   const submitCutting = useMutation({
     mutationFn: async () => {
@@ -69,7 +85,7 @@ export function CuttingEntryView() {
           body: JSON.stringify({
             bundleId: activeBundle.id,
             requestId,
-            quantity: liveQty,
+            quantity: Math.min(Math.max(1, liveQty), activeBundle.quantity),
             clientOccurredAt: occurredAt,
           }),
         });
@@ -79,7 +95,7 @@ export function CuttingEntryView() {
             kind: 'cutting',
             requestId,
             bundleId: activeBundle.id,
-            quantity: liveQty,
+            quantity: Math.min(Math.max(1, liveQty), activeBundle.quantity),
             occurredAt,
             actorId: user.id,
           });
@@ -90,74 +106,94 @@ export function CuttingEntryView() {
     },
     onSuccess: () => {
       invalidateOperationalFlow(queryClient);
-      Alert.alert(t('production:cuttingEntry'), activeBundle?.bundleCode ?? '', [
+      Alert.alert(t('production:cuttingEntry'), `${activeBundle?.bundleCode ?? ''} · ${formatQuantity(liveQty)}`, [
         { text: t('common:confirm'), onPress: () => router.back() },
       ]);
     },
-    onError: (err: Error) => Alert.alert(t('errors:serverError'), err.message),
+    onError: (err: Error) => {
+      const isClientErr = err instanceof ApiError && err.statusCode >= 400 && err.statusCode < 500;
+      Alert.alert(isClientErr ? t('errors:validationError') : t('errors:serverError'), err.message);
+    },
   });
 
   if (!isDemoMode) {
+    const liveList = bundlesQuery.data ?? [];
     return (
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <AppText variant="caption" color="secondary" uppercase style={{ marginBottom: spacing[2] }}>
-          {t('production:cuttingEntry')}
-        </AppText>
+      <ScrollView contentContainerStyle={[styles.scroll, { gap: spacing[3] }]}>
+        <SummaryStrip
+          metrics={[
+            { label: t('common:bundles'), value: liveList.length, tone: 'brand' },
+            {
+              label: t('common:quantity'),
+              value: formatQuantity(activeBundle?.quantity ?? 0),
+              tone: 'success',
+            },
+          ]}
+        />
         {bundlesQuery.isLoading && <AppText>{t('common:loading')}</AppText>}
-        {bundlesQuery.data && (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing[3] }}>
-            <View style={{ flexDirection: 'row', gap: spacing[2] }}>
-              {bundlesQuery.data.slice(0, 20).map((b) => {
-                const chosen = activeBundle?.id === b.id;
-                return (
-                  <TouchableOpacity
-                    key={b.id}
-                    onPress={() => { setSelectedBundle(b); setLiveQty(b.quantity); }}
-                    style={[
-                      styles.chip,
-                      {
-                        backgroundColor: chosen ? tokens.brand : tokens.surface,
-                        borderColor: chosen ? tokens.brand : tokens.border,
-                      },
-                    ]}
-                  >
-                    <AppText variant="label" mono bold style={{ color: chosen ? tokens.textInverse : tokens.textPrimary }}>
-                      {b.bundleCode}
-                    </AppText>
-                    <AppText variant="caption" style={{ color: chosen ? tokens.textInverse : tokens.textSecondary }}>
-                      {b.jobCode} · {b.quantity}
-                    </AppText>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </ScrollView>
+        {!bundlesQuery.isLoading && liveList.length === 0 && (
+          <EmptyState title={t('common:noData')} message="No active cutting bundles found for this factory." />
+        )}
+        {liveList.length > 0 && (
+          <>
+            <SectionHeader title={t('production:cuttingEntry')} count={liveList.length} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={{ flexDirection: 'row', gap: spacing[2] }}>
+                {liveList.slice(0, 20).map((b) => {
+                  const chosen = activeBundle?.id === b.id;
+                  return (
+                    <TouchableOpacity
+                      key={b.id}
+                      onPress={() => { setSelectedBundle(b); setLiveQty(b.quantity); }}
+                      style={[
+                        styles.chip,
+                        {
+                          backgroundColor: chosen ? tokens.brand : tokens.surface,
+                          borderColor: chosen ? tokens.brand : tokens.border,
+                        },
+                      ]}
+                    >
+                      <AppText variant="label" mono bold style={{ color: chosen ? tokens.textInverse : tokens.textPrimary }}>
+                        {b.bundleCode}
+                      </AppText>
+                      <AppText variant="caption" style={{ color: chosen ? tokens.textInverse : tokens.textSecondary }}>
+                        {b.jobCode} · {formatQuantity(b.quantity)}
+                      </AppText>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </ScrollView>
+          </>
         )}
 
         {activeBundle && (
-          <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
-            <AppText variant="h3" bold mono>{activeBundle.bundleCode}</AppText>
-            <AppText variant="bodySmall" color="secondary">
-              {activeBundle.jobCode} · {activeBundle.size} · {activeBundle.color}
-            </AppText>
-            <View style={{ marginTop: spacing[4] }}>
-              <QuantityStepper
-                label={t('production:cuttingEntry')}
-                value={liveQty}
-                min={1}
-                max={activeBundle.quantity}
-                step={1}
-                onChange={setLiveQty}
-              />
-            </View>
-          </AppCard>
+          <StructuredRecordCard
+            code={activeBundle.bundleCode}
+            title={activeBundle.jobCode}
+            status={{ label: formatQuantity(activeBundle.quantity), variant: 'brand', dot: true }}
+            fields={[
+              { label: t('common:size'), value: activeBundle.size },
+              { label: t('common:color'), value: activeBundle.color },
+              { label: t('common:quantity'), value: formatQuantity(activeBundle.quantity), mono: true, fullWidth: true },
+            ]}
+          >
+            <QuantityStepper
+              label={t('production:cuttingEntry')}
+              value={Math.min(Math.max(1, liveQty), activeBundle.quantity)}
+              min={1}
+              max={activeBundle.quantity}
+              step={1}
+              onChange={setLiveQty}
+            />
+            <AppButton
+              title={`${t('common:confirm')} (${formatQuantity(Math.min(Math.max(1, liveQty), activeBundle.quantity))})`}
+              loading={submitCutting.isPending}
+              disabled={!activeBundle || submitCutting.isPending}
+              onPress={() => submitCutting.mutate()}
+            />
+          </StructuredRecordCard>
         )}
-
-        <AppButton
-          title={t('common:confirm')}
-          disabled={!activeBundle || submitCutting.isPending}
-          onPress={() => submitCutting.mutate()}
-        />
       </ScrollView>
     );
   }
