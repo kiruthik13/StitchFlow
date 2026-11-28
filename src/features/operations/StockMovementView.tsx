@@ -5,7 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
-import { apiRequest } from '../../services/api/apiClient';
+import { ApiError, apiRequest } from '../../services/api/apiClient';
+import { invalidateOperationalFlow } from '../../services/api/useFactoryUpdates';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
 import { AppInput } from '../../design-system/components/AppInput';
@@ -42,13 +43,15 @@ export function StockMovementView({ mode }: { mode: 'input-in' | 'input-out' | '
     queryKey: ['stock-movement-catalog', factoryId, mode],
     enabled: !isDemoMode && !!factoryId,
     queryFn: async () => {
-      const [materials, locations, bundles, lines] = await Promise.all([
+      const [materials, locations, bundles, hierarchy] = await Promise.all([
         isRawMode ? apiRequest<Array<{ id: string; sku: string; name: string; baseUnit: string }>>(`/inventory/raw/materials?factoryId=${encodeURIComponent(factoryId)}`) : Promise.resolve([]),
         apiRequest<Array<{ id: string; name: string; isActive?: boolean }>>(`/masters/locations?factoryId=${encodeURIComponent(factoryId)}`),
         !isRawMode ? apiRequest<Array<{ id: string; bundleCode: string; quantity: number }>>(`/bundles?factoryId=${encodeURIComponent(factoryId)}`) : Promise.resolve([]),
-        mode === 'output-out' ? apiRequest<Array<{ id: string; name: string }>>(`/masters/lines?factoryId=${encodeURIComponent(factoryId)}`) : Promise.resolve([]),
+        mode === 'output-out'
+          ? apiRequest<{ lines: Array<{ id: string; name: string }> }>(`/factories/${encodeURIComponent(factoryId)}/hierarchy`).catch(() => ({ lines: [] }))
+          : Promise.resolve({ lines: [] }),
       ]);
-      return { materials, locations: locations.filter((l) => l.isActive !== false), bundles, lines };
+      return { materials, locations: locations.filter((l) => l.isActive !== false), bundles, lines: hierarchy.lines ?? [] };
     },
   });
 
@@ -100,7 +103,7 @@ export function StockMovementView({ mode }: { mode: 'input-in' | 'input-out' | '
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['raw-stock'] });
+      invalidateOperationalFlow(queryClient);
       queryClient.invalidateQueries({ queryKey: ['cut-stock-handovers'] });
       Alert.alert(
         `${config.title} Successful`,
@@ -108,7 +111,10 @@ export function StockMovementView({ mode }: { mode: 'input-in' | 'input-out' | '
         [{ text: 'OK', onPress: () => router.back() }],
       );
     },
-    onError: (err: Error) => Alert.alert(t('errors:serverError'), err.message),
+    onError: (err: Error) => {
+      const isClientErr = err instanceof ApiError && err.statusCode >= 400 && err.statusCode < 500;
+      Alert.alert(isClientErr ? t('errors:validationError') : t('errors:serverError'), err.message);
+    },
   });
 
   const handleSubmit = () => {

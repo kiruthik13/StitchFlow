@@ -3,7 +3,8 @@ import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../../src/store/authStore';
 import { ManifestCarton, ShipmentsPanel } from '../../../src/features/operations/ShipmentsPanel';
-import { apiRequest } from '../../../src/services/api/apiClient';
+import { ApiError, apiRequest } from '../../../src/services/api/apiClient';
+import { invalidateOperationalFlow } from '../../../src/services/api/useFactoryUpdates';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -60,8 +61,11 @@ export default function DispatchScreen() {
   const update = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'receive' | 'approve' | 'execute' }) =>
       apiRequest(`/dispatch/cartons/${id}/${action}`, { method: 'POST' }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: key }),
-    onError: () => Alert.alert(t('errors:serverError')),
+    onSuccess: () => invalidateOperationalFlow(queryClient),
+    onError: (err: Error) => {
+      const isClientErr = err instanceof ApiError && err.statusCode >= 400 && err.statusCode < 500;
+      Alert.alert(isClientErr ? t('errors:validationError') : t('errors:serverError'), err.message);
+    },
   });
 
   const [truckNo, setTruckNo] = useState('TN-11-BX-5521');
@@ -81,7 +85,23 @@ export default function DispatchScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title={t('inventory:dispatchManifest')} subtitle={t('inventory:finishedGoodsStore')} showBack onBack={() => router.back()} />
+      <AppHeader
+        title={t('inventory:dispatchManifest')}
+        subtitle={t('inventory:finishedGoodsStore')}
+        showBack
+        onBack={() => router.back()}
+        rightEl={
+          !isDemoMode ? (
+            <AppButton
+              title={t('common:refresh')}
+              size="sm"
+              variant="outline"
+              loading={cartons.isRefetching}
+              onPress={() => void cartons.refetch()}
+            />
+          ) : undefined
+        }
+      />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
         {!isDemoMode ? (

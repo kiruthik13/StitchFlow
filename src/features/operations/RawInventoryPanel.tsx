@@ -13,7 +13,8 @@ import {
   SummaryStrip,
 } from '../../design-system/components/StructuredRecordCard';
 import { spacing } from '../../design-system/tokens/spacing';
-import { apiRequest } from '../../services/api/apiClient';
+import { ApiError, apiRequest } from '../../services/api/apiClient';
+import { invalidateOperationalFlow } from '../../services/api/useFactoryUpdates';
 import { useAuthStore } from '../../store/authStore';
 import { formatQuantity } from '../../utils/formatters';
 
@@ -83,12 +84,17 @@ export function RawInventoryPanel({ mode }: { mode: 'receipt' | 'transfer' | 'co
     void cache.invalidateQueries({ queryKey: transferKey });
     void cache.invalidateQueries({ queryKey: stockKey });
     void cache.invalidateQueries({ queryKey: countKey });
+    invalidateOperationalFlow(cache);
+  };
+  const showErr = (err: Error) => {
+    const isClientErr = err instanceof ApiError && err.statusCode >= 400 && err.statusCode < 500;
+    Alert.alert(isClientErr ? t('errors:validationError') : t('errors:serverError'), err.message);
   };
   const create = useMutation({
     mutationFn: () => apiRequest('/inventory/raw/materials', { method: 'POST',
       body: JSON.stringify({ sku, name, baseUnit: unit }) }),
     onSuccess: () => { setSku(''); setName(''); refresh(); },
-    onError: () => Alert.alert(t('errors:serverError')),
+    onError: showErr,
   });
   const submit = useMutation({
     mutationFn: (material: Material) => apiRequest(
@@ -98,14 +104,14 @@ export function RawInventoryPanel({ mode }: { mode: 'receipt' | 'transfer' | 'co
           { quantity: Number(quantity), ...(mode === 'transfer' ? { destinationLocationId: destination } : { reference }) }) }) },
     ),
     onSuccess: () => { setSelected(null); setQuantity(''); setReference(''); refresh(); },
-    onError: () => Alert.alert(t('errors:serverError')),
+    onError: showErr,
   });
   const receive = useMutation({
     mutationFn: (id: string) => apiRequest(`/inventory/raw/transfers/${id}/receive`, {
       method: 'POST', body: JSON.stringify({ quantity: Number(count) }),
     }),
     onSuccess: () => { setReceiving(null); setCount(''); refresh(); },
-    onError: () => Alert.alert(t('errors:serverError')),
+    onError: showErr,
   });
 
   const resolveTransfer = useMutation({
@@ -115,12 +121,12 @@ export function RawInventoryPanel({ mode }: { mode: 'receipt' | 'transfer' | 'co
       },
     ),
     onSuccess: () => { setReceiving(null); setDiscrepancy(''); setCount(''); refresh(); },
-    onError: () => Alert.alert(t('errors:serverError')),
+    onError: showErr,
   });
   const approveCount = useMutation({
     mutationFn: (id: string) => apiRequest(`/inventory/raw/counts/${id}/approve`, { method: 'POST' }),
     onSuccess: refresh,
-    onError: () => Alert.alert(t('errors:serverError')),
+    onError: showErr,
   });
 
   const choices = (items: Location[], current: string, change: (id: string) => void) => items.map(item => (

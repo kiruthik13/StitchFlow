@@ -23,6 +23,7 @@ import { AppCard } from '../../design-system/components/AppCard';
 import { spacing } from '../../design-system/tokens/spacing';
 import { radii } from '../../design-system/tokens/radii';
 import { STOCK_ITEMS, CARTONS } from '../../fixtures/mockData';
+import { formatQuantity } from '../../utils/formatters';
 import {
   ArrowDownLeft,
   ArrowUpRight,
@@ -145,7 +146,7 @@ export function StoreDashboard() {
               maxTotal={Math.max(1, m.packed + m.dispatched)}
               stages={[
                 { key: 'packed', label: t('inventory:fgCartons'), quantity: m.packed, tone: 'brand' },
-                { key: 'disp', label: t('inventory:issuedToProd'), quantity: m.dispatched, tone: 'success' },
+                { key: 'disp', label: t('inventory:dispatched'), quantity: m.dispatched, tone: 'success' },
               ]}
             />
 
@@ -164,9 +165,9 @@ export function StoreDashboard() {
                   key={c.id}
                   code={c.cartonCode ?? c.barcode}
                   title={c.styleName || c.jobCode || 'Carton'}
-                  subtitle={`${c.quantity} ${t('common:pieces')}`}
-                  statusLabel={(c.status ?? (c.dispatchedAt ? 'DISPATCHED' : c.receivedAt ? 'RECEIVED' : 'PENDING')).toUpperCase()}
-                  statusVariant={c.dispatchedAt || c.status === 'sealed' ? 'success' : 'warning'}
+                  subtitle={`${c.size ? `${c.size} · ` : ''}${c.color ? `${c.color} · ` : ''}${formatQuantity(c.quantity)}`}
+                  statusLabel={(c.status ?? (c.dispatchedAt ? 'DISPATCHED' : c.approvedAt ? 'APPROVED' : c.receivedAt ? 'IN STORE' : 'PENDING')).toUpperCase()}
+                  statusVariant={c.dispatchedAt || c.status === 'sealed' ? 'success' : c.approvedAt ? 'brand' : c.receivedAt ? 'info' : 'warning'}
                   onPress={() => router.push(`/(app)/cartons/${c.id}`)}
                 />
               ))}

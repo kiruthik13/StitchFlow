@@ -7,6 +7,7 @@ import { AppButton } from '../../design-system/components/AppButton';
 import { AppCard } from '../../design-system/components/AppCard';
 import { AppInput } from '../../design-system/components/AppInput';
 import { AppText } from '../../design-system/components/AppText';
+import { FilterBar } from '../../design-system/components/FilterBar';
 import {
   DetailField,
   SectionHeader,
@@ -14,7 +15,7 @@ import {
   SummaryStrip,
 } from '../../design-system/components/StructuredRecordCard';
 import { spacing } from '../../design-system/tokens/spacing';
-import { apiRequest } from '../../services/api/apiClient';
+import { ApiError, apiRequest } from '../../services/api/apiClient';
 import { invalidateOperationalFlow } from '../../services/api/useFactoryUpdates';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime, formatQuantity, shortCode } from '../../utils/formatters';
@@ -70,8 +71,13 @@ export function ShipmentsPanel({ cartons }: { cartons: ManifestCarton[] }) {
   const [vehicle, setVehicle] = useState('');
   const [seal, setSeal] = useState('');
   const [destination, setDestination] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'ready' | 'dispatched'>('all');
   const refresh = () => {
     invalidateOperationalFlow(cache);
+  };
+  const showErr = (err: Error) => {
+    const isClientErr = err instanceof ApiError && err.statusCode >= 400 && err.statusCode < 500;
+    Alert.alert(isClientErr ? t('errors:validationError') : t('errors:serverError'), err.message);
   };
   const create = useMutation({
     mutationFn: () => apiRequest('/dispatch/manifests', {
@@ -87,16 +93,22 @@ export function ShipmentsPanel({ cartons }: { cartons: ManifestCarton[] }) {
       setDestination('');
       refresh();
     },
-    onError: () => Alert.alert(t('errors:serverError')),
+    onError: showErr,
   });
   const update = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'approve' | 'execute' }) =>
       apiRequest(`/dispatch/manifests/${id}/${action}`, { method: 'POST' }),
     onSuccess: refresh,
-    onError: () => Alert.alert(t('errors:serverError')),
+    onError: showErr,
   });
   const eligible = cartons.filter(item => item.receivedAt && !item.approvedAt && !item.manifestId);
   const manifests = query.data ?? [];
+  const filteredManifests = manifests.filter((m) => {
+    if (statusFilter === 'pending') return !m.approvedAt;
+    if (statusFilter === 'ready') return !!m.approvedAt && !m.dispatchedAt;
+    if (statusFilter === 'dispatched') return !!m.dispatchedAt;
+    return true;
+  });
   const pendingApprovalCount = manifests.filter(m => !m.approvedAt).length;
   const readyDispatchCount = manifests.filter(m => !!m.approvedAt && !m.dispatchedAt).length;
   const dispatchedCount = manifests.filter(m => !!m.dispatchedAt).length;
@@ -107,14 +119,26 @@ export function ShipmentsPanel({ cartons }: { cartons: ManifestCarton[] }) {
       <SectionHeader title={t('inventory:shipmentManifests')} count={manifests.length} />
 
       {manifests.length > 0 && (
-        <SummaryStrip
-          metrics={[
-            { label: t('inventory:totalManifests'), value: manifests.length, tone: 'brand' },
-            { label: t('inventory:pendingApproval'), value: pendingApprovalCount, tone: pendingApprovalCount > 0 ? 'warning' : 'default' },
-            { label: t('inventory:dispatched'), value: dispatchedCount, tone: 'success' },
-            { label: t('inventory:totalPieces'), value: formatQuantity(totalPieces), tone: 'default' },
-          ]}
-        />
+        <>
+          <SummaryStrip
+            metrics={[
+              { label: t('inventory:totalManifests'), value: manifests.length, tone: 'brand' },
+              { label: t('inventory:pendingApproval'), value: pendingApprovalCount, tone: pendingApprovalCount > 0 ? 'warning' : 'default' },
+              { label: t('inventory:dispatched'), value: dispatchedCount, tone: 'success' },
+              { label: t('inventory:totalPieces'), value: formatQuantity(totalPieces), tone: 'default' },
+            ]}
+          />
+          <FilterBar
+            selected={statusFilter}
+            onSelect={(k) => setStatusFilter(k as 'all' | 'pending' | 'ready' | 'dispatched')}
+            options={[
+              { key: 'all', label: `${t('common:all')} (${manifests.length})` },
+              { key: 'pending', label: `${t('common:pending')} (${pendingApprovalCount})` },
+              { key: 'ready', label: `${t('inventory:readyToDispatch')} (${readyDispatchCount})` },
+              { key: 'dispatched', label: `${t('inventory:dispatched')} (${dispatchedCount})` },
+            ]}
+          />
+        </>
       )}
 
       {query.isError && <AppButton title={t('common:refresh')} onPress={() => void query.refetch()} />}
@@ -161,7 +185,7 @@ export function ShipmentsPanel({ cartons }: { cartons: ManifestCarton[] }) {
         </AppCard>
       )}
 
-      {manifests.map(item => {
+      {filteredManifests.map(item => {
         const statusInfo = item.dispatchedAt
           ? { label: t('inventory:dispatched').toUpperCase(), variant: 'success' as const, dot: true }
           : item.approvedAt
