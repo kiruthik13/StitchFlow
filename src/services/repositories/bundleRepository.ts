@@ -60,7 +60,6 @@ export class ApiBundleRepository implements IBundleRepository {
       operatorId: raw.operatorId,
       operatorName: raw.operatorName,
       cuttingDate: raw.cuttingDate ?? '—',
-      lastUpdated: raw.lastUpdated ?? new Date().toISOString(),
     };
   }
 
