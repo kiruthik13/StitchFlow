@@ -97,10 +97,10 @@ export async function decodeCapturedCameraFrame(
     ? nativeRoi
     : options?.rgbaBuffer
       ? {
-          gray: rgbaToGrayscale(options.rgbaBuffer.data, options.rgbaBuffer.width, options.rgbaBuffer.height),
-          width: options.rgbaBuffer.width,
-          height: options.rgbaBuffer.height,
-        }
+        gray: rgbaToGrayscale(options.rgbaBuffer.data, options.rgbaBuffer.width, options.rgbaBuffer.height),
+        width: options.rgbaBuffer.width,
+        height: options.rgbaBuffer.height,
+      }
       : undefined;
 
   if (graySource) {

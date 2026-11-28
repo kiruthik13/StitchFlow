@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { UserRole } from '../../../src/core/types';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { apiRequest } from '../../../src/services/api/apiClient';
@@ -14,8 +15,15 @@ import { AppButton } from '../../../src/design-system/components/AppButton';
 import { AppInput } from '../../../src/design-system/components/AppInput';
 import { FilterBar } from '../../../src/design-system/components/FilterBar';
 import { SearchField } from '../../../src/design-system/components/SearchField';
-import { StatusBadge } from '../../../src/design-system/components/StatusBadge';
+import {
+  DetailField,
+  SectionHeader,
+  StructuredRecordCard,
+  SummaryStrip,
+} from '../../../src/design-system/components/StructuredRecordCard';
+import { radii } from '../../../src/design-system/tokens/radii';
 import { spacing } from '../../../src/design-system/tokens/spacing';
+import { formatDateTime } from '../../../src/utils/formatters';
 
 const DEMO_USERS = [
   { id: 'usr-1', empId: 'EMP-0101', name: 'Arun Kumar', role: 'supervisor', line: 'Line 1', shift: 'Morning', status: 'Active' },
@@ -24,6 +32,9 @@ const DEMO_USERS = [
   { id: 'usr-4', empId: 'EMP-0410', name: 'Senthil Nathan', role: 'store-dispatch', line: 'Main Store', shift: 'General', status: 'Active' },
   { id: 'usr-5', empId: 'EMP-0504', name: 'Anitha Raj', role: 'packing-staff', line: 'Packing Bay', shift: 'Morning', status: 'Active' },
 ];
+
+const FLOOR_ROLES: UserRole[] = ['operator', 'supervisor', 'qc-inspector', 'store-dispatch', 'packing-staff'];
+const ALL_ROLES: UserRole[] = ['md', 'factory-manager', ...FLOOR_ROLES];
 
 interface RosterItem {
   employeeId: string;
@@ -42,8 +53,15 @@ interface UserAccount {
   employee_id: string;
   name: string;
   email: string;
+  phone?: string | null;
+  designation?: string | null;
   role_code: string;
+  requested_role?: string | null;
   account_status: string;
+  factory_name?: string | null;
+  line_name?: string | null;
+  created_at?: string | null;
+  approved_at?: string | null;
 }
 
 export default function UserManagementScreen() {
@@ -56,9 +74,12 @@ export default function UserManagementScreen() {
   const queryClient = useQueryClient();
 
   const [search, setSearch] = useState('');
-  const [liveTab, setLiveTab] = useState<'roster' | 'users'>('roster');
+  const [liveTab, setLiveTab] = useState<'users' | 'roster'>('users');
   const [empIdInput, setEmpIdInput] = useState('');
   const [emailInput, setEmailInput] = useState('');
+  const [roleSelections, setRoleSelections] = useState<Record<string, UserRole>>({});
+
+  const assignableRoles = user?.role === 'md' ? ALL_ROLES : FLOOR_ROLES;
 
   const rosterQuery = useQuery({
     queryKey: ['users-roster', user?.id, factoryId],
@@ -100,10 +121,10 @@ export default function UserManagementScreen() {
   });
 
   const approveAccount = useMutation({
-    mutationFn: (id: string) =>
+    mutationFn: ({ id, decision, role }: { id: string; decision: 'active' | 'rejected'; role?: UserRole }) =>
       apiRequest(`/users/${id}/approval`, {
         method: 'PATCH',
-        body: JSON.stringify({ decision: 'active', factoryId }),
+        body: JSON.stringify({ decision, ...(role ? { role } : {}), ...(factoryId ? { factoryId } : {}) }),
       }),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['users-accounts', user?.id] }),
     onError: (err: Error) => Alert.alert(t('errors:serverError'), err.message),
@@ -136,26 +157,25 @@ export default function UserManagementScreen() {
           data={filtered}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}
-          ItemSeparatorComponent={() => <View style={{ height: spacing[2] }} />}
+          ItemSeparatorComponent={() => <View style={{ height: spacing[2.5] }} />}
           renderItem={({ item }) => (
-            <AppCard padding={spacing[4]}>
-              <View style={styles.row}>
-                <View style={{ flex: 1 }}>
-                  <AppText variant="h4" bold>{item.name}</AppText>
-                  <AppText variant="code" mono color="secondary">{item.empId}</AppText>
-                  <AppText variant="caption" color="secondary">{item.line} · {item.shift}</AppText>
-                </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <StatusBadge label={item.role.replace('-', ' ').toUpperCase()} variant="brand" size="sm" />
-                  <TouchableOpacity
-                    style={{ marginTop: spacing[2] }}
-                    onPress={() => Alert.alert(item.name, item.role)}
-                  >
-                    <AppText variant="caption" color="brand">{t('common:edit')}</AppText>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </AppCard>
+            <StructuredRecordCard
+              code={item.empId}
+              title={item.name}
+              subtitle={t(`common:roles.${item.role}`)}
+              status={{ label: item.status.toUpperCase(), variant: 'success', dot: true }}
+              fields={[
+                { label: t('common:line'), value: item.line },
+                { label: t('common:shift'), value: item.shift },
+              ]}
+            >
+              <AppButton
+                title={t('common:edit')}
+                size="sm"
+                variant="outline"
+                onPress={() => Alert.alert(item.name, t(`common:roles.${item.role}`))}
+              />
+            </StructuredRecordCard>
           )}
         />
       </View>
@@ -163,24 +183,36 @@ export default function UserManagementScreen() {
   }
 
   const term = search.toLowerCase();
-  const filteredRoster = (rosterQuery.data ?? []).filter((r) =>
-    r.employeeId.toLowerCase().includes(term) || r.email.toLowerCase().includes(term)
+  const rosterList = rosterQuery.data ?? [];
+  const usersList = usersQuery.data ?? [];
+
+  const filteredRoster = rosterList.filter((r) =>
+    r.employeeId.toLowerCase().includes(term) ||
+    r.email.toLowerCase().includes(term) ||
+    (r.registeredName ?? '').toLowerCase().includes(term)
   );
-  const filteredUsers = (usersQuery.data ?? []).filter((u) =>
-    u.name.toLowerCase().includes(term) || u.employee_id.toLowerCase().includes(term) || u.role_code.toLowerCase().includes(term)
+  const filteredUsers = usersList.filter((u) =>
+    u.name.toLowerCase().includes(term) ||
+    u.employee_id.toLowerCase().includes(term) ||
+    u.role_code.toLowerCase().includes(term) ||
+    (u.designation ?? '').toLowerCase().includes(term)
   );
+
+  const pendingCount = usersList.filter(u => u.account_status === 'pending').length;
+  const activeCount = usersList.filter(u => u.account_status === 'active').length;
+  const suspendedCount = usersList.filter(u => u.account_status === 'suspended').length;
 
   return (
     <View style={[styles.flex, { backgroundColor: tokens.background }]}>
-      <AppHeader title={t('production:floorAccess')} subtitle={t('production:rosterProvisioning')} showBack onBack={() => router.back()} />
+      <AppHeader title={t('production:floorAccess')} subtitle={t('production:registeredUsers')} showBack onBack={() => router.back()} />
       <View style={{ padding: spacing[4], paddingBottom: spacing[2], gap: spacing[2] }}>
         <FilterBar
           options={[
-            { key: 'roster', label: t('production:rosterProvisioning') },
-            { key: 'users', label: t('production:registeredUsers') },
+            { key: 'users', label: `${t('production:registeredUsers')} (${usersList.length})` },
+            { key: 'roster', label: `${t('production:rosterProvisioning')} (${rosterList.length})` },
           ]}
           selected={liveTab}
-          onSelect={(k) => setLiveTab(k as 'roster' | 'users')}
+          onSelect={(k) => setLiveTab(k as 'users' | 'roster')}
         />
         <SearchField value={search} onChangeText={setSearch} placeholder={t('common:search')} />
       </View>
@@ -188,6 +220,13 @@ export default function UserManagementScreen() {
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
         {liveTab === 'roster' ? (
           <View style={{ gap: spacing[3] }}>
+            <SummaryStrip
+              metrics={[
+                { label: t('production:rosterProvisioning'), value: rosterList.length, tone: 'brand' },
+                { label: t('common:active'), value: rosterList.filter(r => r.isActive).length, tone: 'success' },
+                { label: t('production:registeredUsers'), value: rosterList.filter(r => !!r.profileId).length, tone: 'default' },
+              ]}
+            />
             {factoryId && (
               <AppCard padding={spacing[4]}>
                 <AppText variant="h4" bold style={{ marginBottom: spacing[2] }}>{t('production:provisionEmployee')}</AppText>
@@ -201,57 +240,189 @@ export default function UserManagementScreen() {
               </AppCard>
             )}
             {rosterQuery.isLoading && <AppText>{t('common:loading')}</AppText>}
-            {filteredRoster.map((item) => (
-              <AppCard key={item.employeeId} padding={spacing[4]}>
-                <View style={styles.row}>
-                  <View style={{ flex: 1 }}>
-                    <AppText variant="code" mono bold>{item.employeeId}</AppText>
-                    <AppText variant="bodySmall">{item.email}</AppText>
-                    <AppText variant="caption" color="secondary">{item.factoryName}</AppText>
-                    {item.registeredName && (
-                      <AppText variant="caption" color="secondary">{item.registeredName} · {item.roleCode} ({item.accountStatus})</AppText>
-                    )}
-                  </View>
-                  <View style={{ alignItems: 'flex-end', gap: spacing[2] }}>
-                    <StatusBadge label={item.isActive ? 'ACTIVE' : 'INACTIVE'} variant={item.isActive ? 'success' : 'warning'} size="sm" />
-                    <AppButton
-                      title={item.isActive ? t('production:suspendUser') : t('production:activateUser')}
-                      size="sm"
-                      variant="outline"
-                      onPress={() => toggleRoster.mutate({ employeeId: item.employeeId, isActive: !item.isActive })}
-                    />
-                  </View>
-                </View>
-              </AppCard>
-            ))}
+            <SectionHeader title={t('production:rosterProvisioning')} count={filteredRoster.length} />
+            {filteredRoster.map((item) => {
+              const fields: DetailField[] = [
+                { label: t('production:emailLabel'), value: item.email, fullWidth: true },
+                { label: t('common:factory'), value: item.factoryName },
+                {
+                  label: t('common:status'),
+                  value: item.registeredName
+                    ? `${item.registeredName} (${item.accountStatus ?? 'pending'})`
+                    : t('common:pending'),
+                },
+              ];
+              return (
+                <StructuredRecordCard
+                  key={item.employeeId}
+                  code={item.employeeId}
+                  title={item.registeredName || item.email}
+                  subtitle={item.roleCode ? t(`common:roles.${item.roleCode}`, { defaultValue: item.roleCode }) : undefined}
+                  status={{
+                    label: item.isActive ? 'ACTIVE' : 'INACTIVE',
+                    variant: item.isActive ? 'success' : 'warning',
+                    dot: true,
+                  }}
+                  fields={fields}
+                >
+                  <AppButton
+                    title={item.isActive ? t('production:suspendUser') : t('production:activateUser')}
+                    size="sm"
+                    variant="outline"
+                    onPress={() => toggleRoster.mutate({ employeeId: item.employeeId, isActive: !item.isActive })}
+                  />
+                </StructuredRecordCard>
+              );
+            })}
           </View>
         ) : (
-          <View style={{ gap: spacing[2] }}>
+          <View style={{ gap: spacing[3] }}>
+            <SummaryStrip
+              metrics={[
+                { label: t('production:registeredUsers'), value: usersList.length, tone: 'brand' },
+                { label: t('common:pending'), value: pendingCount, tone: pendingCount > 0 ? 'warning' : 'default' },
+                { label: t('common:active'), value: activeCount, tone: 'success' },
+                { label: t('production:suspendUser'), value: suspendedCount, tone: suspendedCount > 0 ? 'danger' : 'default' },
+              ]}
+            />
             {usersQuery.isLoading && <AppText>{t('common:loading')}</AppText>}
-            {filteredUsers.map((u) => (
-              <AppCard key={u.id} padding={spacing[4]}>
-                <View style={styles.row}>
-                  <View style={{ flex: 1 }}>
-                    <AppText variant="h4" bold>{u.name}</AppText>
-                    <AppText variant="code" mono color="secondary">{u.employee_id}</AppText>
-                    <AppText variant="caption" color="secondary">{u.email}</AppText>
-                  </View>
-                  <View style={{ alignItems: 'flex-end', gap: spacing[2] }}>
-                    <StatusBadge label={u.role_code.toUpperCase()} variant="brand" size="sm" />
-                    <StatusBadge label={u.account_status.toUpperCase()} variant={u.account_status === 'active' ? 'success' : 'warning'} size="sm" />
-                    {u.account_status === 'pending' && (
-                      <AppButton title={t('production:approveUser')} size="sm" onPress={() => approveAccount.mutate(u.id)} />
-                    )}
-                    {u.account_status === 'active' && (
-                      <AppButton title={t('production:suspendUser')} size="sm" variant="outline" onPress={() => updateAccountStatus.mutate({ id: u.id, status: 'suspended' })} />
-                    )}
-                    {u.account_status === 'suspended' && (
-                      <AppButton title={t('production:activateUser')} size="sm" variant="outline" onPress={() => updateAccountStatus.mutate({ id: u.id, status: 'active' })} />
-                    )}
-                  </View>
-                </View>
-              </AppCard>
-            ))}
+            <SectionHeader title={t('production:registeredUsers')} count={filteredUsers.length} />
+            {filteredUsers.map((u) => {
+              const defaultRequested = (
+                assignableRoles.includes((u.requested_role as UserRole))
+                  ? u.requested_role
+                  : assignableRoles.includes(u.role_code as UserRole)
+                  ? u.role_code
+                  : 'operator'
+              ) as UserRole;
+              const chosenRole = roleSelections[u.id] ?? defaultRequested;
+
+              const statusBadge =
+                u.account_status === 'active'
+                  ? { label: 'ACTIVE', variant: 'success' as const, dot: true }
+                  : u.account_status === 'pending'
+                  ? { label: 'PENDING APPROVAL', variant: 'warning' as const, dot: true }
+                  : { label: u.account_status.toUpperCase(), variant: 'danger' as const, dot: true };
+
+              const fields: DetailField[] = [
+                { label: t('production:emailLabel'), value: u.email, fullWidth: true },
+                {
+                  label: t('common:role'),
+                  value: t(`common:roles.${u.role_code}`, { defaultValue: u.role_code }),
+                  tone: 'brand',
+                },
+                { label: t('common:factory'), value: u.factory_name || '—' },
+              ];
+              if (u.phone) {
+                fields.push({ label: t('production:phoneLabel'), value: u.phone, mono: true });
+              }
+              if (u.line_name) {
+                fields.push({ label: t('common:line'), value: u.line_name });
+              }
+              if (u.created_at) {
+                fields.push({ label: t('common:date'), value: formatDateTime(u.created_at) });
+              }
+              if (u.approved_at) {
+                fields.push({ label: t('common:approved'), value: formatDateTime(u.approved_at), tone: 'success' });
+              }
+
+              return (
+                <StructuredRecordCard
+                  key={u.id}
+                  code={u.employee_id}
+                  title={u.name}
+                  subtitle={u.requested_role && u.account_status === 'pending'
+                    ? `Requested: ${t(`common:roles.${u.requested_role}`, { defaultValue: u.requested_role })}`
+                    : undefined}
+                  status={statusBadge}
+                  fields={fields}
+                  highlight={
+                    u.designation
+                      ? { label: t('common:details'), value: u.designation, tone: 'info' }
+                      : undefined
+                  }
+                >
+                  {u.account_status === 'pending' && (
+                    <View style={{ gap: spacing[2] }}>
+                      <AppText variant="caption" color="secondary" bold>
+                        {t('common:role')}
+                      </AppText>
+                      <View style={styles.roleChipRow}>
+                        {assignableRoles.map((roleOpt) => {
+                          const selected = chosenRole === roleOpt;
+                          return (
+                            <TouchableOpacity
+                              key={roleOpt}
+                              onPress={() => setRoleSelections((prev) => ({ ...prev, [u.id]: roleOpt }))}
+                              style={[
+                                styles.roleChip,
+                                {
+                                  backgroundColor: selected ? tokens.brand : tokens.surfaceSecondary,
+                                  borderColor: selected ? tokens.brand : tokens.border,
+                                },
+                              ]}
+                            >
+                              <AppText
+                                variant="caption"
+                                bold={selected}
+                                style={{ color: selected ? tokens.textInverse : tokens.textPrimary }}
+                              >
+                                {t(`common:roles.${roleOpt}`)}
+                              </AppText>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: spacing[2] }}>
+                        <View style={{ flex: 1 }}>
+                          <AppButton
+                            title={t('production:approveUser')}
+                            size="sm"
+                            disabled={approveAccount.isPending}
+                            onPress={() => approveAccount.mutate({ id: u.id, decision: 'active', role: chosenRole })}
+                          />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <AppButton
+                            title={t('common:reject')}
+                            size="sm"
+                            variant="outline"
+                            disabled={approveAccount.isPending}
+                            onPress={() =>
+                              Alert.alert(t('common:reject'), u.name, [
+                                { text: t('common:cancel'), style: 'cancel' },
+                                {
+                                  text: t('common:confirm'),
+                                  onPress: () => approveAccount.mutate({ id: u.id, decision: 'rejected' }),
+                                },
+                              ])
+                            }
+                          />
+                        </View>
+                      </View>
+                    </View>
+                  )}
+                  {u.account_status === 'active' && u.id !== user?.id && (
+                    <AppButton
+                      title={t('production:suspendUser')}
+                      size="sm"
+                      variant="outline"
+                      disabled={updateAccountStatus.isPending}
+                      onPress={() => updateAccountStatus.mutate({ id: u.id, status: 'suspended' })}
+                    />
+                  )}
+                  {u.account_status === 'suspended' && (
+                    <AppButton
+                      title={t('production:activateUser')}
+                      size="sm"
+                      variant="outline"
+                      disabled={updateAccountStatus.isPending}
+                      onPress={() => updateAccountStatus.mutate({ id: u.id, status: 'active' })}
+                    />
+                  )}
+                </StructuredRecordCard>
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -262,5 +433,17 @@ export default function UserManagementScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   scroll: { padding: spacing[4] },
-  row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  roleChipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[1.5],
+  },
+  roleChip: {
+    borderWidth: 1,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing[2.5],
+    paddingVertical: spacing[1],
+    minHeight: 32,
+    justifyContent: 'center',
+  },
 });

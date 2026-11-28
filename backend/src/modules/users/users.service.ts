@@ -126,11 +126,23 @@ export class UsersService {
 
   async listUsers(actor: AuthenticatedUser) {
     const res = await this.db.query(
-      `SELECT p.id, p.employee_id, p.name, p.email, p.designation, p.role_code, p.account_status,
-              p.created_at, p.updated_at
+      `SELECT p.id, p.employee_id, p.name, p.email, p.phone, p.designation, p.role_code, p.account_status,
+              p.created_at, p.updated_at, p.approved_at,
+              f.name AS factory_name, pl.name AS line_name,
+              reg.new_values->>'requestedRole' AS requested_role
        FROM public.profiles p
+       LEFT JOIN public.user_assignments ua ON ua.profile_id = p.id AND ua.is_primary = TRUE AND ua.is_active = TRUE
+       LEFT JOIN public.factories f ON f.id = ua.factory_id
+       LEFT JOIN public.production_lines pl ON pl.id = ua.line_id
+       LEFT JOIN LATERAL (
+         SELECT a.new_values FROM public.audit_logs a
+         WHERE a.action = 'AUTH_REGISTER_PENDING' AND a.entity_id = p.id::text
+         ORDER BY a.created_at DESC LIMIT 1
+       ) reg ON TRUE
        WHERE ${this.managedProfileScope}
-       ORDER BY p.created_at DESC`,
+       ORDER BY
+         CASE WHEN p.account_status = 'pending' THEN 0 WHEN p.account_status = 'active' THEN 1 ELSE 2 END,
+         p.created_at DESC`,
       this.scopeParams(actor),
     );
     return res.rows;

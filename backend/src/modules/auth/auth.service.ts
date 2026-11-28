@@ -179,7 +179,11 @@ export class AuthService {
              actor_name, actor_role, action, entity_type, entity_id, new_values)
            VALUES ($1, $2, $3, $4, $5, $6, 'AUTH_REGISTER_PENDING', 'profile', $3::uuid::text, $7)`,
           [dto.organizationId, dto.factoryId, userId, dto.employeeId, dto.name, roleCode,
-            JSON.stringify({ accountStatus: 'pending' })],
+            JSON.stringify({
+              accountStatus: 'pending',
+              requestedRole: dto.requestedRole ?? 'operator',
+              designation: dto.designation ?? null,
+            })],
         );
       });
     } catch (error) {

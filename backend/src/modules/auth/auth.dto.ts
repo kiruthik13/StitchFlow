@@ -58,10 +58,10 @@ export class RegisterEmployeeDto {
 
   // Self-registration is strictly limited to non-privileged floor roles;
   // management roles (md, factory-manager) can only be assigned by authorized admins during approval.
-  @ApiPropertyOptional({ enum: ['operator', 'qc-inspector', 'store-dispatch', 'packing-staff'], default: 'operator' })
+  @ApiPropertyOptional({ enum: ['supervisor', 'operator', 'qc-inspector', 'store-dispatch', 'packing-staff'], default: 'operator' })
   @IsOptional()
-  @IsIn(['operator', 'qc-inspector', 'store-dispatch', 'packing-staff'])
-  requestedRole?: 'operator' | 'qc-inspector' | 'store-dispatch' | 'packing-staff';
+  @IsIn(['supervisor', 'operator', 'qc-inspector', 'store-dispatch', 'packing-staff'])
+  requestedRole?: 'supervisor' | 'operator' | 'qc-inspector' | 'store-dispatch' | 'packing-staff';
 }
 
 export class RefreshTokenDto {

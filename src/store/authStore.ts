@@ -16,6 +16,9 @@ export interface RegisterPayload {
   password: string;
   organizationId: string;
   factoryId: string;
+  phone?: string;
+  designation?: string;
+  requestedRole?: 'supervisor' | 'operator' | 'qc-inspector' | 'store-dispatch' | 'packing-staff';
 }
 
 interface AuthMeResponse {
