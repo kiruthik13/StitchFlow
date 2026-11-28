@@ -51,8 +51,11 @@ export interface LiveQualityBundle {
   inspected?: number;
   passed?: number;
   rework?: number;
+  reworked?: number;
   rejected?: number;
   released?: number;
+  packed?: number;
+  ready?: boolean;
 }
 
 export function useLiveDashboardData(options?: {

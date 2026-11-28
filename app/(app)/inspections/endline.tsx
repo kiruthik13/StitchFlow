@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -67,16 +67,44 @@ export default function EndlineQCScreen() {
     null;
   const routeNotReady = !isDemoMode && !!activeLive && activeLive.ready === false;
   const totalInspected = isDemoMode ? 200 : Math.max(0, (activeLive?.quantity ?? 0) - (activeLive?.inspected ?? 0));
+  const pendingReleaseOnly =
+    !isDemoMode &&
+    !!activeLive &&
+    !routeNotReady &&
+    totalInspected === 0 &&
+    activeLive.passed > activeLive.released;
+  const releasableRemaining = activeLive ? Math.max(0, activeLive.passed - activeLive.released) : 0;
 
   const [passedQty, setPassedQty] = useState(isDemoMode ? 180 : 0);
   const [reworkQty, setReworkQty] = useState(isDemoMode ? 15 : 0);
   const [rejectedQty, setRejectedQty] = useState(isDemoMode ? 5 : 0);
+
+  useEffect(() => {
+    if (isDemoMode || !activeLive) return;
+    const rem = Math.max(0, activeLive.quantity - activeLive.inspected);
+    setPassedQty(rem > 0 ? rem : Math.max(0, activeLive.passed - activeLive.released));
+    setReworkQty(0);
+    setRejectedQty(0);
+  }, [isDemoMode, activeLive?.id, activeLive?.quantity, activeLive?.inspected, activeLive?.passed, activeLive?.released]);
 
   const validation = validateQCReconciliation(totalInspected, passedQty, reworkQty, rejectedQty);
 
   const submitLive = useMutation({
     mutationFn: async () => {
       if (!activeLive) throw new Error('No bundle selected');
+      if (pendingReleaseOnly) {
+        if (releasableRemaining > 0) {
+          await apiRequest('/quality/releases', {
+            method: 'POST',
+            body: JSON.stringify({
+              bundleId: activeLive.id,
+              requestId: createUuidV4(),
+              quantity: releasableRemaining,
+            }),
+          });
+        }
+        return;
+      }
       await apiRequest('/quality/inspections', {
         method: 'POST',
         body: JSON.stringify({
@@ -112,7 +140,7 @@ export default function EndlineQCScreen() {
   });
 
   const handleSubmit = () => {
-    if (!validation.isValid) {
+    if (!pendingReleaseOnly && !validation.isValid) {
       Alert.alert(t('errors:validationError'), validation.error);
       return;
     }
@@ -220,9 +248,17 @@ export default function EndlineQCScreen() {
         )}
 
         <AppButton
-          title={`${t('quality:releaseToPacking')} (${passedQty})`}
+          title={
+            pendingReleaseOnly
+              ? `${t('quality:releaseToPacking')} (${releasableRemaining})`
+              : `${t('quality:releaseToPacking')} (${passedQty})`
+          }
           onPress={handleSubmit}
-          disabled={routeNotReady || !validation.isValid || totalInspected === 0 || submitLive.isPending}
+          disabled={
+            routeNotReady ||
+            submitLive.isPending ||
+            (!pendingReleaseOnly && (!validation.isValid || totalInspected === 0))
+          }
         />
       </ScrollView>
     </View>

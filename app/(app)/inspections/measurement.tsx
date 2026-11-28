@@ -6,12 +6,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useAuthStore } from '../../../src/store/authStore';
-import { apiRequest } from '../../../src/services/api/apiClient';
+import { ApiError, apiRequest } from '../../../src/services/api/apiClient';
+import { invalidateOperationalFlow } from '../../../src/services/api/useFactoryUpdates';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppText } from '../../../src/design-system/components/AppText';
 import { AppCard } from '../../../src/design-system/components/AppCard';
 import { AppButton } from '../../../src/design-system/components/AppButton';
 import { AppInput } from '../../../src/design-system/components/AppInput';
+import { EmptyState } from '../../../src/design-system/components/EmptyState';
 import { StatusBadge } from '../../../src/design-system/components/StatusBadge';
 import { spacing } from '../../../src/design-system/tokens/spacing';
 
@@ -63,19 +65,27 @@ export default function MeasurementCheckScreen() {
   });
 
   const submitMeasurement = useMutation({
-    mutationFn: ({ specId, measuredMm }: { specId: string; measuredMm: number }) =>
-      apiRequest(`/quality/bundles/${activeBundle!.id}/measurements`, {
+    mutationFn: ({ specId, measuredMm }: { specId: string; measuredMm: number }) => {
+      if (!evidenceQuery.data?.requestId) {
+        throw new Error('Measurement session is refreshing. Please try again.');
+      }
+      return apiRequest(`/quality/bundles/${activeBundle!.id}/measurements`, {
         method: 'POST',
         body: JSON.stringify({
-          requestId: evidenceQuery.data?.requestId,
+          requestId: evidenceQuery.data.requestId,
           specId,
           measuredMm,
         }),
-      }),
+      });
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['bundle-evidence', activeBundle?.id] });
+      invalidateOperationalFlow(queryClient);
     },
-    onError: (err: Error) => Alert.alert(t('errors:serverError'), err.message),
+    onError: (err: Error) => {
+      const isClientErr = err instanceof ApiError && err.statusCode >= 400 && err.statusCode < 500;
+      Alert.alert(isClientErr ? t('errors:validationError') : t('errors:serverError'), err.message);
+    },
   });
 
   if (isDemoMode) {
@@ -162,6 +172,12 @@ export default function MeasurementCheckScreen() {
         )}
 
         {evidenceQuery.isLoading && <AppText>{t('common:loading')}</AppText>}
+        {!evidenceQuery.isLoading && activeBundle && (evidenceQuery.data?.specs.length ?? 0) === 0 && (
+          <EmptyState
+            title="No Measurement Specs Configured"
+            message={`No POM tolerances are configured for size ${activeBundle.size}. Ask Factory Manager to add measurement specs in Masters.`}
+          />
+        )}
         {evidenceQuery.data?.specs.map((spec) => {
           const val = measuredValues[spec.id] ?? '';
           const last = evidenceQuery.data?.measurements.find((m) => m.specId === spec.id);

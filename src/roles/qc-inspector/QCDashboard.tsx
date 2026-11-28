@@ -44,9 +44,29 @@ export function QCDashboard() {
   const { t } = useTranslation(['quality', 'common']);
 
   const live = useLiveDashboardData({ includeQuality: true });
+  const qualityList = live.qualityBundles.data ?? [];
   const pendingBundles = isDemoMode
     ? demoBundles.filter((b) => b.status === 'qc-pending')
-    : (live.qualityBundles.data ?? []).filter((b) => (b.inspected ?? 0) < (b.quantity ?? 0));
+    : qualityList.filter((b) => (b.inspected ?? 0) < (b.quantity ?? 0));
+
+  const liveQualityTotals = qualityList.reduce<{
+    inspected: number;
+    passed: number;
+    rework: number;
+    reworked: number;
+    rejected: number;
+    released: number;
+  }>(
+    (acc, b) => ({
+      inspected: acc.inspected + Number(b.inspected ?? 0),
+      passed: acc.passed + Number(b.passed ?? 0),
+      rework: acc.rework + Number(b.rework ?? 0),
+      reworked: acc.reworked + Number(b.reworked ?? 0),
+      rejected: acc.rejected + Number(b.rejected ?? 0),
+      released: acc.released + Number(b.released ?? 0),
+    }),
+    { inspected: 0, passed: 0, rework: 0, reworked: 0, rejected: 0, released: 0 },
+  );
 
   const completedInspection = QC_INSPECTIONS.find((q) => q.status === 'passed');
   const m = isDemoMode
@@ -54,14 +74,18 @@ export function QCDashboard() {
         inspected: completedInspection?.inspectedQty ?? 200,
         passed: completedInspection?.passedQty ?? 180,
         rework: completedInspection?.reworkQty ?? 15,
+        reworked: 15,
         rejected: completedInspection?.rejectedQty ?? 5,
         released: completedInspection?.releasedQty ?? 180,
       }
-    : live.metrics.data
+    : qualityList.length > 0
+      ? liveQualityTotals
+      : live.metrics.data
       ? {
           inspected: live.metrics.data.inspected,
           passed: Math.max(0, live.metrics.data.inspected - live.metrics.data.rework - live.metrics.data.rejected),
           rework: live.metrics.data.rework,
+          reworked: 0,
           rejected: live.metrics.data.rejected,
           released: live.metrics.data.released,
         }
@@ -130,13 +154,17 @@ export function QCDashboard() {
               }}
             />
 
-            {m.rework > 0 && (
+            {(m.reworked > 0 || m.rework > 0) && (
               <>
                 <DashboardSection title={t('quality:activeReworkTracking')} />
                 <PriorityActionCard
                   title={t('quality:reinspection')}
-                  subtitle={t('quality:bundlesAwaitingVerification')}
-                  count={m.rework}
+                  subtitle={
+                    m.reworked > 0
+                      ? `${m.reworked} pcs rectified & ready for reinspection`
+                      : `${m.rework} pcs pending operator rework`
+                  }
+                  count={m.reworked > 0 ? m.reworked : m.rework}
                   tone="warning"
                   onPress={() => router.push('/(app)/inspections/reinspection')}
                 />
