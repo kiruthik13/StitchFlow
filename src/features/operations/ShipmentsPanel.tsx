@@ -1,6 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
-import { Alert, Share, View } from 'react-native';
+import { Alert, View } from 'react-native';
+import { downloadAndShareDocument } from '../../utils/exportService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { AppButton } from '../../design-system/components/AppButton';
@@ -247,8 +248,13 @@ export function ShipmentsPanel({ cartons }: { cartons: ManifestCarton[] }) {
                 variant="outline"
                 onPress={async () => {
                   try {
-                    const doc = await apiRequest<{ text: string }>(`/dispatch/manifests/${item.id}/gate-pass`);
-                    await Share.share({ title: `StitchFlow Gate Pass · ${item.gatePass}`, message: doc.text });
+                    await downloadAndShareDocument(
+                      `/dispatch/manifests/${item.id}/gate-pass.pdf`,
+                      `stitchflow-gate-pass-${item.gatePass}.pdf`,
+                      'application/pdf',
+                      'com.adobe.pdf',
+                      `StitchFlow Gate Pass · ${item.gatePass}`,
+                    );
                   } catch {
                     Alert.alert(t('errors:serverError'));
                   }

@@ -1,4 +1,6 @@
 import { Platform, Share } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { UserRole } from '../core/types';
 import { BUNDLES, CARTONS, JOBS, TODAY_SHIFT } from '../fixtures/mockData';
 import { apiRequest, getApiBaseUrl, getStoredSession } from '../services/api/apiClient';
@@ -139,9 +141,99 @@ function triggerWebDownload(filename: string, content: BlobPart, mimeType: strin
   URL.revokeObjectURL(url);
 }
 
+function escapePdfText(text: string): string {
+  return text
+    .replace(/[^\x20-\x7E]/g, ' ')
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+}
+
+function buildDemoPdfContent(title: string, lines: string[]): string {
+  const safeLines = [title, '', ...lines].slice(0, 48);
+  const contentOps: string[] = ['BT', '/F1 11 Tf', '40 760 Td', '14 TL'];
+  for (let i = 0; i < safeLines.length; i += 1) {
+    const text = escapePdfText(safeLines[i]);
+    if (i === 0) {
+      contentOps.push(`/F1 14 Tf (${text}) Tj /F1 10 Tf T*`);
+    } else {
+      contentOps.push(`(${text}) Tj T*`);
+    }
+  }
+  contentOps.push('ET');
+  const stream = contentOps.join('\n');
+
+  const objects: string[] = [
+    '1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n',
+    '2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n',
+    '3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>\nendobj\n',
+    '4 0 obj\n<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>\nendobj\n',
+    `5 0 obj\n<< /Length ${stream.length} >>\nstream\n${stream}\nendstream\nendobj\n`,
+  ];
+
+  let body = '%PDF-1.4\n';
+  const offsets: number[] = [0];
+  for (const obj of objects) {
+    offsets.push(body.length);
+    body += obj;
+  }
+  const xrefOffset = body.length;
+  let xref = `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  for (let i = 1; i <= objects.length; i += 1) {
+    xref += `${String(offsets[i]).padStart(10, '0')} 00000 n \n`;
+  }
+  const trailer = `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+  return body + xref + trailer;
+}
+
+async function shareFileOnDevice(
+  fileUri: string,
+  mimeType: string,
+  dialogTitle: string,
+  uti: string,
+) {
+  const canShare = await Sharing.isAvailableAsync();
+  if (canShare) {
+    await Sharing.shareAsync(fileUri, { mimeType, dialogTitle, UTI: uti });
+    return;
+  }
+  await Share.share({ title: dialogTitle, url: fileUri });
+}
+
+export async function downloadAndShareDocument(
+  endpoint: string,
+  filename: string,
+  mimeType: string,
+  uti: string,
+  dialogTitle: string,
+): Promise<void> {
+  const session = await getStoredSession();
+  const token = session?.accessToken;
+
+  if (Platform.OS === 'web') {
+    const res = await fetch(`${getBaseUrl()}${endpoint}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!res.ok) throw new Error(`Export failed (${res.status})`);
+    const blob = await res.blob();
+    triggerWebDownload(filename, blob, mimeType);
+    return;
+  }
+
+  const baseDir = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
+  if (!baseDir) throw new Error('Device storage directory unavailable');
+  const fileUri = `${baseDir}${filename}`;
+  const result = await FileSystem.downloadAsync(`${getBaseUrl()}${endpoint}`, fileUri, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (result.status < 200 || result.status >= 300) {
+    throw new Error(`Export failed (${result.status})`);
+  }
+  await shareFileOnDevice(result.uri, mimeType, dialogTitle, uti);
+}
+
 /**
- * Exports the current user's role-scoped data as PDF or Excel.
- * Uses binary download on web and structured Share sheet on mobile.
+ * Exports the current user's role-scoped data as a real PDF or Excel file.
  */
 export async function exportRoleReport(
   format: 'pdf' | 'excel',
@@ -151,50 +243,36 @@ export async function exportRoleReport(
   const role: UserRole = user?.role ?? 'operator';
   const userName = user?.name ?? 'Employee';
   const employeeId = user?.employeeId ?? 'EMP';
+  const ext = format === 'pdf' ? 'pdf' : 'xls';
+  const mimeType = format === 'pdf' ? 'application/pdf' : 'application/vnd.ms-excel';
+  const uti = format === 'pdf' ? 'com.adobe.pdf' : 'com.microsoft.excel.xls';
 
   if (isDemoMode) {
     const payload = buildDemoRoleExport(role, userName, employeeId);
+    const filename = `stitchflow-${role}-demo.${ext}`;
+    const fileContent =
+      format === 'excel'
+        ? payload.excelXml
+        : buildDemoPdfContent(payload.title, payload.summaryText.split('\n').slice(1));
+
     if (Platform.OS === 'web') {
-      if (format === 'excel') {
-        triggerWebDownload(`stitchflow-${role}-demo.xls`, payload.excelXml, 'application/vnd.ms-excel');
-      } else {
-        triggerWebDownload(`stitchflow-${role}-demo.txt`, payload.summaryText, 'text/plain;charset=utf-8');
-      }
+      triggerWebDownload(filename, fileContent, mimeType);
       return payload;
     }
 
-    await Share.share({
-      title: `${payload.title} (${format.toUpperCase()})`,
-      message: format === 'excel' ? payload.csv : payload.summaryText,
+    const baseDir = FileSystem.cacheDirectory ?? FileSystem.documentDirectory;
+    if (!baseDir) throw new Error('Device storage directory unavailable');
+    const fileUri = `${baseDir}${filename}`;
+    await FileSystem.writeAsStringAsync(fileUri, fileContent, {
+      encoding: FileSystem.EncodingType.UTF8,
     });
+    await shareFileOnDevice(fileUri, mimeType, `${payload.title} (${format.toUpperCase()})`, uti);
     return payload;
   }
 
   const suffix = factoryId ? `?factoryId=${encodeURIComponent(factoryId)}` : '';
-  if (Platform.OS === 'web') {
-    const session = await getStoredSession();
-    const token = session?.accessToken;
-    const endpoint = format === 'pdf' ? `/reports/role-export.pdf${suffix}` : `/reports/role-export.xls${suffix}`;
-    const res = await fetch(`${getBaseUrl()}${endpoint}`, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
-    if (!res.ok) {
-      throw new Error(`Export failed (${res.status})`);
-    }
-    const blob = await res.blob();
-    triggerWebDownload(
-      `stitchflow-${role}-report.${format === 'pdf' ? 'pdf' : 'xls'}`,
-      blob,
-      format === 'pdf' ? 'application/pdf' : 'application/vnd.ms-excel',
-    );
-  }
-
-  const payload = await apiRequest<RoleExportPayload>(`/reports/role-export${suffix}`);
-  if (Platform.OS !== 'web') {
-    await Share.share({
-      title: `${payload.title} (${format.toUpperCase()})`,
-      message: format === 'excel' ? payload.csv : payload.summaryText,
-    });
-  }
-  return payload;
+  const endpoint = format === 'pdf' ? `/reports/role-export.pdf${suffix}` : `/reports/role-export.xls${suffix}`;
+  const filename = `stitchflow-${role}-report.${ext}`;
+  await downloadAndShareDocument(endpoint, filename, mimeType, uti, `StitchFlow ${role.toUpperCase()} Report`);
+  return apiRequest<RoleExportPayload>(`/reports/role-export${suffix}`);
 }

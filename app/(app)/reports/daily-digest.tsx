@@ -1,10 +1,11 @@
-import React from 'react';
-import { ScrollView, Share, StyleSheet, View } from 'react-native';
+import React, { useState } from 'react';
+import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiRequest } from '../../../src/services/api/apiClient';
+import { exportRoleReport } from '../../../src/utils/exportService';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
@@ -30,7 +31,19 @@ export default function DailyDigestScreen() {
   const insets = useSafeAreaInsets();
   const { tokens } = useThemeStore();
   const { user, isDemoMode } = useAuthStore();
-  const { t } = useTranslation(['common', 'production']);
+  const { t } = useTranslation(['common', 'production', 'reports', 'errors']);
+  const [exporting, setExporting] = useState<'pdf' | 'excel' | null>(null);
+
+  const handleExport = async (format: 'pdf' | 'excel') => {
+    setExporting(format);
+    try {
+      await exportRoleReport(format, user?.factoryId);
+    } catch {
+      Alert.alert(t('errors:serverError'));
+    } finally {
+      setExporting(null);
+    }
+  };
 
   const query = useQuery({
     queryKey: ['daily-digest', user?.id, user?.factoryId],
@@ -55,18 +68,27 @@ export default function DailyDigestScreen() {
             <AppText variant="bodySmall">{`Active: ${d.activeJobs} · Completed: ${d.completedJobs} · Overdue: ${d.overdueJobs}`}</AppText>
             <AppText variant="bodySmall">{`QC: ${d.qc.inspected} Inspected / ${d.qc.passed} Passed / ${d.qc.rework} Rework / ${d.qc.rejected} Rejected`}</AppText>
             <AppText variant="bodySmall">{`Packed: ${d.packed} · Dispatched: ${d.dispatched} · Open Issues: ${d.openIssues}`}</AppText>
-            <AppButton
-              title={t('common:share', { defaultValue: 'Share Daily Digest' })}
-              variant="outline"
-              size="sm"
-              style={{ marginTop: spacing[3] }}
-              onPress={() =>
-                void Share.share({
-                  title: `StitchFlow Daily Digest (${d.reportDate})`,
-                  message: `Date: ${d.reportDate}\nActive: ${d.activeJobs}, Completed: ${d.completedJobs}, Overdue: ${d.overdueJobs}\nQC: ${d.qc.inspected} Inspected (${d.qc.passed} Pass / ${d.qc.rework} Rework / ${d.qc.rejected} Reject)\nPacked: ${d.packed}, Dispatched: ${d.dispatched}, Open Issues: ${d.openIssues}`,
-                })
-              }
-            />
+            <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[3] }}>
+              <View style={{ flex: 1 }}>
+                <AppButton
+                  title={t('reports:exportPDF', { defaultValue: 'Export PDF' })}
+                  size="sm"
+                  loading={exporting === 'pdf'}
+                  disabled={exporting !== null}
+                  onPress={() => void handleExport('pdf')}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <AppButton
+                  title={t('reports:exportExcel', { defaultValue: 'Export Excel' })}
+                  variant="outline"
+                  size="sm"
+                  loading={exporting === 'excel'}
+                  disabled={exporting !== null}
+                  onPress={() => void handleExport('excel')}
+                />
+              </View>
+            </View>
           </AppCard>
         )}
       </ScrollView>
