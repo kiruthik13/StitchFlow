@@ -23,68 +23,68 @@
   },
   "events": {
     "JOB_APPROVAL_REQUESTED": {
-      "title": "Work Order Approval Needed",
-      "message": "Job {{jobCode}} is awaiting Factory Manager approval."
+      "title": "Work Order Approval Required",
+      "message": "Work Order {{jobCode}} has been submitted and is awaiting Factory Manager authorization."
     },
     "JOB_APPROVED": {
-      "title": "Work Order Approved",
-      "message": "Job {{jobCode}} has been approved for production."
+      "title": "Work Order Authorized",
+      "message": "Work Order {{jobCode}} is approved and released for floor cutting & line production."
     },
     "JOB_REJECTED": {
-      "title": "Work Order Rejected",
-      "message": "Job {{jobCode}} was rejected. Review feedback."
+      "title": "Work Order Returned / Rejected",
+      "message": "Work Order {{jobCode}} was rejected. Please review management remarks and revise."
     },
     "CUTTING_COMPLETED": {
       "title": "Cutting Output Recorded",
-      "message": "{{quantity}} pcs cut for {{bundleCode}} ({{jobCode}})."
+      "message": "{{quantity}} pcs cut and bundled as {{bundleCode}} under Work Order {{jobCode}}."
     },
     "PRODUCTION_STAGE_COMPLETED": {
-      "title": "Stage Completed",
-      "message": "Bundle {{bundleCode}} completed {{stageCode}} ({{quantity}} pcs)."
+      "title": "Production Stage Completed",
+      "message": "Bundle {{bundleCode}} completed {{stageCode}} ({{quantity}} pcs) and advanced in the route."
     },
     "BUNDLE_READY_FOR_NEXT_STAGE": {
-      "title": "Bundle Ready for Next Stage",
-      "message": "Bundle {{bundleCode}} is ready for {{stageCode}}."
+      "title": "Bundle Ready at Your Station",
+      "message": "Bundle {{bundleCode}} has arrived and is ready for {{stageCode}} processing."
     },
     "QC_INSPECTION_REQUESTED": {
-      "title": "QC Inspection Required",
-      "message": "Bundle {{bundleCode}} is ready for QC inspection."
+      "title": "QC Checkpoint Ready",
+      "message": "Bundle {{bundleCode}} completed all production stages and is queued for QC inspection."
     },
     "QC_REWORK_REQUESTED": {
-      "title": "Rework Assigned",
-      "message": "{{rework}} pcs on {{bundleCode}} require rework."
+      "title": "Rework Task Assigned",
+      "message": "{{rework}} pcs on bundle {{bundleCode}} flagged for defect rectification."
     },
     "QC_REWORK_COMPLETED": {
       "title": "Rework Ready for Reinspection",
-      "message": "Rework completed on {{bundleCode}} ({{quantity}} pcs)."
+      "message": "Operator completed rework on bundle {{bundleCode}} ({{quantity}} pcs). Ready for QC reinspection."
     },
     "BUNDLE_READY_FOR_PACKING": {
-      "title": "Ready for Packing",
-      "message": "{{quantity}} QC-released pcs on {{bundleCode}} ready to pack."
+      "title": "QC Released — Ready to Pack",
+      "message": "{{quantity}} QC-passed pcs on bundle {{bundleCode}} are released for carton packing."
     },
     "DISPATCH_APPROVAL_REQUESTED": {
-      "title": "Dispatch Approval Needed",
-      "message": "Shipment manifest awaits Factory Manager approval."
+      "title": "Dispatch Manifest Approval Needed",
+      "message": "A finished-goods shipment manifest has been staged and awaits Factory Manager approval."
     },
     "DISPATCH_APPROVED": {
-      "title": "Dispatch Approved",
-      "message": "Shipment approved and ready for Store execution."
+      "title": "Dispatch Manifest Approved",
+      "message": "Shipment manifest approved by Factory Manager. Ready for Store gate-pass execution."
     },
     "DISPATCH_COMPLETED": {
-      "title": "Dispatch Completed",
-      "message": "Shipment dispatched with gate-pass {{gatePass}}."
+      "title": "Shipment Dispatched · Gate Pass Issued",
+      "message": "Shipment departed with official Gate Pass {{gatePass}}."
     },
     "BOTTLENECK_CRITICAL": {
-      "title": "Critical Bottleneck",
-      "message": "{{stage}} on {{lineName}} ({{jobCode}}) needs immediate action."
+      "title": "Critical Bottleneck Alert",
+      "message": "{{stage}} on {{lineName}} (Work Order {{jobCode}}) requires immediate supervisor/FM intervention."
     },
     "BOTTLENECK_WARNING": {
-      "title": "Bottleneck Warning",
-      "message": "{{stage}} on {{lineName}} ({{jobCode}}) is slowing down."
+      "title": "Line Pace Slowdown Warning",
+      "message": "{{stage}} on {{lineName}} (Work Order {{jobCode}}) is trending below target pace."
     },
     "MACHINE_STOPPAGE_REPORTED": {
       "title": "Machine Stoppage Reported",
-      "message": "Stoppage reported on {{lineName}}."
+      "message": "Unplanned stoppage reported on {{lineName}}. Immediate maintenance & line review required."
     }
   }
 }

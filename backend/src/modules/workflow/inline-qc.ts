@@ -19,6 +19,7 @@ import { FactoryQuery } from '../jobs/jobs.dto';
 import { factoryScope, jobScopeParams } from '../jobs/jobs.service';
 
 export class InlineAuditInput {
+  @ApiPropertyOptional() @IsOptional() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) requestId?: string;
   @ApiProperty() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) factoryId!: string;
   @ApiPropertyOptional() @IsOptional() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) lineId?: string;
   @ApiPropertyOptional() @IsOptional() @Matches(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, { message: '$property must be a UUID' }) bundleId?: string;
@@ -33,7 +34,34 @@ export class InlineAuditInput {
 export class InlineQcService {
   constructor(private readonly db: DatabaseService, private readonly audit: AuditService) {}
 
+  async cleanupDuplicates(factoryId: string): Promise<number> {
+    const res = await this.db.query(
+      `WITH ranked AS (
+         SELECT id,
+                ROW_NUMBER() OVER (
+                  PARTITION BY factory_id,
+                               COALESCE(line_id::text, ''),
+                               LOWER(TRIM(station_name)),
+                               LOWER(TRIM(operator_name)),
+                               sample_qty,
+                               defect_qty,
+                               COALESCE(TRIM(defect_notes), ''),
+                               DATE_TRUNC('hour', created_at)
+                  ORDER BY created_at DESC, id DESC
+                ) AS rn
+         FROM public.inline_qc_audits
+         WHERE factory_id = $1
+       )
+       DELETE FROM public.inline_qc_audits a
+       USING ranked r
+       WHERE a.id = r.id AND r.rn > 1`,
+      [factoryId],
+    );
+    return res.rowCount ?? 0;
+  }
+
   async listAudits(user: AuthenticatedUser, query: FactoryQuery) {
+    await this.cleanupDuplicates(query.factoryId);
     const { rows } = await this.db.query(
       `SELECT a.id, a.factory_id AS "factoryId", a.line_id AS "lineId", a.bundle_id AS "bundleId",
               a.station_name AS "stationName", a.operator_name AS "operatorName",
@@ -54,6 +82,10 @@ export class InlineQcService {
     if (body.defectQty > body.sampleQty) {
       throw new BadRequestException('Defect quantity cannot exceed sample quantity');
     }
+    const stationName = body.stationName.trim();
+    const operatorName = body.operatorName.trim();
+    const defectNotes = body.defectNotes?.trim() || null;
+
     return this.db.withTransaction(async client => {
       const factoryCheck = await client.query(
         `SELECT 1 FROM public.factories f WHERE ${factoryScope} AND f.id = $4`,
@@ -63,38 +95,67 @@ export class InlineQcService {
 
       const status = body.defectQty > 0 ? 'alert' : 'pass';
       const { rows: [row] } = await client.query(
-        `INSERT INTO public.inline_qc_audits
-           (factory_id, line_id, bundle_id, station_name, operator_name, sample_qty, defect_qty, defect_notes, status, inspector_id)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-         RETURNING id, factory_id AS "factoryId", line_id AS "lineId", bundle_id AS "bundleId",
-                   station_name AS "stationName", operator_name AS "operatorName",
-                   sample_qty AS "sampleQty", defect_qty AS "defectQty",
-                   defect_notes AS "defectNotes", status, created_at AS "createdAt"`,
+        `WITH recent_dup AS (
+           SELECT a.id, a.factory_id AS "factoryId", a.line_id AS "lineId", a.bundle_id AS "bundleId",
+                  a.station_name AS "stationName", a.operator_name AS "operatorName",
+                  a.sample_qty AS "sampleQty", a.defect_qty AS "defectQty",
+                  a.defect_notes AS "defectNotes", a.status, a.created_at AS "createdAt"
+           FROM public.inline_qc_audits a
+           WHERE a.factory_id = $1
+             AND COALESCE(a.line_id::text, '') = COALESCE($2::text, '')
+             AND LOWER(TRIM(a.station_name)) = LOWER($4)
+             AND LOWER(TRIM(a.operator_name)) = LOWER($5)
+             AND a.sample_qty = $6
+             AND a.defect_qty = $7
+             AND COALESCE(TRIM(a.defect_notes), '') = COALESCE($8, '')
+             AND a.created_at >= NOW() - INTERVAL '10 minutes'
+           ORDER BY a.created_at DESC LIMIT 1
+         ),
+         inserted AS (
+           INSERT INTO public.inline_qc_audits
+             (factory_id, line_id, bundle_id, station_name, operator_name, sample_qty, defect_qty, defect_notes, status, inspector_id)
+           SELECT $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+           WHERE NOT EXISTS (SELECT 1 FROM recent_dup)
+           RETURNING id, factory_id AS "factoryId", line_id AS "lineId", bundle_id AS "bundleId",
+                     station_name AS "stationName", operator_name AS "operatorName",
+                     sample_qty AS "sampleQty", defect_qty AS "defectQty",
+                     defect_notes AS "defectNotes", status, created_at AS "createdAt"
+         )
+         SELECT id, "factoryId", "lineId", "bundleId", "stationName", "operatorName",
+                "sampleQty", "defectQty", "defectNotes", status, "createdAt", TRUE AS "wasInserted"
+         FROM inserted
+         UNION ALL
+         SELECT id, "factoryId", "lineId", "bundleId", "stationName", "operatorName",
+                "sampleQty", "defectQty", "defectNotes", status, "createdAt", FALSE AS "wasInserted"
+         FROM recent_dup
+         LIMIT 1`,
         [
           body.factoryId,
           body.lineId ?? null,
           body.bundleId ?? null,
-          body.stationName.trim(),
-          body.operatorName.trim(),
+          stationName,
+          operatorName,
           body.sampleQty,
           body.defectQty,
-          body.defectNotes?.trim() ?? null,
+          defectNotes,
           status,
           user.id,
         ],
       );
-      await this.audit.record({
-        organizationId: user.organizationId,
-        factoryId: body.factoryId,
-        actorId: user.id,
-        actorEmployeeId: user.employeeId,
-        actorName: user.name,
-        actorRole: user.role,
-        action: 'INLINE_QC_AUDIT_RECORDED',
-        entityType: 'inline_qc_audit',
-        entityId: row.id,
-        newValues: row,
-      }, client);
+      if ((row as { wasInserted?: boolean }).wasInserted !== false) {
+        await this.audit.record({
+          organizationId: user.organizationId,
+          factoryId: body.factoryId,
+          actorId: user.id,
+          actorEmployeeId: user.employeeId,
+          actorName: user.name,
+          actorRole: user.role,
+          action: 'INLINE_QC_AUDIT_RECORDED',
+          entityType: 'inline_qc_audit',
+          entityId: row.id,
+          newValues: { ...row, ...(body.requestId ? { requestId: body.requestId } : {}) },
+        }, client);
+      }
       return row;
     });
   }

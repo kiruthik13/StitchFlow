@@ -40,6 +40,7 @@ import { EmptyState } from '../../../src/design-system/components/EmptyState';
 import { DashboardSkeleton } from '../../../src/design-system/components/dashboard';
 import { spacing } from '../../../src/design-system/tokens/spacing';
 import { radii } from '../../../src/design-system/tokens/radii';
+import { formatDateTime } from '../../../src/utils/formatters';
 
 type FilterTab = 'all' | 'unread' | 'action_required';
 
@@ -237,16 +238,39 @@ export default function NotificationsCenterScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <View style={styles.itemTop}>
-              <AppText variant="label" bold numberOfLines={1} style={{ color: tokens.textPrimary, flex: 1 }}>
-                {title}
+              <AppText variant="caption" bold style={{ color: priorityColor }}>
+                {t(`notifications:categories.${item.category}`, { defaultValue: item.category.replace('_', ' ') }).toUpperCase()}
               </AppText>
               <AppText variant="caption" color="secondary">
-                {formatRelativeTime(item.createdAt)}
+                {formatRelativeTime(item.createdAt)} · {formatDateTime(item.createdAt)}
               </AppText>
             </View>
-            <AppText variant="bodySmall" color="secondary" numberOfLines={2} style={{ marginTop: 2 }}>
+            <AppText variant="label" bold numberOfLines={2} style={{ color: tokens.textPrimary, marginTop: 2 }}>
+              {title}
+            </AppText>
+            <AppText variant="bodySmall" color="secondary" numberOfLines={3} style={{ marginTop: 2 }}>
               {body}
             </AppText>
+            {!!item.messageParameters && Object.keys(item.messageParameters).length > 0 && (
+              <View style={styles.paramChipRow}>
+                {(['jobCode', 'bundleCode', 'stageCode', 'lineName', 'quantity', 'rework', 'gatePass'] as const)
+                  .filter((k) => item.messageParameters?.[k] !== undefined && item.messageParameters?.[k] !== null && String(item.messageParameters?.[k]).trim() !== '')
+                  .slice(0, 4)
+                  .map((k) => (
+                    <View
+                      key={k}
+                      style={[
+                        styles.paramChip,
+                        { backgroundColor: tokens.surfaceSecondary, borderColor: tokens.border },
+                      ]}
+                    >
+                      <AppText variant="caption" mono color="secondary">
+                        {`${k.replace(/Code|Name/, '').toUpperCase()}: ${String(item.messageParameters[k])}`}
+                      </AppText>
+                    </View>
+                  ))}
+              </View>
+            )}
             <View style={styles.itemMeta}>
               <StatusBadge
                 label={item.priority}
@@ -470,6 +494,8 @@ const styles = StyleSheet.create({
   },
   itemTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing[2] },
   itemMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing[2], marginTop: spacing[2] },
+  paramChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[1.5], marginTop: spacing[2] },
+  paramChip: { borderWidth: 1, borderRadius: radii.sm, paddingHorizontal: spacing[2], paddingVertical: 2 },
   unreadDot: { width: 8, height: 8, borderRadius: 4, marginLeft: 'auto' },
   centerBox: { padding: spacing[6], alignItems: 'center', gap: spacing[3] },
   emptyWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingBottom: spacing[8] },

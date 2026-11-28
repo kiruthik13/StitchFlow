@@ -14,7 +14,9 @@ import { AppButton } from '../../../src/design-system/components/AppButton';
 import { AppInput } from '../../../src/design-system/components/AppInput';
 import { StatusBadge } from '../../../src/design-system/components/StatusBadge';
 import { QuantityStepper } from '../../../src/design-system/components/QuantityStepper';
+import { SectionHeader, StructuredRecordCard } from '../../../src/design-system/components/StructuredRecordCard';
 import { spacing } from '../../../src/design-system/tokens/spacing';
+import { formatDateTime, formatQuantity } from '../../../src/utils/formatters';
 
 const DEMO_STATIONS = [
   { id: 'st-1', name: 'Collar Runstitch', operator: 'Kavitha S.', line: 'Line 1' },
@@ -43,6 +45,14 @@ interface InlineAuditRow {
   createdAt: string;
 }
 
+function createUuidV4(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (ch) => {
+    const r = (Math.random() * 16) | 0;
+    const v = ch === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export default function InlineQCScreen() {
   const { tokens } = useThemeStore();
   const router = useRouter();
@@ -57,6 +67,7 @@ export default function InlineQCScreen() {
   const [checkedPieces, setCheckedPieces] = useState(10);
   const [defectsFound, setDefectsFound] = useState(0);
   const [defectNotes, setDefectNotes] = useState('');
+  const [requestId, setRequestId] = useState(() => createUuidV4());
 
   const stationsQuery = useQuery({
     queryKey: ['inline-stations', user?.id, factoryId],
@@ -76,6 +87,7 @@ export default function InlineQCScreen() {
     mutationFn: () => apiRequest('/quality/inline-audits', {
       method: 'POST',
       body: JSON.stringify({
+        requestId,
         factoryId,
         lineId: activeStation?.lineId,
         stationName: activeStation?.operationName ?? 'Inline Station',
@@ -88,6 +100,7 @@ export default function InlineQCScreen() {
     onSuccess: () => {
       setDefectsFound(0);
       setDefectNotes('');
+      setRequestId(createUuidV4());
       void queryClient.invalidateQueries({ queryKey: ['inline-audits', user?.id, factoryId] });
       Alert.alert(t('quality:inlineQC'), `${checkedPieces} · ${defectsFound}`, [
         { text: t('common:confirm'), onPress: () => router.back() },
@@ -143,7 +156,10 @@ export default function InlineQCScreen() {
               return (
                 <TouchableOpacity
                   key={st.id}
-                  onPress={() => setSelectedStation(st)}
+                  onPress={() => {
+                    setSelectedStation(st);
+                    setRequestId(createUuidV4());
+                  }}
                   style={[
                     styles.stationCard,
                     {
@@ -199,17 +215,30 @@ export default function InlineQCScreen() {
         />
 
         {!isDemoMode && auditsQuery.data && auditsQuery.data.length > 0 && (
-          <View style={{ marginTop: spacing[4], gap: spacing[2] }}>
+          <View style={{ marginTop: spacing[4], gap: spacing[2.5] }}>
+            <SectionHeader title={t('quality:inlineQC')} count={auditsQuery.data.length} />
             {auditsQuery.data.slice(0, 10).map((a) => (
-              <AppCard key={a.id} padding={spacing[3]}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <View style={{ flex: 1 }}>
-                    <AppText variant="label" bold>{a.stationName} · {a.operatorName}</AppText>
-                    <AppText variant="caption" color="secondary">{a.sampleQty} / {a.defectQty}</AppText>
-                  </View>
-                  <StatusBadge label={a.status.toUpperCase()} variant={a.status === 'pass' ? 'success' : 'danger'} size="sm" />
-                </View>
-              </AppCard>
+              <StructuredRecordCard
+                key={a.id}
+                title={a.stationName}
+                subtitle={a.operatorName}
+                status={{
+                  label: a.status.toUpperCase(),
+                  variant: a.status === 'pass' ? 'success' : 'danger',
+                  dot: true,
+                }}
+                fields={[
+                  { label: t('quality:inspectedQty'), value: formatQuantity(a.sampleQty), mono: true },
+                  {
+                    label: t('quality:defectCount'),
+                    value: formatQuantity(a.defectQty),
+                    mono: true,
+                    tone: a.defectQty > 0 ? 'danger' : 'success',
+                  },
+                  { label: t('common:date'), value: formatDateTime(a.createdAt), fullWidth: true },
+                ]}
+                highlight={a.defectNotes ? { label: t('quality:defectNotes'), value: a.defectNotes, tone: 'warning' } : undefined}
+              />
             ))}
           </View>
         )}
