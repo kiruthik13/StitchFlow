@@ -187,20 +187,24 @@ export class Phase11OptimizationService {
         `SELECT (
            (SELECT COUNT(*) FROM public.bundle_cartons WHERE bundle_id = ANY($1::uuid[])) +
            (SELECT COUNT(*) FROM public.bundle_quality_balances WHERE bundle_id = ANY($1::uuid[]) AND inspected > 0) +
+           (SELECT COUNT(*) FROM public.bundle_quality_events WHERE bundle_id = ANY($1::uuid[])) +
+           (SELECT COUNT(*) FROM public.bundle_route_progress WHERE bundle_id = ANY($1::uuid[])) +
            (SELECT COUNT(*) FROM public.bundle_stage_events WHERE bundle_id = ANY($1::uuid[])) +
            (SELECT COUNT(*) FROM public.cutting_output_events WHERE bundle_id = ANY($1::uuid[])) +
-           (SELECT COUNT(*) FROM public.cut_stock_handovers WHERE bundle_id = ANY($1::uuid[]))
+           (SELECT COUNT(*) FROM public.cut_stock_handovers WHERE bundle_id = ANY($1::uuid[])) +
+           (SELECT COUNT(*) FROM public.tag_print_logs WHERE bundle_id = ANY($1::uuid[]))
          )::text AS cnt`,
         [input.bundleIds],
       );
       if (Number(refs?.cnt ?? 0) > 0) {
-        throw new ConflictException('Cannot merge bundles that already have production, QC, carton, or handover records');
+        throw new ConflictException('Cannot merge bundles that already have production, route, tag, QC, carton, or handover records');
       }
       const totalQty = rows.reduce((s, r) => s + r.quantity, 0);
       const primaryId = first.id;
       const absorbedIds = rows.slice(1).map((r) => r.id);
       await client.query(`UPDATE public.bundles SET quantity = $2 WHERE id = $1`, [primaryId, totalQty]);
       if (absorbedIds.length > 0) {
+        await client.query(`DELETE FROM public.bundle_quality_balances WHERE bundle_id = ANY($1::uuid[])`, [absorbedIds]);
         await client.query(`DELETE FROM public.bundles WHERE id = ANY($1::uuid[])`, [absorbedIds]);
       }
       const merged = { id: primaryId };
