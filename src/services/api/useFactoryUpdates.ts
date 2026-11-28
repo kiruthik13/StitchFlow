@@ -59,6 +59,11 @@ const syncedKeys = new Set([
   'planning-bottlenecks',
   'planning-predictions',
   'monitor-bottlenecks',
+  'smart-task-inbox',
+  'production-exceptions',
+  'wip-aging',
+  'shift-handover',
+  'bundle-passport',
 ]);
 
 const realtimeRoles = new Set([

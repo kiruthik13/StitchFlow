@@ -106,7 +106,7 @@ StitchFlow is a **mobile-only** React Native + Expo application designed for gar
 | API Docs | Swagger / OpenAPI (`@nestjs/swagger`) |
 | Security | Helmet, UUID validation, DTO class-validator |
 | Hosting | Railway (auto-deploy from `main` branch) |
-| Testing | Jest 29, 21 suites, 105 tests |
+| Testing | Jest 29, 22 suites, 115 tests |
 
 ---
 
@@ -655,7 +655,7 @@ npm run ts-check
 ```bash
 cd backend
 npm test
-# Expected: 21 suites, 105 tests PASS
+# Expected: 22 suites, 115 tests PASS
 ```
 
 ### Backend Test Coverage
@@ -715,7 +715,7 @@ The backend auto-deploys on every push to the `main` branch of the GitHub reposi
 ### Deployment Checklist
 
 - [ ] `npm run ts-check` → 0 errors
-- [ ] `cd backend && npm test` → 105/105 pass
+- [ ] `cd backend && npm test` → 115/115 pass
 - [ ] No secrets in staged files (`git diff --staged`)
 - [ ] `git push origin main`
 - [ ] Railway build completes (check Railway dashboard)

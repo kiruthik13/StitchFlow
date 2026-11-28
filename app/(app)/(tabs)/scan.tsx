@@ -721,6 +721,13 @@ export default function ScanTabScreen() {
               );
             })}
             <BundleDutyPanel key={liveBundle.id} bundleId={liveBundle.id} />
+            <AppButton
+              title={t('production:digitalPassport', { defaultValue: 'Digital Garment Passport' })}
+              variant="outline"
+              size="sm"
+              style={{ marginTop: spacing[2] }}
+              onPress={() => router.push({ pathname: '/(app)/bundles/passport', params: { bundleId: liveBundle.id } } as never)}
+            />
             {(user?.role === 'qc-inspector' || user?.role === 'factory-manager') && (
               <BundleEvidencePanel key={liveBundle.id} bundleId={liveBundle.id} />
             )}
