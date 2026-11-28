@@ -14,6 +14,7 @@ import {
   verifyCode11Checksum,
   verifyMsiMod10,
 } from '../../src/services/barcode/specialized1dDecoder';
+import { processBarcodePayload } from '../../src/services/barcode/barcodeProcessor';
 
 /**
  * Helper: render synthetic 1D bar/space grayscale scanline image (white=250, black=15)
@@ -158,5 +159,101 @@ describe('Specialized 1D Barcode Image & Scanline Decoders', () => {
     }
     expect(decodeSpecializedFromGrayscale(fabricNoise, 240, 40).decoded).toBe(false);
     expect(decodePharmacode2TrackFromGrayscale(fabricNoise, 240, 40)).toBeNull();
+  });
+
+  it('rejects text-only negative controls, random lines, low-contrast paper, and damaged patterns', async () => {
+    // 1. Printed text-like vertical strokes (irregular glyph-like runs)
+    const width = 320;
+    const height = 40;
+    const textLike = new Uint8Array(width * height).fill(245);
+    const strokeCols = [30, 32, 38, 44, 46, 52, 60, 62, 68, 75, 81, 83, 95, 97, 108, 120, 122, 134];
+    for (let y = 10; y < 30; y++) {
+      for (const x of strokeCols) {
+        textLike[y * width + x] = 20;
+      }
+    }
+    expect(decodeSpecializedFromGrayscale(textLike, width, height, { allowPharmacode: true }).decoded).toBe(false);
+    expect(decodePharmacode2TrackFromGrayscale(textLike, width, height)).toBeNull();
+
+    // 2. Low-contrast pattern (contrast range < 40) must be rejected
+    const lowContrast = new Uint8Array(240 * 40).fill(150);
+    for (let y = 5; y < 35; y++) {
+      for (let x = 40; x < 200; x += 6) {
+        lowContrast[y * 240 + x] = 125;
+        lowContrast[y * 240 + x + 1] = 125;
+      }
+    }
+    expect(decodeSpecializedFromGrayscale(lowContrast, 240, 40, { allowPharmacode: true }).decoded).toBe(false);
+
+    // 3. Damaged / irregular single-track pattern must not fabricate a Code 11 / MSI / I2of5 result
+    const damaged = new Uint8Array(width * height).fill(245);
+    for (let y = 10; y < 30; y++) {
+      for (let x = 40; x < 180; x += 11) {
+        damaged[y * width + x] = 15;
+        damaged[y * width + x + 1] = 15;
+      }
+    }
+    expect(decodeSpecializedFromGrayscale(damaged, width, height, { allowPharmacode: false }).decoded).toBe(false);
+  });
+
+  it('decodes identical barcode payload on text-free labels and labels with incorrect printed text', () => {
+    // Valid Code-11 barcode for "12" with check digit '4': Start(*)='00110', '1'='10001', '2'='01001', '4'='00101', Stop(*)='00110'
+    const seq = ['0','0','1','1','0', '0', '1','0','0','0','1', '0', '0','1','0','0','1', '0', '0','0','1','0','1', '0', '0','0','1','1','0'];
+    let modules = '';
+    seq.forEach((w, idx) => {
+      const isBar = idx % 2 === 0;
+      const len = w === '1' ? 3 : 1;
+      modules += (isBar ? '1' : '0').repeat(len);
+    });
+    const { gray, width, height } = renderScanlineImage(modules, 4, 60);
+
+    // Text-free label
+    const textFree = decodeSpecializedFromGrayscale(gray, width, height);
+    expect(textFree.decoded).toBe(true);
+    expect(textFree.symbology).toBe('CODE_11');
+    expect(textFree.value).toBe('12');
+
+    // Label with incorrect printed text in the bottom margin (e.g. "99999" strokes)
+    const withWrongText = new Uint8Array(gray);
+    for (let y = 48; y < 58; y++) {
+      for (let x = 20; x < width - 20; x += 5) {
+        withWrongText[y * width + x] = 15;
+      }
+    }
+    const wrongTextRes = decodeSpecializedFromGrayscale(withWrongText, width, height);
+    expect(wrongTextRes.decoded).toBe(true);
+    expect(wrongTextRes.symbology).toBe('CODE_11');
+    expect(wrongTextRes.value).toBe('12');
+  });
+
+  it('preserves leading zeros, case sensitivity, raw payloads, GS1 separators, and Tier 2/3 symbologies', () => {
+    const leadingZeros = processBarcodePayload('00042', { expoType: 'CODE_11', inputSource: 'camera' });
+    expect(leadingZeros.normalizedValue).toBe('00042');
+    expect(leadingZeros.symbology).toBe('CODE_11');
+    expect(leadingZeros.rawValue).toBe('00042');
+
+    const mixedCase = processBarcodePayload('AbCd-001', { expoType: 'code39', inputSource: 'camera' });
+    expect(mixedCase.normalizedValue).toBe('AbCd-001');
+    expect(mixedCase.symbology).toBe('CODE_39');
+
+    const gs1 = processBarcodePayload(']C1010123456789012810LOT42\x1d21SER0099', {
+      expoType: 'code128',
+      inputSource: 'camera',
+    });
+    expect(gs1.symbology).toBe('GS1_128');
+    expect(gs1.rawValue).toContain('\x1d');
+    expect(gs1.gs1?.gtin).toBe('01234567890128');
+    expect(gs1.gs1?.batchLot).toBe('LOT42');
+    expect(gs1.gs1?.serialNumber).toBe('SER0099');
+
+    const microQr = processBarcodePayload('MQ-007', { expoType: 'MICRO_QR_CODE', inputSource: 'camera' });
+    expect(microQr.symbology).toBe('MICRO_QR');
+
+    const dataBar = processBarcodePayload('0101234567890128', { expoType: 'DATA_BAR', inputSource: 'camera' });
+    expect(dataBar.symbology).toBe('GS1_DATABAR');
+
+    const msi = processBarcodePayload('001234', { expoType: 'MSI', inputSource: 'camera' });
+    expect(msi.symbology).toBe('MSI');
+    expect(msi.normalizedValue).toBe('001234');
   });
 });

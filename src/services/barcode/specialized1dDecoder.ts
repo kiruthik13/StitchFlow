@@ -89,6 +89,17 @@ export function scanlineSharpness(line: Uint8Array): number {
   return totalDiff / (line.length - 1);
 }
 
+function scanlineContrastRange(line: Uint8Array): number {
+  let minVal = 255;
+  let maxVal = 0;
+  for (let i = 0; i < line.length; i++) {
+    const v = line[i];
+    if (v < minVal) minVal = v;
+    if (v > maxVal) maxVal = v;
+  }
+  return maxVal - minVal;
+}
+
 /** Extract dark/light run-lengths from a 1D grayscale scanline */
 export function extractRunLengths(line: Uint8Array): RunLength[] {
   const threshold = computeOtsuThreshold(line);
@@ -508,7 +519,7 @@ export function decodeSpecializedFromGrayscale(
     const line = gray.subarray(y * width, (y + 1) * width);
     const blur = scanlineSharpness(line);
     if (blur > bestBlur) bestBlur = blur;
-    if (blur < 2.5) continue;
+    if (blur < 2.5 || scanlineContrastRange(line) < 40) continue;
 
     const runs = extractRunLengths(line);
     const match =

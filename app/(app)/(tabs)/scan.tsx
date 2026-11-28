@@ -138,27 +138,43 @@ export default function ScanTabScreen() {
     return () => sub.remove();
   }, []);
 
-  const scanExtendedFrame = async () => {
-    if (!cameraRef.current || busy) return;
+  const scanExtendedFrame = useCallback(async (silent = false) => {
+    if (!cameraRef.current || busy || inFlight.current) return;
+    inFlight.current = true;
     setBusy(true);
+    let handedOffToLookup = false;
     try {
       const pic = await cameraRef.current.takePictureAsync({ quality: 0.55, skipProcessing: true });
       if (!pic?.uri) {
-        Alert.alert(t('errors:scanFailed'), 'Could not capture camera frame');
+        if (!silent) Alert.alert(t('errors:scanFailed'), 'Could not capture camera frame');
         return;
       }
       const outcome = await decodeCapturedCameraFrame(pic.uri);
       if (outcome.decoded && outcome.rawText) {
+        inFlight.current = false;
+        handedOffToLookup = true;
         await lookupLive(outcome.rawText, { inputSource: 'camera', expoType: outcome.symbology });
-      } else {
+      } else if (!silent) {
         Alert.alert(t('common:scanBarcode'), outcome.reason ?? 'No barcode detected in frame');
       }
     } catch {
-      Alert.alert(t('errors:scanFailed'));
+      if (!silent) Alert.alert(t('errors:scanFailed'));
     } finally {
+      if (!handedOffToLookup) inFlight.current = false;
       setBusy(false);
     }
-  };
+  }, [busy, t]);
+
+  // Automatic Tier 2 -> Tier 3 fallback probe while camera is active and Tier 1 has not decoded
+  useEffect(() => {
+    if (isDemoMode || !cameraActive || phase !== 'idle') return;
+    const timer = setInterval(() => {
+      if (!busy && !inFlight.current && cameraRef.current) {
+        void scanExtendedFrame(true);
+      }
+    }, 2200);
+    return () => clearInterval(timer);
+  }, [isDemoMode, cameraActive, phase, busy, scanExtendedFrame]);
 
   const openCamera = async () => {
     const access = permission?.granted ? permission : await requestPermission();

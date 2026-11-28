@@ -10,19 +10,28 @@ export type KnownSymbology =
   | 'GS1_128'
   | 'CODE_39'
   | 'CODE_93'
+  | 'CODE_11'
+  | 'MSI'
   | 'ITF'
   | 'ITF_14'
+  | 'INDUSTRIAL_2_OF_5'
+  | 'PHARMACODE_1T'
+  | 'PHARMACODE_2T'
+  | 'FLATTERMARKEN'
   | 'EAN_13'
   | 'EAN_8'
   | 'UPC_A'
   | 'UPC_E'
   | 'CODABAR'
+  | 'GS1_DATABAR'
   | 'QR_CODE'
+  | 'MICRO_QR'
   | 'GS1_QR'
   | 'DATA_MATRIX'
   | 'GS1_DATA_MATRIX'
   | 'PDF417'
   | 'AZTEC'
+  | 'ZXING_EXTENDED'
   | 'UNKNOWN_HID'
   | 'MANUAL';
 
@@ -72,18 +81,44 @@ const AIM_PREFIX_MAP: Record<string, KnownSymbology> = {
 
 const EXPO_TYPE_MAP: Record<string, KnownSymbology> = {
   qr: 'QR_CODE',
+  QR_CODE: 'QR_CODE',
+  MICRO_QR_CODE: 'MICRO_QR',
+  MICRO_QR: 'MICRO_QR',
   code128: 'CODE_128',
+  CODE_128: 'CODE_128',
   code39: 'CODE_39',
+  CODE_39: 'CODE_39',
   code93: 'CODE_93',
+  CODE_93: 'CODE_93',
+  CODE_11: 'CODE_11',
+  MSI: 'MSI',
   itf14: 'ITF_14',
+  ITF: 'ITF',
+  ITF_14: 'ITF_14',
+  INDUSTRIAL_2_OF_5: 'INDUSTRIAL_2_OF_5',
+  PHARMACODE_1T: 'PHARMACODE_1T',
+  PHARMACODE_2T: 'PHARMACODE_2T',
+  FLATTERMARKEN: 'FLATTERMARKEN',
   ean13: 'EAN_13',
+  EAN_13: 'EAN_13',
   ean8: 'EAN_8',
+  EAN_8: 'EAN_8',
   upc_a: 'UPC_A',
+  UPC_A: 'UPC_A',
   upc_e: 'UPC_E',
+  UPC_E: 'UPC_E',
   codabar: 'CODABAR',
+  CODABAR: 'CODABAR',
+  DATA_BAR: 'GS1_DATABAR',
+  DATA_BAR_EXPANDED: 'GS1_DATABAR',
+  GS1_DATABAR: 'GS1_DATABAR',
   datamatrix: 'DATA_MATRIX',
+  DATA_MATRIX: 'DATA_MATRIX',
   pdf417: 'PDF417',
+  PDF_417: 'PDF417',
   aztec: 'AZTEC',
+  AZTEC: 'AZTEC',
+  ZXING_EXTENDED: 'ZXING_EXTENDED',
 };
 
 /**
