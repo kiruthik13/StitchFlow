@@ -30,6 +30,7 @@ import { spacing } from '../../../src/design-system/tokens/spacing';
 import { radii } from '../../../src/design-system/tokens/radii';
 import { TODAY_SHIFT } from '../../../src/fixtures/mockData';
 import { ROLE_DISPLAY_NAMES } from '../../../src/core/permissions';
+import { exportRoleReport } from '../../../src/utils/exportService';
 
 interface ReportDefinition {
   id: string;
@@ -146,6 +147,32 @@ export default function ReportsTabScreen() {
             <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
               <ShiftSummaryCard tokens={tokens} />
             </AppCard>
+
+            <SectionHead label="Data Export & Archiving" />
+            <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
+              <View style={styles.exportGrid}>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => void exportRoleReport('pdf', user?.factoryId)}
+                  style={[styles.exportButton, { backgroundColor: tokens.surfaceSecondary, borderColor: tokens.border }]}
+                >
+                  <FileText size={18} color={tokens.brand} strokeWidth={2} />
+                  <AppText variant="label" bold style={{ color: tokens.textPrimary, marginLeft: spacing[2] }}>
+                    {t('reports:exportPDF')}
+                  </AppText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  activeOpacity={0.7}
+                  onPress={() => void exportRoleReport('excel', user?.factoryId)}
+                  style={[styles.exportButton, { backgroundColor: tokens.surfaceSecondary, borderColor: tokens.border }]}
+                >
+                  <FileSpreadsheet size={18} color={tokens.brand} strokeWidth={2} />
+                  <AppText variant="label" bold style={{ color: tokens.textPrimary, marginLeft: spacing[2] }}>
+                    {t('reports:exportExcel')}
+                  </AppText>
+                </TouchableOpacity>
+              </View>
+            </AppCard>
           </>
         ) : (
           <>
@@ -231,12 +258,7 @@ export default function ReportsTabScreen() {
               <View style={styles.exportGrid}>
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() =>
-                    Alert.alert(
-                      'StitchFlow Demo',
-                      'PDF export generation requires active sync with StitchFlow Cloud server.'
-                    )
-                  }
+                  onPress={() => void exportRoleReport('pdf', user?.factoryId)}
                   style={[
                     styles.exportButton,
                     {
@@ -253,12 +275,7 @@ export default function ReportsTabScreen() {
 
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() =>
-                    Alert.alert(
-                      'StitchFlow Demo',
-                      'Excel (.xlsx) worksheet export requires active sync with StitchFlow Cloud server.'
-                    )
-                  }
+                  onPress={() => void exportRoleReport('excel', user?.factoryId)}
                   style={[
                     styles.exportButton,
                     {

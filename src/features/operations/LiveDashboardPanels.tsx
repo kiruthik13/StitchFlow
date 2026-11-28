@@ -9,6 +9,8 @@ import { AppText } from '../../design-system/components/AppText';
 import { spacing } from '../../design-system/tokens/spacing';
 import { apiRequest } from '../../services/api/apiClient';
 import { useAuthStore } from '../../store/authStore';
+import { formatDateOnly, formatQuantity } from '../../utils/formatters';
+import { exportRoleReport } from '../../utils/exportService';
 import { UserRole } from '../../core/types';
 
 const metricLabels = {
@@ -153,6 +155,7 @@ export function LiveReportsPanel() {
   const { t } = useTranslation(['common', 'production', 'reports', 'errors']);
   const router = useRouter();
   const user = useAuthStore(state => state.user);
+  const [exportingFormat, setExportingFormat] = React.useState<'pdf' | 'excel' | null>(null);
   const query = useInfiniteQuery({
     queryKey: ['live-reports', user?.id],
     initialPageParam: undefined as string | undefined,
@@ -160,6 +163,16 @@ export function LiveReportsPanel() {
     queryFn: ({ pageParam }) => apiRequest<ReportJob[]>(pageParam ? `/reports/jobs?after=${encodeURIComponent(pageParam)}` : '/reports/jobs'),
     getNextPageParam: page => page.length === 100 ? page[page.length - 1].id : undefined,
   });
+  const handleRoleExport = async (format: 'pdf' | 'excel') => {
+    setExportingFormat(format);
+    try {
+      await exportRoleReport(format, user?.factoryId);
+    } catch {
+      // Handled gracefully
+    } finally {
+      setExportingFormat(null);
+    }
+  };
   const exportReport = useMutation({
     mutationFn: async () => {
       const chunks: string[] = [];
@@ -185,16 +198,42 @@ export function LiveReportsPanel() {
   });
   return (
     <View style={{ gap: spacing[3] }}>
-      <AppButton title={t('production:shareJobCsv')} disabled={exportReport.isPending} onPress={() => exportReport.mutate()} />
+      <AppCard padding={spacing[3.5]}>
+        <AppText variant="label" bold style={{ marginBottom: spacing[2] }}>
+          {t(`common:roles.${user?.role ?? 'operator'}`)} · {t('reports:reports')}
+        </AppText>
+        <View style={{ flexDirection: 'row', gap: spacing[2] }}>
+          <View style={{ flex: 1 }}>
+            <AppButton
+              title={t('reports:exportPDF')}
+              size="sm"
+              loading={exportingFormat === 'pdf'}
+              disabled={exportingFormat !== null}
+              onPress={() => void handleRoleExport('pdf')}
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <AppButton
+              title={t('reports:exportExcel')}
+              size="sm"
+              variant="outline"
+              loading={exportingFormat === 'excel'}
+              disabled={exportingFormat !== null}
+              onPress={() => void handleRoleExport('excel')}
+            />
+          </View>
+        </View>
+      </AppCard>
+      <AppButton title={t('production:shareJobCsv')} variant="outline" disabled={exportReport.isPending} onPress={() => exportReport.mutate()} />
       {exportReport.isError && <AppText>{t('errors:serverError')}</AppText>}
       {query.isLoading && <AppText>{t('common:loading')}</AppText>}
       {query.isError && <AppButton title={t('common:refresh')} onPress={() => void query.refetch()} />}
       {!query.isLoading && !query.isError && !query.data?.pages.some(page => page.length) && <AppText>{t('production:noJobsFound')}</AppText>}
       {query.data?.pages.flat().map(job => <AppCard key={job.id} padding={spacing[3]}>
         <AppText variant="h4" bold>{job.job_code}</AppText>
-        <AppText variant="caption" color="secondary">{job.factory_name} · {job.target_date}</AppText>
-        <AppText variant="bodySmall">{t('production:orderQuantity')}: {job.order_quantity} · {t('production:cuttingPieces')}: {job.cut}</AppText>
-        <AppText variant="bodySmall">{t('production:reworkPieces')}: {job.rework} · {t('production:packingPieces')}: {job.packed} · {t('production:actualDispatched')}: {job.dispatched}</AppText>
+        <AppText variant="caption" color="secondary">{job.factory_name} · {formatDateOnly(job.target_date)}</AppText>
+        <AppText variant="bodySmall">{t('production:orderQuantity')}: {formatQuantity(job.order_quantity)} · {t('production:cuttingPieces')}: {formatQuantity(job.cut)}</AppText>
+        <AppText variant="bodySmall">{t('production:reworkPieces')}: {formatQuantity(job.rework)} · {t('production:packingPieces')}: {formatQuantity(job.packed)} · {t('production:actualDispatched')}: {formatQuantity(job.dispatched)}</AppText>
         <AppButton title={t('common:details')} size="sm" variant="outline" onPress={() => router.push(`/(app)/jobs/${job.id}`)} />
       </AppCard>)}
       {query.hasNextPage && <AppButton title={t('production:loadMoreJobs')} disabled={query.isFetching}
