@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
@@ -7,10 +7,12 @@ import { useQuery } from '@tanstack/react-query';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { apiRequest } from '../../../src/services/api/apiClient';
+import { masterRepository } from '../../../src/services/repositories/masterRepository';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppText } from '../../../src/design-system/components/AppText';
 import { AppButton } from '../../../src/design-system/components/AppButton';
 import { EmptyState } from '../../../src/design-system/components/EmptyState';
+import { FactorySelector } from '../../../src/design-system/components/dashboard';
 import {
   DetailField,
   SectionHeader,
@@ -78,7 +80,13 @@ export default function BottleneckAnalyticsScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation(['production', 'common']);
   const { isDemoMode, user } = useAuthStore();
-  const factoryId = user?.factoryId;
+  const factoriesQuery = useQuery({
+    queryKey: ['md-bn-factories', user?.id],
+    enabled: !isDemoMode && !!user,
+    queryFn: () => masterRepository.getFactories(),
+  });
+  const [selectedFactory, setSelectedFactory] = useState('');
+  const factoryId = selectedFactory || user?.factoryId || factoriesQuery.data?.[0]?.id || '';
 
   const bottlenecksQuery = useQuery({
     queryKey: ['planning-bottlenecks', user?.id, factoryId],
@@ -125,6 +133,15 @@ export default function BottleneckAnalyticsScreen() {
       />
 
       <ScrollView contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + spacing[8] }]}>
+        {!isDemoMode && factoriesQuery.data && factoriesQuery.data.length > 1 && (
+          <View style={{ marginBottom: spacing[3] }}>
+            <FactorySelector
+              items={factoriesQuery.data.map((f) => ({ id: f.id, label: f.name }))}
+              selectedId={factoryId}
+              onSelect={setSelectedFactory}
+            />
+          </View>
+        )}
         <SummaryStrip
           style={{ marginBottom: spacing[3] }}
           metrics={[

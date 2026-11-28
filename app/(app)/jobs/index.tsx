@@ -4,7 +4,7 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../../src/store/authStore';
 import { apiJobs } from '../../../src/services/repositories/jobRepository';
 import { ApiError } from '../../../src/services/api/apiClient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useDemoStore } from '../../../src/store/demoStore';
@@ -33,15 +33,30 @@ export default function JobsIndexScreen() {
     enabled: !demo && !!userId,
   });
   const jobs = demo ? demoJobs : query.data?.pages.flat() ?? [];
+  const params = useLocalSearchParams<{ filter?: string }>();
+  const initialFilter = Array.isArray(params.filter) ? params.filter[0] : params.filter;
   const router = useRouter();
   const { t } = useTranslation(['production', 'common', 'errors']);
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState(initialFilter || 'all');
+
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const isHighRiskJob = useCallback(
+    (j: Job) =>
+      (j.status === 'active' || j.status === 'on-hold') &&
+      (j.targetDate < todayIso || j.status === 'on-hold'),
+    [todayIso],
+  );
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return jobs.filter((j) => {
-      const matchStatus = filter === 'all' || j.status === filter;
+      const matchStatus =
+        filter === 'all'
+          ? true
+          : filter === 'high-risk'
+          ? isHighRiskJob(j)
+          : j.status === filter;
       const matchSearch =
         q === '' ||
         j.jobCode.toLowerCase().includes(q) ||
@@ -49,7 +64,7 @@ export default function JobsIndexScreen() {
         j.buyerName.toLowerCase().includes(q);
       return matchStatus && matchSearch;
     });
-  }, [jobs, filter, search]);
+  }, [jobs, filter, search, isHighRiskJob]);
 
   const renderItem = useCallback(
     ({ item }: { item: Job }) => (
@@ -78,6 +93,7 @@ export default function JobsIndexScreen() {
         <View style={{ marginTop: spacing[2] }}>
           <FilterBar options={[
             { key: 'all', label: t('common:all') },
+            { key: 'high-risk', label: t('production:highRiskOrders') },
             { key: 'active', label: t('common:active') },
             { key: 'on-hold', label: t('common:onHold') },
             { key: 'completed', label: t('common:completed') },
@@ -113,7 +129,10 @@ export default function JobsIndexScreen() {
 }
 
 const JobRow = React.memo(function JobRow({ job, onPress, tokens, showDemoMetrics }: { job: Job; onPress: () => void; tokens: any; showDemoMetrics: boolean }) {
-  const prog = Math.round(((showDemoMetrics ? job.packingQty : job.cuttingQty) / job.orderQuantity) * 100);
+  const prog = job.orderQuantity > 0
+    ? Math.min(100, Math.round(((showDemoMetrics ? job.packingQty : job.cuttingQty) / job.orderQuantity) * 100))
+    : 0;
+  const isOverdue = (job.status === 'active' || job.status === 'on-hold') && job.targetDate < new Date().toISOString().slice(0, 10);
   return (
     <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
       <AppCard padding={spacing[4]}>
@@ -122,7 +141,10 @@ const JobRow = React.memo(function JobRow({ job, onPress, tokens, showDemoMetric
             <AppText variant="code" mono bold style={{ color: tokens.textPrimary }}>{job.jobCode}</AppText>
             <AppText variant="bodySmall" color="secondary">{job.buyerName}</AppText>
           </View>
-          <StatusBadge label={job.status.replace('-', ' ').toUpperCase()} variant={jobStatusBadge(job.status)} size="sm" />
+          <View style={{ flexDirection: 'row', gap: spacing[1.5], alignItems: 'center' }}>
+            {isOverdue && <StatusBadge label="OVERDUE" variant="danger" size="sm" />}
+            <StatusBadge label={job.status.replace('-', ' ').toUpperCase()} variant={jobStatusBadge(job.status)} size="sm" />
+          </View>
         </View>
         <AppText variant="body" bold style={{ marginTop: spacing[1], marginBottom: spacing[2] }}>{job.styleName}</AppText>
         <View style={styles.stats}>

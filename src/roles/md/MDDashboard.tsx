@@ -167,25 +167,28 @@ export function MDDashboard() {
                 value={m.pastTarget}
                 tone={m.pastTarget > 0 ? 'danger' : 'success'}
                 icon={<AlertTriangle size={15} color={m.pastTarget > 0 ? tokens.dangerText : tokens.successText} />}
-                onPress={() => router.push('/(app)/md/bottlenecks')}
+                onPress={() => router.push('/(app)/jobs?filter=high-risk' as never)}
               />
               <CompactMetricCard
                 label={t('production:cuttingPieces')}
                 value={m.cut}
                 tone="brand"
                 icon={<Scissors size={15} color={tokens.brand} />}
+                onPress={() => router.push('/(app)/jobs')}
               />
               <CompactMetricCard
                 label={t('production:packingPieces')}
                 value={m.packed}
                 tone="success"
                 icon={<PackageCheck size={15} color={tokens.successText} />}
+                onPress={() => router.push('/(app)/(tabs)/reports')}
               />
               <CompactMetricCard
                 label={t('production:actualDispatched')}
                 value={m.dispatched}
                 tone="default"
                 icon={<Truck size={15} color={tokens.textPrimary} />}
+                onPress={() => router.push('/(app)/store/dispatch')}
               />
             </View>
 
