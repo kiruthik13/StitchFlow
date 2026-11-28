@@ -17,7 +17,11 @@ import { BundleEvidencePanel } from '../../../src/features/operations/BundleEvid
 import { BundleDutyPanel } from '../../../src/features/operations/BundleDutyPanel';
 import { ApiError, apiRequest } from '../../../src/services/api/apiClient';
 import { hidScannerAdapter, validateBarcodeFormat } from '../../../src/services/adapters/hidScannerAdapter';
-import { ProcessedBarcode, ScannerInputSource } from '../../../src/services/barcode/barcodeProcessor';
+import {
+  formatBarcodeShareReport,
+  ProcessedBarcode,
+  ScannerInputSource,
+} from '../../../src/services/barcode/barcodeProcessor';
 import { decodeCapturedCameraFrame } from '../../../src/services/barcode/cameraFrameDecoder';
 import { useScanInput } from '../../../src/hooks/useScanInput';
 import * as Haptics from 'expo-haptics';
@@ -579,10 +583,18 @@ export default function ScanTabScreen() {
             )}
             <View style={{ flexDirection: 'row', gap: spacing[2], marginTop: spacing[2] }}>
               <AppButton
-                title={t('common:share', { defaultValue: 'Share / Copy' })}
+                title={t('common:share', { defaultValue: 'Share Report' })}
                 variant="outline"
                 size="sm"
-                onPress={() => void Share.share({ message: lastProcessed.rawValue })}
+                onPress={() => {
+                  const report = formatBarcodeShareReport(lastProcessed, {
+                    bundle: liveBundle,
+                    unregistered: !!unregisteredDecode,
+                    operatorName: user?.name,
+                    factoryName: user?.factoryName,
+                  });
+                  void Share.share({ title: report.title, message: report.message });
+                }}
               />
               {!isDemoMode && (
                 <AppButton

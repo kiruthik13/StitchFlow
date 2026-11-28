@@ -291,3 +291,64 @@ export function processBarcodePayload(
     checksumValid,
   };
 }
+
+export function formatBarcodeShareReport(
+  processed: ProcessedBarcode,
+  context?: {
+    bundle?: {
+      bundleCode: string;
+      jobCode: string;
+      color: string;
+      size: string;
+      quantity: number;
+    } | null;
+    unregistered?: boolean;
+    operatorName?: string;
+    factoryName?: string;
+  },
+): { title: string; message: string } {
+  const scannedAt = new Date(processed.timestamp).toLocaleString();
+  const lines: string[] = [
+    'StitchFlow — Barcode Scan Report',
+    '──────────────────────────',
+    `Barcode   : ${processed.rawValue}`,
+    `Symbology : ${processed.symbology}`,
+    `Source    : ${processed.inputSource.toUpperCase()}`,
+    `Scanned   : ${scannedAt}`,
+  ];
+
+  if (processed.checksumValid !== undefined) {
+    lines.push(`Checksum  : ${processed.checksumValid ? 'Valid' : 'Invalid'}`);
+  }
+
+  if (processed.gs1?.ais) {
+    lines.push('GS1 Data  :');
+    for (const [ai, val] of Object.entries(processed.gs1.ais)) {
+      lines.push(`  • AI (${ai}): ${val}`);
+    }
+  }
+
+  if (context?.bundle) {
+    const b = context.bundle;
+    lines.push(
+      'Status    : Registered Production Bundle',
+      `Job Order : ${b.jobCode}`,
+      `Bundle ID : ${b.bundleCode}`,
+      `Details   : ${b.color} · Size ${b.size} · ${b.quantity} pcs`,
+    );
+  } else if (context?.unregistered) {
+    lines.push('Status    : Decoded (Not registered in StitchFlow)');
+  }
+
+  if (context?.factoryName) {
+    lines.push(`Factory   : ${context.factoryName}`);
+  }
+  if (context?.operatorName) {
+    lines.push(`Scanned By: ${context.operatorName}`);
+  }
+
+  return {
+    title: `StitchFlow Scan · ${processed.normalizedValue}`,
+    message: lines.join('\n'),
+  };
+}
