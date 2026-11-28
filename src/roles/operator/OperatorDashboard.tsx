@@ -127,12 +127,12 @@ export function OperatorDashboard() {
               <>
                 <DashboardSection title={t('production:currentAssignment')} />
                 <WorkOrderPreview
-                  code={myBundle.bundleCode}
-                  title={myBundle.styleName || myBundle.jobCode}
-                  subtitle={`${myBundle.color || ''} ${myBundle.size || ''} · ${myBundle.quantity} ${t('common:pieces')}`}
-                  statusLabel={(myBundle.currentStage || myBundle.status).toUpperCase()}
+                  code={myBundle.bundleCode ?? ''}
+                  title={myBundle.styleName || myBundle.jobCode || ''}
+                  subtitle={`${myBundle.color || ''} ${myBundle.size || ''} · ${myBundle.quantity ?? 0} ${t('common:pieces')}`}
+                  statusLabel={String(myBundle.currentStage || myBundle.status || 'ACTIVE').toUpperCase()}
                   statusVariant="info"
-                  progressPct={myBundle.quantity > 0 ? Math.round((myBundle.completedQty / myBundle.quantity) * 100) : 0}
+                  progressPct={myBundle.quantity > 0 ? Math.round(((myBundle.completedQty ?? 0) / myBundle.quantity) * 100) : 0}
                   onPress={() => router.push(`/(app)/bundles/${myBundle.id}`)}
                 />
               </>

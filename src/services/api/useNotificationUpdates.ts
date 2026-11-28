@@ -72,48 +72,54 @@ export function useNotificationUpdates() {
   useEffect(() => {
     if (!user) return;
 
-    const receivedSub = Notifications.addNotificationReceivedListener((event) => {
-      const data = (event.request.content.data ?? {}) as Record<string, unknown>;
-      void queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
-      if (!isDemoMode) {
-        void apiRequest<{ unreadCount: number; actionRequiredCount: number }>('/notifications/unread-count')
-          .then((res) => useNotificationStore.getState().setCounts(res.unreadCount, res.actionRequiredCount))
-          .catch(() => {});
-      }
-      if (data.notificationId && !pathname.includes('/scan')) {
-        useNotificationStore.getState().showBanner({
-          id: String(data.notificationId),
-          category: 'production',
-          priority: 'INFORMATION',
-          titleKey: String(event.request.content.title ?? 'StitchFlow'),
-          messageKey: String(event.request.content.body ?? ''),
-          messageParameters: {},
-          entityType: 'notification',
-          actionRoute: typeof data.actionRoute === 'string' ? data.actionRoute : null,
-          actionParameters: (data.actionParameters as Record<string, unknown>) ?? {},
-          actionRequired: true,
-          readAt: null,
-          createdAt: new Date().toISOString(),
-        });
-      }
-    });
+    let receivedSub: { remove: () => void } | undefined;
+    let responseSub: { remove: () => void } | undefined;
+    try {
+      receivedSub = Notifications.addNotificationReceivedListener((event) => {
+        const data = (event.request.content.data ?? {}) as Record<string, unknown>;
+        void queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+        if (!isDemoMode) {
+          void apiRequest<{ unreadCount: number; actionRequiredCount: number }>('/notifications/unread-count')
+            .then((res) => useNotificationStore.getState().setCounts(res.unreadCount, res.actionRequiredCount))
+            .catch(() => {});
+        }
+        if (data.notificationId && !pathname.includes('/scan')) {
+          useNotificationStore.getState().showBanner({
+            id: String(data.notificationId),
+            category: 'production',
+            priority: 'INFORMATION',
+            titleKey: String(event.request.content.title ?? 'StitchFlow'),
+            messageKey: String(event.request.content.body ?? ''),
+            messageParameters: {},
+            entityType: 'notification',
+            actionRoute: typeof data.actionRoute === 'string' ? data.actionRoute : null,
+            actionParameters: (data.actionParameters as Record<string, unknown>) ?? {},
+            actionRequired: true,
+            readAt: null,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      });
 
-    const responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
-      const data = (response.notification.request.content.data ?? {}) as Record<string, unknown>;
-      const notifId = typeof data.notificationId === 'string' ? data.notificationId : null;
-      if (notifId && !isDemoMode) {
-        void apiRequest(`/notifications/${encodeURIComponent(notifId)}/read`, { method: 'PATCH' }).catch(() => {});
-      }
-      navigateFromNotification(
-        router,
-        typeof data.actionRoute === 'string' ? data.actionRoute : null,
-        (data.actionParameters as Record<string, unknown>) ?? {},
-      );
-    });
+      responseSub = Notifications.addNotificationResponseReceivedListener((response) => {
+        const data = (response.notification.request.content.data ?? {}) as Record<string, unknown>;
+        const notifId = typeof data.notificationId === 'string' ? data.notificationId : null;
+        if (notifId && !isDemoMode) {
+          void apiRequest(`/notifications/${encodeURIComponent(notifId)}/read`, { method: 'PATCH' }).catch(() => {});
+        }
+        navigateFromNotification(
+          router,
+          typeof data.actionRoute === 'string' ? data.actionRoute : null,
+          (data.actionParameters as Record<string, unknown>) ?? {},
+        );
+      });
+    } catch {
+      // Safe fallback when native notification listeners are unavailable
+    }
 
     return () => {
-      receivedSub.remove();
-      responseSub.remove();
+      receivedSub?.remove();
+      responseSub?.remove();
     };
   }, [user?.id, isDemoMode, pathname, queryClient, router]);
 

@@ -7,15 +7,19 @@ import { useNotificationStore } from '../../store/notificationStore';
 
 const DEVICE_ID_KEY = '@stitchflow_device_identifier_v1';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+try {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowBanner: true,
+      shouldShowList: true,
+    }),
+  });
+} catch {
+  // Ignore if native notification handler is unavailable
+}
 
 async function getOrCreateDeviceIdentifier(): Promise<string> {
   const existing = await AsyncStorage.getItem(DEVICE_ID_KEY);
