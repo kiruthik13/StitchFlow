@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppCard } from '../../../src/design-system/components/AppCard';
 import { AppText } from '../../../src/design-system/components/AppText';
+import { AppButton } from '../../../src/design-system/components/AppButton';
 import { EmptyState } from '../../../src/design-system/components/EmptyState';
 import { spacing } from '../../../src/design-system/tokens/spacing';
 
@@ -54,6 +55,18 @@ export default function DailyDigestScreen() {
             <AppText variant="bodySmall">{`Active: ${d.activeJobs} · Completed: ${d.completedJobs} · Overdue: ${d.overdueJobs}`}</AppText>
             <AppText variant="bodySmall">{`QC: ${d.qc.inspected} Inspected / ${d.qc.passed} Passed / ${d.qc.rework} Rework / ${d.qc.rejected} Rejected`}</AppText>
             <AppText variant="bodySmall">{`Packed: ${d.packed} · Dispatched: ${d.dispatched} · Open Issues: ${d.openIssues}`}</AppText>
+            <AppButton
+              title={t('common:share', { defaultValue: 'Share Daily Digest' })}
+              variant="outline"
+              size="sm"
+              style={{ marginTop: spacing[3] }}
+              onPress={() =>
+                void Share.share({
+                  title: `StitchFlow Daily Digest (${d.reportDate})`,
+                  message: `Date: ${d.reportDate}\nActive: ${d.activeJobs}, Completed: ${d.completedJobs}, Overdue: ${d.overdueJobs}\nQC: ${d.qc.inspected} Inspected (${d.qc.passed} Pass / ${d.qc.rework} Rework / ${d.qc.rejected} Reject)\nPacked: ${d.packed}, Dispatched: ${d.dispatched}, Open Issues: ${d.openIssues}`,
+                })
+              }
+            />
           </AppCard>
         )}
       </ScrollView>

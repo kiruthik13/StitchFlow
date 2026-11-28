@@ -450,6 +450,30 @@ export class WorkflowIntelligenceService {
     };
   }
 
+  async acknowledgeException(user: AuthenticatedUser, factoryId: string, exceptionId: string, notes?: string) {
+    if (!['supervisor', 'factory-manager', 'md'].includes(user.role)) {
+      throw new ForbiddenException('Only Supervisor, Factory Manager, or MD can acknowledge exceptions');
+    }
+    return this.db.withTransaction(async (client) => {
+      await this.audit.record(
+        {
+          organizationId: user.organizationId,
+          factoryId,
+          actorId: user.id,
+          actorEmployeeId: user.employeeId,
+          actorName: user.name,
+          actorRole: user.role,
+          action: 'EXCEPTION_ACKNOWLEDGED',
+          entityType: 'factory',
+          entityId: factoryId,
+          newValues: { exceptionId, notes: notes?.trim() ?? null },
+        },
+        client,
+      );
+      return { acknowledged: true, exceptionId, factoryId };
+    });
+  }
+
   async getShiftHandover(user: AuthenticatedUser, factoryId: string) {
     const [exceptions, wip] = await Promise.all([
       this.getExceptions(user, factoryId),
@@ -543,6 +567,17 @@ export class WorkflowIntelligenceController {
   @RequirePermissions('CAN_LOOKUP_BARCODE')
   exceptions(@CurrentUser() user: AuthenticatedUser, @Query('factoryId', ParseUUIDPipe) factoryId: string) {
     return this.intel.getExceptions(user, factoryId);
+  }
+
+  @Post('analytics/exceptions/:id/acknowledge')
+  @RequirePermissions('CAN_LOOKUP_BARCODE')
+  acknowledgeException(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param('id') id: string,
+    @Query('factoryId', ParseUUIDPipe) factoryId: string,
+    @Body() body: { notes?: string },
+  ) {
+    return this.intel.acknowledgeException(user, factoryId, id, body?.notes);
   }
 
   @Get('workflow/shift-handover')

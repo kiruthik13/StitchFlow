@@ -64,6 +64,14 @@ const syncedKeys = new Set([
   'wip-aging',
   'shift-handover',
   'bundle-passport',
+  'planning-skills',
+  'line-balancing',
+  'rework-cost',
+  'defect-heatmap',
+  'production-replay',
+  'machine-maintenance',
+  'fabric-traceability',
+  'daily-digest',
 ]);
 
 const realtimeRoles = new Set([

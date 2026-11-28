@@ -193,7 +193,8 @@ describe('Phases 9, 10 & 11 — 15 Enterprise Intelligence Enhancements', () => 
         .mockResolvedValueOnce({
           rows: [{ id: bundleId, job_id: jobId, factory_id: facId, size: 'M', color: 'Navy', quantity: 100 }],
         })
-        .mockResolvedValueOnce({ rows: [{ id: 'child-a' }] })
+        .mockResolvedValueOnce({ rows: [{ cartons: '0', inspected: 0, handovers: '0' }] })
+        .mockResolvedValueOnce({ rows: [] })
         .mockResolvedValueOnce({ rows: [{ id: 'child-b' }] }),
     };
     const db = { withTransaction: jest.fn((fn) => fn(client)) } as unknown as DatabaseService;
@@ -240,5 +241,71 @@ describe('Phases 9, 10 & 11 — 15 Enterprise Intelligence Enhancements', () => 
 
     const p11 = new Phase11OptimizationService({} as unknown as DatabaseService, {} as unknown as AuditService);
     await expect(p11.getDailyDigest(userOf('operator'), facId)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('rejects split when QC/carton/handover records exist and enforces merge conservation & compatibility', async () => {
+    const client = {
+      query: jest.fn()
+        // 1. splitBundle parent lookup
+        .mockResolvedValueOnce({
+          rows: [{ id: bundleId, job_id: jobId, factory_id: facId, size: 'M', color: 'Navy', quantity: 100 }],
+        })
+        // 2. refs check shows inspected > 0 -> must reject
+        .mockResolvedValueOnce({ rows: [{ cartons: '0', inspected: 50, handovers: '0' }] }),
+    };
+    const db = { withTransaction: jest.fn((fn) => fn(client)) } as unknown as DatabaseService;
+    const audit = { record: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService;
+    const p11 = new Phase11OptimizationService(db, audit);
+
+    await expect(
+      p11.splitBundle(userOf('supervisor'), bundleId, { quantities: [60, 40] }),
+    ).rejects.toThrow(ConflictException);
+
+    // mergeBundles: incompatible size/color -> ConflictException
+    client.query.mockResolvedValueOnce({
+      rows: [
+        { id: 'b1', job_id: jobId, factory_id: facId, size: 'M', color: 'Navy', quantity: 60, released: 0 },
+        { id: 'b2', job_id: jobId, factory_id: facId, size: 'L', color: 'Navy', quantity: 40, released: 0 },
+      ],
+    });
+    await expect(
+      p11.mergeBundles(userOf('supervisor'), {
+        bundleIds: ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'],
+      }),
+    ).rejects.toThrow(ConflictException);
+
+    // mergeBundles: compatible unstarted bundles -> updates primary to 100 & deletes absorbed
+    client.query
+      .mockResolvedValueOnce({
+        rows: [
+          { id: 'b1', job_id: jobId, factory_id: facId, size: 'M', color: 'Navy', quantity: 60, released: 0 },
+          { id: 'b2', job_id: jobId, factory_id: facId, size: 'M', color: 'Navy', quantity: 40, released: 0 },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [{ cnt: '0' }] })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [] });
+    const merged = await p11.mergeBundles(userOf('supervisor'), {
+      bundleIds: ['11111111-1111-4111-8111-111111111111', '22222222-2222-4222-8222-222222222222'],
+    });
+    expect(merged.totalQuantity).toBe(100);
+    expect(merged.mergedBundleId).toBe('b1');
+  });
+
+  it('bounds optimizeCartons by remaining packable (released - packed) and enforces exception acknowledgement RBAC', async () => {
+    const query = jest.fn().mockResolvedValueOnce({
+      rows: [{ bundleCode: 'BND-00521', released: 97, packed: '20' }],
+    });
+    const p11 = new Phase11OptimizationService({ query } as unknown as DatabaseService, {} as unknown as AuditService);
+    const opt = await p11.optimizeCartons(userOf('packing-staff'), { bundleId, maxPerCarton: 25 });
+    expect(opt.remainingPackable).toBe(77);
+    expect(opt.recommendation.cartons.map((c) => c.quantity)).toEqual([25, 25, 25, 2]);
+
+    const audit = { record: jest.fn().mockResolvedValue(undefined) } as unknown as AuditService;
+    const db = { withTransaction: jest.fn((fn) => fn({})) } as unknown as DatabaseService;
+    const intel = new WorkflowIntelligenceService(db, audit);
+    await expect(intel.acknowledgeException(userOf('operator'), facId, 'exc-1')).rejects.toThrow(ForbiddenException);
+    const ack = await intel.acknowledgeException(userOf('supervisor'), facId, 'exc-1', 'Assigned mechanic');
+    expect(ack.acknowledged).toBe(true);
   });
 });

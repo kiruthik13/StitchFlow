@@ -99,8 +99,24 @@ export class Phase11OptimizationService {
         throw new ConflictException(`Split quantities (${totalSplit}) must equal parent bundle quantity (${parent.quantity})`);
       }
 
-      const childIds: string[] = [];
-      for (const qty of input.quantities) {
+      const { rows: [refs] } = await client.query<{
+        cartons: string;
+        inspected: number;
+        handovers: string;
+      }>(
+        `SELECT
+           (SELECT COUNT(*) FROM public.bundle_cartons WHERE bundle_id = $1)::text AS cartons,
+           COALESCE((SELECT inspected FROM public.bundle_quality_balances WHERE bundle_id = $1), 0) AS inspected,
+           (SELECT COUNT(*) FROM public.cut_stock_handovers WHERE bundle_id = $1)::text AS handovers`,
+        [bundleId],
+      );
+      if (Number(refs?.cartons ?? 0) > 0 || Number(refs?.inspected ?? 0) > 0 || Number(refs?.handovers ?? 0) > 0) {
+        throw new ConflictException('Cannot split bundle with existing QC, carton, or handover records');
+      }
+
+      await client.query(`UPDATE public.bundles SET quantity = $2 WHERE id = $1`, [parent.id, input.quantities[0]]);
+      const childIds: string[] = [parent.id];
+      for (const qty of input.quantities.slice(1)) {
         const reqId = randomUUID();
         const { rows: [child] } = await client.query<{ id: string }>(
           `INSERT INTO public.bundles (job_id, request_id, size, color, quantity, created_by)
@@ -167,12 +183,27 @@ export class Phase11OptimizationService {
       if (!compatible) {
         throw new ConflictException('Bundles are incompatible for merge (job, size, color, or release state mismatch)');
       }
-      const totalQty = rows.reduce((s, r) => s + r.quantity, 0);
-      const { rows: [merged] } = await client.query<{ id: string }>(
-        `INSERT INTO public.bundles (job_id, request_id, size, color, quantity, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-        [first.job_id, randomUUID(), first.size, first.color, totalQty, user.id],
+      const { rows: [refs] } = await client.query<{ cnt: string }>(
+        `SELECT (
+           (SELECT COUNT(*) FROM public.bundle_cartons WHERE bundle_id = ANY($1::uuid[])) +
+           (SELECT COUNT(*) FROM public.bundle_quality_balances WHERE bundle_id = ANY($1::uuid[]) AND inspected > 0) +
+           (SELECT COUNT(*) FROM public.bundle_stage_events WHERE bundle_id = ANY($1::uuid[])) +
+           (SELECT COUNT(*) FROM public.cutting_output_events WHERE bundle_id = ANY($1::uuid[])) +
+           (SELECT COUNT(*) FROM public.cut_stock_handovers WHERE bundle_id = ANY($1::uuid[]))
+         )::text AS cnt`,
+        [input.bundleIds],
       );
+      if (Number(refs?.cnt ?? 0) > 0) {
+        throw new ConflictException('Cannot merge bundles that already have production, QC, carton, or handover records');
+      }
+      const totalQty = rows.reduce((s, r) => s + r.quantity, 0);
+      const primaryId = first.id;
+      const absorbedIds = rows.slice(1).map((r) => r.id);
+      await client.query(`UPDATE public.bundles SET quantity = $2 WHERE id = $1`, [primaryId, totalQty]);
+      if (absorbedIds.length > 0) {
+        await client.query(`DELETE FROM public.bundles WHERE id = ANY($1::uuid[])`, [absorbedIds]);
+      }
+      const merged = { id: primaryId };
       await this.audit.record(
         {
           organizationId: user.organizationId,

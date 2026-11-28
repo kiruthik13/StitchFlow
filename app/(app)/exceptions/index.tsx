@@ -1,15 +1,17 @@
 import React from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { apiRequest } from '../../../src/services/api/apiClient';
+import { invalidateOperationalFlow } from '../../../src/services/api/useFactoryUpdates';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppCard } from '../../../src/design-system/components/AppCard';
 import { AppText } from '../../../src/design-system/components/AppText';
+import { AppButton } from '../../../src/design-system/components/AppButton';
 import { StatusBadge } from '../../../src/design-system/components/StatusBadge';
 import { EmptyState } from '../../../src/design-system/components/EmptyState';
 import { spacing } from '../../../src/design-system/tokens/spacing';
@@ -28,6 +30,7 @@ interface ExceptionItem {
 export default function ExceptionCenterScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const { tokens } = useThemeStore();
   const { user, isDemoMode } = useAuthStore();
   const { t } = useTranslation(['common', 'production']);
@@ -36,6 +39,19 @@ export default function ExceptionCenterScreen() {
     queryKey: ['production-exceptions', user?.id, user?.factoryId],
     enabled: !isDemoMode && !!user?.factoryId,
     queryFn: () => apiRequest<{ exceptions: ExceptionItem[] }>(`/analytics/exceptions?factoryId=${encodeURIComponent(user!.factoryId!)}`),
+  });
+
+  const ackMutation = useMutation({
+    mutationFn: (exceptionId: string) =>
+      apiRequest(`/analytics/exceptions/${encodeURIComponent(exceptionId)}/acknowledge?factoryId=${encodeURIComponent(user!.factoryId!)}`, {
+        method: 'POST',
+        body: JSON.stringify({}),
+      }),
+    onSuccess: () => {
+      invalidateOperationalFlow(queryClient);
+      Alert.alert(t('common:success'), t('production:exceptionAcknowledged', { defaultValue: 'Exception acknowledged' }));
+    },
+    onError: (err: Error) => Alert.alert(t('common:error', { defaultValue: 'Error' }), err.message),
   });
 
   return (
@@ -54,6 +70,16 @@ export default function ExceptionCenterScreen() {
             </View>
             <AppText variant="bodySmall" color="secondary">{item.rootCause}</AppText>
             <AppText variant="caption" style={{ color: tokens.brand, marginTop: spacing[1] }}>{item.recommendedAction}</AppText>
+            {['supervisor', 'factory-manager', 'md'].includes(user?.role ?? '') && (
+              <AppButton
+                title={t('common:acknowledge', { defaultValue: 'Acknowledge' })}
+                variant="outline"
+                size="sm"
+                style={{ marginTop: spacing[2] }}
+                disabled={ackMutation.isPending}
+                onPress={() => ackMutation.mutate(item.id)}
+              />
+            )}
           </AppCard>
         )}
       />
