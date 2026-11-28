@@ -9,6 +9,7 @@ import { useDemoStore } from '../../../src/store/demoStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { apiBundles } from '../../../src/services/repositories/bundleRepository';
 import { ApiQCRepository } from '../../../src/services/repositories/qcRepository';
+import { ApiError, apiRequest } from '../../../src/services/api/apiClient';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppText } from '../../../src/design-system/components/AppText';
 import { AppCard } from '../../../src/design-system/components/AppCard';
@@ -47,7 +48,38 @@ export default function InspectionDetailScreen() {
     queryFn: () => apiBundles.getBundleById(id),
   });
 
+  const qualityStatusQuery = useQuery({
+    queryKey: ['inspection-quality-status', id],
+    enabled: !isDemoMode && !!id,
+    queryFn: async () => {
+      try {
+        return await apiRequest<{
+          ready: boolean;
+          pendingStages?: string[];
+          inspected: number;
+          passed: number;
+          released: number;
+          rework: number;
+          reworked: number;
+          quantity: number;
+        }>(`/quality/bundles/${encodeURIComponent(id)}`);
+      } catch (err) {
+        if (err instanceof ApiError && (err.statusCode === 403 || err.statusCode === 404)) return null;
+        throw err;
+      }
+    },
+  });
+
   const bundle = isDemoMode ? bundles.find((b) => b.id === id) : liveBundleQuery.data;
+  const qualityStatus = isDemoMode ? null : qualityStatusQuery.data;
+  const routeNotReady = !isDemoMode && !!qualityStatus && !qualityStatus.ready;
+  const pendingReleaseOnly =
+    !isDemoMode &&
+    !!qualityStatus &&
+    qualityStatus.ready &&
+    qualityStatus.inspected >= qualityStatus.quantity &&
+    qualityStatus.passed > qualityStatus.released;
+
   const [phase, setPhase] = useState<InspPhase>('pending');
   const [passedQty, setPassedQty] = useState(0);
   const [reworkQty, setReworkQty] = useState(0);
@@ -58,6 +90,16 @@ export default function InspectionDetailScreen() {
   const qcMutation = useMutation({
     mutationFn: async () => {
       if (!bundle) throw new Error('Bundle not found');
+      if (routeNotReady) {
+        throw new Error('Production route has not reached the QC checkpoint');
+      }
+      if (pendingReleaseOnly) {
+        const releasable = Math.max(0, (qualityStatus?.passed ?? 0) - (qualityStatus?.released ?? 0));
+        if (releasable > 0) {
+          await apiQC.releasePieces(bundle.id, releasable);
+        }
+        return;
+      }
       await apiQC.updateInspection(bundle.id, { passedQty, reworkQty, rejectedQty });
       if (passedQty > 0) {
         await apiQC.releasePieces(bundle.id, passedQty);
@@ -67,11 +109,16 @@ export default function InspectionDetailScreen() {
       setShowRelease(false);
       setPhase('done');
       queryClient.invalidateQueries({ queryKey: ['inspection-bundle', id] });
+      queryClient.invalidateQueries({ queryKey: ['inspection-quality-status', id] });
       queryClient.invalidateQueries({ queryKey: ['quality-bundles'] });
     },
     onError: (err: Error) => {
       setShowRelease(false);
-      Alert.alert(t('errors:serverError'), err.message);
+      const isConflictOrValidation = err instanceof ApiError && err.statusCode >= 400 && err.statusCode < 500;
+      Alert.alert(
+        isConflictOrValidation ? t('errors:validationError') : t('errors:serverError'),
+        err.message,
+      );
     },
   });
 
@@ -136,15 +183,44 @@ export default function InspectionDetailScreen() {
           <Row label="Qty to inspect" value={String(bundle.quantity)} mono isLast />
         </AppCard>
 
+        {/* Route Readiness Warning */}
+        {routeNotReady && (
+          <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3], borderColor: tokens.warning, backgroundColor: tokens.warningLight }}>
+            <AppText variant="label" bold style={{ color: tokens.warningText }}>
+              Production route has not reached the QC checkpoint
+            </AppText>
+            <AppText variant="caption" color="secondary" style={{ marginTop: 4 }}>
+              {qualityStatus?.pendingStages?.length
+                ? `Complete upstream stage(s) first: ${qualityStatus.pendingStages.join(' → ')}`
+                : 'Production route steps must be configured and completed before QC inspection & release.'}
+            </AppText>
+          </AppCard>
+        )}
+
         {/* Phase: Pending */}
         {phase === 'pending' && (
-          <AppButton
-            title="🔍 Start Inspection"
-            size="lg"
-            fullWidth
-            onPress={() => { setPassedQty(bundle.quantity); setPhase('inspecting'); }}
-            style={{ marginBottom: spacing[3] }}
-          />
+          pendingReleaseOnly ? (
+            <AppButton
+              title={`Release ${Math.max(0, (qualityStatus?.passed ?? 0) - (qualityStatus?.released ?? 0))} Passed Pieces`}
+              size="lg"
+              fullWidth
+              loading={qcMutation.isPending}
+              onPress={() => {
+                setPassedQty(Math.max(0, (qualityStatus?.passed ?? 0) - (qualityStatus?.released ?? 0)));
+                setShowRelease(true);
+              }}
+              style={{ marginBottom: spacing[3] }}
+            />
+          ) : (
+            <AppButton
+              title="🔍 Start Inspection"
+              size="lg"
+              fullWidth
+              disabled={routeNotReady}
+              onPress={() => { setPassedQty(bundle.quantity); setPhase('inspecting'); }}
+              style={{ marginBottom: spacing[3] }}
+            />
+          )
         )}
 
         {/* Phase: Inspecting */}

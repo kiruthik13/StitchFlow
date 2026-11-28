@@ -7,7 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThemeStore } from '../../../src/store/themeStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useDemoStore } from '../../../src/store/demoStore';
-import { apiRequest } from '../../../src/services/api/apiClient';
+import { ApiError, apiRequest } from '../../../src/services/api/apiClient';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppText } from '../../../src/design-system/components/AppText';
 import { AppCard } from '../../../src/design-system/components/AppCard';
@@ -28,6 +28,8 @@ interface QualityBundle {
   rework: number;
   rejected: number;
   released: number;
+  ready?: boolean;
+  pendingStages?: string[];
 }
 
 function createUuidV4(): string {
@@ -57,7 +59,12 @@ export default function EndlineQCScreen() {
     queryFn: () => apiRequest<QualityBundle[]>(`/quality/bundles?factoryId=${encodeURIComponent(factoryId!)}`),
   });
 
-  const activeLive = selectedLive ?? bundlesQuery.data?.[0] ?? null;
+  const activeLive =
+    selectedLive ??
+    bundlesQuery.data?.find((b) => b.ready !== false) ??
+    bundlesQuery.data?.[0] ??
+    null;
+  const routeNotReady = !isDemoMode && !!activeLive && activeLive.ready === false;
   const totalInspected = isDemoMode ? 200 : Math.max(0, (activeLive?.quantity ?? 0) - (activeLive?.inspected ?? 0));
 
   const [passedQty, setPassedQty] = useState(isDemoMode ? 180 : 0);
@@ -97,7 +104,10 @@ export default function EndlineQCScreen() {
         { text: t('common:confirm'), onPress: () => router.back() },
       ]);
     },
-    onError: (err: Error) => Alert.alert(t('errors:serverError'), err.message),
+    onError: (err: Error) => {
+      const isConflict = err instanceof ApiError && err.statusCode >= 400 && err.statusCode < 500;
+      Alert.alert(isConflict ? t('errors:validationError') : t('errors:serverError'), err.message);
+    },
   });
 
   const handleSubmit = () => {
@@ -153,7 +163,7 @@ export default function EndlineQCScreen() {
                       {b.bundleCode}
                     </AppText>
                     <AppText variant="caption" style={{ color: chosen ? tokens.textInverse : tokens.textSecondary }}>
-                      {remaining}/{b.quantity}
+                      {remaining}/{b.quantity} · {b.ready === false ? 'IN PROD' : 'READY'}
                     </AppText>
                   </TouchableOpacity>
                 );
@@ -195,10 +205,23 @@ export default function EndlineQCScreen() {
           </View>
         )}
 
+        {routeNotReady && (
+          <View style={[styles.errorCard, { backgroundColor: tokens.warningLight, borderColor: tokens.warning }]}>
+            <AppText variant="label" bold style={{ color: tokens.warningText }}>
+              Production route has not reached the QC checkpoint
+            </AppText>
+            <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
+              {activeLive?.pendingStages?.length
+                ? `Pending stages: ${activeLive.pendingStages.join(' → ')}`
+                : 'Complete all upstream production route steps for this bundle first.'}
+            </AppText>
+          </View>
+        )}
+
         <AppButton
           title={`${t('quality:releaseToPacking')} (${passedQty})`}
           onPress={handleSubmit}
-          disabled={!validation.isValid || totalInspected === 0 || submitLive.isPending}
+          disabled={routeNotReady || !validation.isValid || totalInspected === 0 || submitLive.isPending}
         />
       </ScrollView>
     </View>

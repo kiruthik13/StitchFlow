@@ -107,13 +107,35 @@ export class InlineQcService {
               COALESCE(q.rework, 0)::integer AS rework,
               COALESCE(q.rejected, 0)::integer AS rejected,
               COALESCE(q.reworked, 0)::integer AS reworked,
-              COALESCE(q.released, 0)::integer AS released
+              COALESCE(q.released, 0)::integer AS released,
+              (
+                j.status = 'active'
+                AND EXISTS (SELECT 1 FROM public.job_route_steps s WHERE s.job_id = j.id)
+                AND NOT EXISTS (
+                  SELECT 1 FROM public.job_route_steps s
+                  WHERE s.job_id = j.id
+                    AND NOT EXISTS (
+                      SELECT 1 FROM public.bundle_route_progress e
+                      WHERE e.bundle_id = b.id AND e.step_id = s.id AND e.completed_at IS NOT NULL
+                    )
+                )
+              ) AS ready,
+              ARRAY(
+                SELECT s.stage_code
+                FROM public.job_route_steps s
+                WHERE s.job_id = j.id
+                  AND NOT EXISTS (
+                    SELECT 1 FROM public.bundle_route_progress e
+                    WHERE e.bundle_id = b.id AND e.step_id = s.id AND e.completed_at IS NOT NULL
+                  )
+                ORDER BY s.ordinal ASC
+              ) AS "pendingStages"
        FROM public.bundles b
        JOIN public.jobs j ON j.id = b.job_id
        JOIN public.factories f ON f.id = j.factory_id
        LEFT JOIN public.bundle_quality_balances q ON q.bundle_id = b.id
        WHERE ${factoryScope} AND f.id = $4
-       ORDER BY b.created_at DESC LIMIT 100`,
+       ORDER BY ready DESC, b.created_at DESC LIMIT 100`,
       [...jobScopeParams(user), query.factoryId],
     );
     return rows;

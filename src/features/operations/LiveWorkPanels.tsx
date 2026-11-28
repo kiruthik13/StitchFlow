@@ -29,6 +29,8 @@ interface LiveBundle {
   inspected?: number;
   released?: number;
   rework?: number;
+  ready?: boolean;
+  pendingStages?: string[];
 }
 
 interface LiveRawStock {
@@ -189,11 +191,34 @@ export function LiveWorkPanel({ mode }: { mode: 'supervisor' | 'operator' | 'qc'
                     code={b.bundleCode}
                     title={b.jobCode}
                     status={{
-                      label: mode === 'packing' ? `${b.released ?? 0} REL` : `${b.quantity} PCS`,
-                      variant: mode === 'packing' ? 'success' : 'brand',
+                      label:
+                        mode === 'packing'
+                          ? `${b.released ?? 0} REL`
+                          : mode === 'qc'
+                          ? b.ready === false
+                            ? 'PENDING ROUTE'
+                            : 'READY FOR QC'
+                          : `${b.quantity} PCS`,
+                      variant:
+                        mode === 'packing'
+                          ? 'success'
+                          : mode === 'qc'
+                          ? b.ready === false
+                            ? 'warning'
+                            : 'success'
+                          : 'brand',
                       dot: true,
                     }}
                     fields={fields}
+                    highlight={
+                      mode === 'qc' && b.ready === false && b.pendingStages?.length
+                        ? {
+                            label: t('common:stage'),
+                            value: `Pending: ${b.pendingStages.join(' → ')}`,
+                            tone: 'warning',
+                          }
+                        : undefined
+                    }
                   />
                 </TouchableOpacity>
               );

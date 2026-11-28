@@ -49,18 +49,26 @@ export class WorkflowService {
     return this.db.withTransaction(async client => {
       const bundle = await this.lockBundle(client, user, id);
       await this.requireDuty(client, user, bundle, duty);
-      const { rows: [progress] } = await client.query<{ ready: boolean; packed: string }>(`
+      const { rows: [progress] } = await client.query<{ ready: boolean; packed: string; pendingStages: string[] }>(`
         SELECT EXISTS (SELECT 1 FROM public.job_route_steps s WHERE s.job_id = $1)
           AND NOT EXISTS (
             SELECT 1 FROM public.job_route_steps s WHERE s.job_id = $1 AND NOT EXISTS (
               SELECT 1 FROM public.bundle_route_progress e WHERE e.bundle_id = $2 AND e.step_id = s.id AND e.completed_at IS NOT NULL
             )
           ) AS ready,
-          (SELECT COALESCE(SUM(quantity), 0) FROM public.bundle_cartons WHERE bundle_id = $2) AS packed`,
+          (SELECT COALESCE(SUM(quantity), 0) FROM public.bundle_cartons WHERE bundle_id = $2) AS packed,
+          ARRAY(
+            SELECT s.stage_code FROM public.job_route_steps s
+            WHERE s.job_id = $1 AND NOT EXISTS (
+              SELECT 1 FROM public.bundle_route_progress e WHERE e.bundle_id = $2 AND e.step_id = s.id AND e.completed_at IS NOT NULL
+            )
+            ORDER BY s.ordinal ASC
+          ) AS "pendingStages"`,
         [bundle.job_id, id]);
       const { rows: [request] } = await client.query<{ id: string }>('SELECT gen_random_uuid() AS id');
       return {
         ...await this.balance(client, id), duty, ready: progress.ready && bundle.status === 'active',
+        pendingStages: progress.pendingStages ?? [],
         packed: Number(progress.packed), quantity: bundle.quantity, requestId: request.id,
       };
     });
