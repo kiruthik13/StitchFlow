@@ -45,10 +45,11 @@ StitchFlow is a **mobile-only** React Native + Expo application designed for gar
 ### Key Capabilities
 
 - **Multi-factory hierarchy**: Organization → Factories → Production Units → Departments → Lines → Supervisors → Operators
-- **End-to-end production tracking**: Cutting → Sewing → QC → Packing → Dispatch
-- **Real-time dashboards** per role with live API data
-- **QR / Barcode scanning** for bundle and garment tracking
-- **Offline-aware** with async queue replay
+- **End-to-end production tracking**: Cutting → Sewing → Kaja Button → Ironing → QC → Packing → Dispatch
+- **Real-time WebSocket sync**: Live cross-stage TanStack Query invalidation and bottleneck monitoring across all 7 roles
+- **4-input, 3-tier hybrid barcode scanning**: Camera (ML Kit Tier 1 + native ZXing-C++ Tier 2 + grayscale CV Tier 3), Hardware HID/USB/Bluetooth, Manual Entry, and Offline Outbox replay
+- **Role-scoped exports & reporting**: PDF and Excel data export, structured industrial carton shipping labels, and readable executive Share Job reports
+- **Offline-aware** with async queue replay (`/sync/production`)
 - **Three languages**: English, Tamil, Hindi
 - **Light and Dark mode** with automatic system detection
 
@@ -105,7 +106,7 @@ StitchFlow is a **mobile-only** React Native + Expo application designed for gar
 | API Docs | Swagger / OpenAPI (`@nestjs/swagger`) |
 | Security | Helmet, UUID validation, DTO class-validator |
 | Hosting | Railway (auto-deploy from `main` branch) |
-| Testing | Jest 29, 17 suites, 79 tests |
+| Testing | Jest 29, 20 suites, 100 tests |
 
 ---
 
@@ -177,6 +178,10 @@ StitchFlow-main/
 │   │   ├── StoreDashboard.tsx
 │   │   └── PackingDashboard.tsx
 │   ├── services/
+│   │   ├── barcode/              # 3-tier hybrid decoder & GS1/payload processor
+│   │   ├── notifications/        # Real-time notification handlers
+│   │   ├── offline/              # Durable AsyncStorage outbox replay
+│   │   ├── printer/              # ZPL/TSPL tag & label printing
 │   │   └── repositories/
 │   │       ├── masterRepository.ts    # Factories, buyers, styles, lines
 │   │       ├── jobRepository.ts       # Jobs, bundles
@@ -189,6 +194,9 @@ StitchFlow-main/
 │   │   ├── languageStore.ts      # Active locale
 │   │   └── demoStore.ts          # Mutable demo-mode state
 │   └── utils/                    # formatDate, formatQty, barcodeUtils …
+│
+├── android-native/               # Custom Android native module (ZXing-C++ bridge)
+├── plugins/                      # Expo config plugin for native barcode decoder
 │
 ├── backend/
 │   ├── src/
@@ -206,12 +214,13 @@ StitchFlow-main/
 │   │       ├── health/           # /health endpoint
 │   │       ├── inventory/        # Ledger, cartons, dispatch
 │   │       ├── jobs/             # Jobs, approvals, bundles, barcodes
+│   │       ├── notifications/    # Role-scoped notifications & WebSocket sync
 │   │       ├── organizations/    # Org bootstrap, buyers, styles
 │   │       ├── planning/         # SAM, workforce, what-if
 │   │       ├── redis/            # Cache service, rate-limit guard
 │   │       ├── users/            # User management, roles
 │   │       └── workflow/         # Cutting, production, QC, packing, rework
-│   └── test/                     # Jest spec files (17 suites)
+│   └── test/                     # Jest spec files (20 suites)
 │
 ├── docs/
 │   └── implementation-roadmap.md # Phase-by-phase delivery status
@@ -318,15 +327,16 @@ Organization
 ## Features by Module
 
 ### Managing Director Dashboard
-- Executive KPI summary (total/active orders, efficiency, risk index)
+- Executive KPI summary (total/active orders, SAM efficiency, risk index)
+- Real-time bottleneck analysis (stage, rework, and pace bottlenecks computed from live production data)
 - Factory selector + date-range filter
-- Stage-wise production pipeline visualization
+- Stage-wise production pipeline visualization (cutting, sewing, QC, packing, dispatched pieces)
 - Factory performance comparison (efficiency %, output vs target)
-- Rework and rejection summary
+- Rework and loss summary
 - High-risk production orders with ETA warning
-- Packing and dispatch performance
 - 6-tab factory drilldown: **Overview · Units · Lines · Orders · Workforce · Store**
 - Production line detail with live occupancy and output
+- Role-scoped PDF/Excel export and executive Share Job summary
 
 ### Factory Manager Dashboard
 - Factory-scoped production overview
@@ -337,35 +347,46 @@ Organization
 
 ### Supervisor Dashboard
 - Shift-level KPIs (output, efficiency, attendance)
-- Bundle assignment and operator load balancing
-- QC inline summary
-- Downtime and machine status alerts
+- Work assignment and tailor-to-operation mapping
+- Live SAM monitor
+- Tag reprints (ZPL/TSPL) and barcode scanning
+- Machine stoppage reporting and inline QC summary
 
 ### Operator Dashboard
 - Personal production target vs actual
 - Current bundle and operation
+- Stage entries: Cutting entry, Sewing out, Kaja button, and Ironing entry
+- Enhanced Report Machine stoppage mechanism
 - Barcode / QR scanner integration for bundle tracking
-- Cutting entry for authorised line operators
 
 ### QC Inspector Dashboard
-- Inspection queue with bundle details
+- Inspection queue with route readiness & pending-stage verification before inspection/release
 - Pass / Rework / Reject decision entry
-- QC equation enforced: `Inspected = Passed + Rework + Rejected`
-- Reinspection flow for rework batches
-- Inline and intermediate audit inspections
+- QC equation enforced: `Inspected = Passed + Rework + Rejected` (released never exceeds passed)
+- Reinspection and release flow for rework batches
+- Deduplicated inline and intermediate QC audits
+- Real-time Expo Camera evidence capture and upload
 
 ### Store & Dispatch Dashboard
 - Raw material inventory ledger
 - Output receipt from production floor
-- Carton management and dispatch approval
-- PDF gate-pass generation
+- Carton management, manifest filtering, and dispatch approval
+- Structured industrial record cards and PDF gate-pass generation
 - Partial loss recovery and return flows
 
 ### Packing Staff Dashboard
-- Carton creation and bundle packing
-- Bundle barcode verification
-- Packing progress per job
+- Carton creation with accurate remaining packable quantity validation
+- Structured industrial shipping carton labels
+- Bundle barcode verification and packing progress per job
 - Shipment manifest preparation
+
+### Hybrid Barcode Scanning Architecture
+- **4 Input Channels**: Live Camera, Hardware HID/USB/Bluetooth scanners, Manual Entry, and Offline Outbox replay
+- **3 Decoding Tiers** (`app/(app)/(tabs)/scan.tsx`, `src/services/barcode/`, `android-native/StitchFlowBarcodeModule.kt`):
+  - **Tier 1 (ML Kit / Expo Camera)**: Standard 1D/2D (`QR_CODE`, `DATA_MATRIX`, `AZTEC`, `PDF417`, `CODE_128`, `CODE_39`, `CODE_93`, `ITF`, `EAN_13`, `EAN_8`, `UPC_A`, `UPC_E`, `CODABAR`)
+  - **Tier 2 (Native ZXing-C++)**: `MICRO_QR_CODE`, `DATA_BAR`, `DATA_BAR_EXPANDED`, plus EXIF rotation and 1D/2D fallback
+  - **Tier 3 (Grayscale CV Decoder)**: `CODE_11`, `MSI`, `INDUSTRIAL_2_OF_5`, `PHARMACODE_1T`, `PHARMACODE_2T`, and `FLATTERMARKEN` with Otsu thresholding, contrast-range gating, and concurrency lock (`inFlight`)
+- **Strict Pattern Decoding**: Zero OCR or text recognition; preserves leading zeros, case sensitivity, raw payloads, and GS1 `\x1d` separators
 
 ---
 
@@ -634,7 +655,7 @@ npm run ts-check
 ```bash
 cd backend
 npm test
-# Expected: 17 suites, 79 tests PASS
+# Expected: 20 suites, 100 tests PASS
 ```
 
 ### Backend Test Coverage
@@ -694,7 +715,7 @@ The backend auto-deploys on every push to the `main` branch of the GitHub reposi
 ### Deployment Checklist
 
 - [ ] `npm run ts-check` → 0 errors
-- [ ] `cd backend && npm test` → 79/79 pass
+- [ ] `cd backend && npm test` → 100/100 pass
 - [ ] No secrets in staged files (`git diff --staged`)
 - [ ] `git push origin main`
 - [ ] Railway build completes (check Railway dashboard)
