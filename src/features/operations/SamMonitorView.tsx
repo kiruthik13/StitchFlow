@@ -7,7 +7,13 @@ import { useAuthStore } from '../../store/authStore';
 import { apiRequest } from '../../services/api/apiClient';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
+import { EmptyState } from '../../design-system/components/EmptyState';
 import { StatusBadge } from '../../design-system/components/StatusBadge';
+import {
+  SectionHeader,
+  StructuredRecordCard,
+  SummaryStrip,
+} from '../../design-system/components/StructuredRecordCard';
 import { spacing } from '../../design-system/tokens/spacing';
 
 const STAGE_SAM_STATS = [
@@ -54,33 +60,64 @@ export function SamMonitorView() {
   });
 
   if (!isDemoMode) {
-    return (
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {(bottlenecksQuery.data ?? []).slice(0, 2).map((b) => (
-          <View key={b.id} style={[styles.alertBanner, { backgroundColor: tokens.dangerLight, borderColor: tokens.danger }]}>
-            <AppText variant="h4" bold style={{ color: tokens.danger }}>{b.stage} · {b.lineName}</AppText>
-            <AppText variant="bodySmall" color="secondary" style={{ marginTop: 2 }}>{b.rootCause}</AppText>
-          </View>
-        ))}
+    const samPlans = samQuery.data ?? [];
+    const bottlenecks = bottlenecksQuery.data ?? [];
+    const avgTargetPace = samPlans.length
+      ? Math.round(samPlans.reduce((sum, s) => sum + Number(s.targetPcsPerHour || 0), 0) / samPlans.length)
+      : 0;
 
-        <AppText variant="caption" color="secondary" uppercase style={{ letterSpacing: 0.8, marginBottom: spacing[2] }}>
-          {t('production:samPlan')}
-        </AppText>
+    return (
+      <ScrollView contentContainerStyle={[styles.scroll, { gap: spacing[3] }]}>
+        <SummaryStrip
+          metrics={[
+            { label: t('production:samPlan'), value: samPlans.length, tone: 'brand' },
+            { label: 'Bottlenecks', value: bottlenecks.length, tone: bottlenecks.length > 0 ? 'danger' : 'success' },
+            { label: 'Avg 100% Target', value: `${avgTargetPace} pcs/hr`, tone: 'default' },
+          ]}
+        />
+
+        {bottlenecks.length > 0 && (
+          <>
+            <SectionHeader title="Active Line Bottlenecks" count={bottlenecks.length} />
+            {bottlenecks.slice(0, 3).map((b) => (
+              <StructuredRecordCard
+                key={b.id}
+                title={b.stage}
+                subtitle={b.lineName}
+                status={{
+                  label: (b.severity || 'warning').toUpperCase(),
+                  variant: b.severity === 'critical' ? 'danger' : 'warning',
+                  dot: true,
+                }}
+                fields={[{ label: t('common:line'), value: b.lineName, fullWidth: true }]}
+                highlight={{ label: 'Root Cause', value: b.rootCause, tone: b.severity === 'critical' ? 'danger' : 'warning' }}
+              />
+            ))}
+          </>
+        )}
+
+        <SectionHeader title={t('production:samPlan')} count={samPlans.length} />
         {samQuery.isLoading && <AppText>{t('common:loading')}</AppText>}
-        {samQuery.data?.map((item) => (
-          <AppCard key={item.id} padding={spacing[4]} style={{ marginBottom: spacing[2] }}>
-            <View style={styles.rowBetween}>
-              <View>
-                <AppText variant="h4" bold>{item.styleName}</AppText>
-                <AppText variant="code" color="secondary">{item.styleCode}</AppText>
-              </View>
-              <StatusBadge label={`${item.totalSam} SAM`} variant="brand" size="sm" />
-            </View>
-            <AppText variant="caption" color="secondary" style={{ marginTop: spacing[2] }}>
-              {item.targetPcsPerHour} pcs/hr
-            </AppText>
-          </AppCard>
-        ))}
+        {!samQuery.isLoading && samPlans.length === 0 && (
+          <EmptyState title={t('common:noData')} message="No SAM plans configured for this factory yet." />
+        )}
+        {samPlans.map((item) => {
+          const target85 = Math.round(Number(item.targetPcsPerHour || 0) * 0.85);
+          return (
+            <StructuredRecordCard
+              key={item.id}
+              code={item.styleCode}
+              title={item.styleName}
+              status={{ label: `${item.totalSam} SAM`, variant: 'brand', dot: true }}
+              fields={[
+                { label: 'Total SAM', value: `${item.totalSam} min`, mono: true },
+                { label: '100% Target', value: `${item.targetPcsPerHour} pcs/hr`, mono: true, tone: 'brand' },
+                { label: '85% Floor Target', value: `${target85} pcs/hr`, mono: true, tone: 'success' },
+                { label: 'Cycle Time', value: `${item.totalSam} min/pc`, mono: true },
+              ]}
+            />
+          );
+        })}
       </ScrollView>
     );
   }

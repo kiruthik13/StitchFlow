@@ -4,12 +4,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
-import { apiRequest } from '../../services/api/apiClient';
+import { ApiError, apiRequest } from '../../services/api/apiClient';
+import { invalidateOperationalFlow } from '../../services/api/useFactoryUpdates';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
 import { AppButton } from '../../design-system/components/AppButton';
 import { AppInput } from '../../design-system/components/AppInput';
+import { EmptyState } from '../../design-system/components/EmptyState';
+import { FilterBar } from '../../design-system/components/FilterBar';
 import { StatusBadge } from '../../design-system/components/StatusBadge';
+import {
+  SectionHeader,
+  StructuredRecordCard,
+  SummaryStrip,
+} from '../../design-system/components/StructuredRecordCard';
 import { spacing } from '../../design-system/tokens/spacing';
 
 interface TailorMappingRecord {
@@ -42,6 +50,7 @@ export function TailorMappingView() {
   const queryClient = useQueryClient();
 
   const [showForm, setShowForm] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'optimal' | 'slow'>('all');
   const [lineId, setLineId] = useState('');
   const [operatorName, setOperatorName] = useState('');
   const [operationName, setOperationName] = useState('');
@@ -60,26 +69,37 @@ export function TailorMappingView() {
     queryFn: async () => (await apiRequest<{ lines: Array<{ id: string; name: string }> }>(`/factories/${encodeURIComponent(factoryId!)}/hierarchy`)).lines,
   });
 
+  const showErr = (err: Error) => {
+    const isClientErr = err instanceof ApiError && err.statusCode >= 400 && err.statusCode < 500;
+    Alert.alert(isClientErr ? t('errors:validationError') : t('errors:serverError'), err.message);
+  };
+
+  const parsedPace = Number(targetPace);
+  const validPace = Number.isInteger(parsedPace) && parsedPace > 0 && parsedPace <= 500;
+
   const createMapping = useMutation({
-    mutationFn: () => apiRequest('/masters/tailor-mappings', {
-      method: 'POST',
-      body: JSON.stringify({
-        factoryId,
-        lineId: lineId || linesQuery.data?.[0]?.id,
-        operatorName: operatorName.trim(),
-        operationName: operationName.trim(),
-        machineCode: machineCode.trim(),
-        targetPace: Number(targetPace) || 40,
-      }),
-    }),
+    mutationFn: () => {
+      if (!validPace) throw new Error('Target pace must be between 1 and 500 pcs/hr.');
+      return apiRequest('/masters/tailor-mappings', {
+        method: 'POST',
+        body: JSON.stringify({
+          factoryId,
+          lineId: lineId || linesQuery.data?.[0]?.id,
+          operatorName: operatorName.trim(),
+          operationName: operationName.trim(),
+          machineCode: machineCode.trim().toUpperCase(),
+          targetPace: parsedPace,
+        }),
+      });
+    },
     onSuccess: () => {
       setShowForm(false);
       setOperatorName('');
       setOperationName('');
       setMachineCode('');
-      void queryClient.invalidateQueries({ queryKey: ['tailor-mappings', user?.id, factoryId] });
+      invalidateOperationalFlow(queryClient);
     },
-    onError: (err: Error) => Alert.alert(t('errors:serverError'), err.message),
+    onError: showErr,
   });
 
   const toggleStatus = useMutation({
@@ -88,8 +108,8 @@ export function TailorMappingView() {
         method: 'PATCH',
         body: JSON.stringify({ status }),
       }),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['tailor-mappings', user?.id, factoryId] }),
-    onError: (err: Error) => Alert.alert(t('errors:serverError'), err.message),
+    onSuccess: () => invalidateOperationalFlow(queryClient),
+    onError: showErr,
   });
 
   if (isDemoMode) {
@@ -129,20 +149,35 @@ export function TailorMappingView() {
     );
   }
 
+  const allMappings = mappingsQuery.data ?? [];
+  const optimalCount = allMappings.filter((m) => m.status === 'optimal').length;
+  const slowCount = allMappings.filter((m) => m.status === 'slow').length;
+  const filteredMappings = allMappings.filter((m) => statusFilter === 'all' || m.status === statusFilter);
+
   return (
-    <ScrollView contentContainerStyle={styles.scroll}>
+    <ScrollView contentContainerStyle={[styles.scroll, { gap: spacing[3] }]}>
+      <SummaryStrip
+        metrics={[
+          { label: 'Stations', value: allMappings.length, tone: 'brand' },
+          { label: 'Optimal', value: optimalCount, tone: 'success' },
+          { label: 'Slow / Bottleneck', value: slowCount, tone: slowCount > 0 ? 'warning' : 'default' },
+        ]}
+      />
+
       {canEdit && (
-        <View style={{ marginBottom: spacing[3] }}>
-          <AppButton title={t('production:addMasterRecord')} onPress={() => setShowForm((v) => !v)} />
-        </View>
+        <AppButton
+          title={showForm ? t('common:cancel') : t('production:addMasterRecord')}
+          variant={showForm ? 'outline' : 'primary'}
+          onPress={() => setShowForm((v) => !v)}
+        />
       )}
 
       {showForm && (
-        <AppCard padding={spacing[4]} style={{ marginBottom: spacing[3] }}>
+        <AppCard padding={spacing[4]}>
           <AppInput label={t('production:operatorNameLabel')} value={operatorName} onChangeText={setOperatorName} />
           <AppInput label={t('production:operationNameLabel')} value={operationName} onChangeText={setOperationName} />
-          <AppInput label={t('production:machineCodeLabel')} value={machineCode} onChangeText={setMachineCode} />
-          <AppInput label={t('production:targetPaceLabel')} value={targetPace} onChangeText={setTargetPace} keyboardType="number-pad" />
+          <AppInput label={t('production:machineCodeLabel')} value={machineCode} onChangeText={setMachineCode} autoCapitalize="characters" />
+          <AppInput label={`${t('production:targetPaceLabel')} (pcs/hr)`} value={targetPace} onChangeText={setTargetPace} keyboardType="number-pad" />
           {linesQuery.data && linesQuery.data.length > 0 && (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing[2], marginBottom: spacing[2] }}>
               {linesQuery.data.map((l) => (
@@ -158,49 +193,74 @@ export function TailorMappingView() {
           )}
           <AppButton
             title={t('common:confirm')}
-            disabled={createMapping.isPending || !operatorName.trim() || !operationName.trim() || !machineCode.trim()}
+            loading={createMapping.isPending}
+            disabled={createMapping.isPending || !operatorName.trim() || !operationName.trim() || !machineCode.trim() || !validPace}
             onPress={() => createMapping.mutate()}
           />
         </AppCard>
       )}
 
+      {allMappings.length > 0 && (
+        <FilterBar
+          selected={statusFilter}
+          onSelect={(k) => setStatusFilter(k as 'all' | 'optimal' | 'slow')}
+          options={[
+            { key: 'all', label: `${t('common:all')} (${allMappings.length})` },
+            { key: 'optimal', label: `Optimal (${optimalCount})` },
+            { key: 'slow', label: `Slow (${slowCount})` },
+          ]}
+        />
+      )}
+
       {mappingsQuery.isLoading && <AppText>{t('common:loading')}</AppText>}
-      {mappingsQuery.data?.map((item) => (
-        <AppCard key={item.id} padding={spacing[4]} style={{ marginBottom: spacing[2] }}>
-          <View style={styles.rowBetween}>
-            <View style={{ flex: 1 }}>
-              <AppText variant="h4" bold>{item.operatorName}</AppText>
-              <AppText variant="label" color="brand" bold style={{ marginTop: 2 }}>{item.operationName}</AppText>
-              <AppText variant="caption" color="secondary">{item.lineName} · {item.machineCode}</AppText>
-            </View>
-            <StatusBadge
-              label={item.status.toUpperCase()}
-              variant={item.status === 'optimal' ? 'success' : 'warning'}
-              size="sm"
-            />
-          </View>
-          <View style={[styles.statsRow, { marginTop: spacing[3] }]}>
-            <View style={{ flex: 1 }}>
-              <AppText variant="caption" color="secondary">{t('production:targetPaceLabel')}</AppText>
-              <AppText variant="label" bold>{item.targetPace}</AppText>
-            </View>
-            <View style={{ flex: 1 }}>
-              <AppText variant="caption" color="secondary">{t('production:actualPaceLabel')}</AppText>
-              <AppText variant="label" bold style={{ color: item.status === 'optimal' ? tokens.success : tokens.warning }}>
-                {item.actualPace}
-              </AppText>
-            </View>
+      {!mappingsQuery.isLoading && filteredMappings.length === 0 && (
+        <EmptyState title={t('common:noData')} message="No tailor-to-machine mappings match this filter." />
+      )}
+
+      {filteredMappings.length > 0 && <SectionHeader title={t('production:tailorMapping')} count={filteredMappings.length} />}
+
+      {filteredMappings.map((item) => {
+        const effPct = Math.round((item.actualPace / Math.max(1, item.targetPace)) * 100);
+        return (
+          <StructuredRecordCard
+            key={item.id}
+            code={item.machineCode}
+            title={item.operatorName}
+            subtitle={`${item.operationName} · ${item.lineName}`}
+            status={{
+              label: item.status.toUpperCase(),
+              variant: item.status === 'optimal' ? 'success' : 'warning',
+              dot: true,
+            }}
+            fields={[
+              { label: t('production:targetPaceLabel'), value: `${item.targetPace} pcs/hr`, mono: true },
+              {
+                label: t('production:actualPaceLabel'),
+                value: `${item.actualPace} pcs/hr`,
+                mono: true,
+                tone: item.status === 'optimal' ? 'success' : 'warning',
+              },
+              {
+                label: 'Station Efficiency',
+                value: `${effPct}%`,
+                mono: true,
+                tone: effPct >= 95 ? 'success' : effPct >= 80 ? 'warning' : 'danger',
+              },
+              { label: t('common:line'), value: item.lineName },
+            ]}
+          >
             {canEdit && (
               <AppButton
                 title={t('production:rebalanceStation')}
                 size="sm"
                 variant="outline"
+                disabled={toggleStatus.isPending}
                 onPress={() => toggleStatus.mutate({ id: item.id, status: item.status === 'optimal' ? 'slow' : 'optimal' })}
               />
             )}
-          </View>
-        </AppCard>
-      ))}
+          </StructuredRecordCard>
+        );
+      })}
     </ScrollView>
   );
 }
