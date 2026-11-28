@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
-import { useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/authStore';
 import { getStoredSession } from './apiClient';
 
@@ -11,8 +11,60 @@ interface ChannelFrame {
   payload?: { status?: string; event?: string };
 }
 
-const syncedKeys = new Set(['jobs', 'job', 'job-approvals', 'job-route', 'job-queues', 'job-allocation', 'live-dashboard', 'live-reports', 'raw-stock', 'raw-counts', 'raw-transfers', 'shipment-manifests', 'cut-stock', 'dispatch-cartons', 'bundle-duty']);
-const realtimeRoles = new Set(['md', 'factory-manager', 'store-dispatch']);
+const syncedKeys = new Set([
+  'jobs',
+  'job',
+  'job-approvals',
+  'job-route',
+  'job-queues',
+  'job-allocation',
+  'live-dashboard',
+  'live-dashboard-metrics',
+  'live-reports',
+  'live-work-bundles',
+  'live-work-stock',
+  'quality-bundles',
+  'reinspection-bundles',
+  'packing-released-bundles',
+  'inspection-bundle',
+  'inspection-quality-status',
+  'bundle-route',
+  'bundle-duty',
+  'bundle-evidence',
+  'inline-audits',
+  'production-issues',
+  'tailor-mappings',
+  'work-assignments',
+  'raw-stock',
+  'raw-counts',
+  'raw-transfers',
+  'shipment-manifests',
+  'cut-stock',
+  'dispatch-cartons',
+  'users-accounts',
+  'users-roster',
+  'photo-evidence-bundles',
+]);
+
+const realtimeRoles = new Set([
+  'md',
+  'factory-manager',
+  'supervisor',
+  'operator',
+  'qc-inspector',
+  'store-dispatch',
+  'packing-staff',
+]);
+
+/**
+ * Invalidates all downstream production, QC, packing, store, and dashboard
+ * queries immediately after any live operational mutation completes.
+ */
+export function invalidateOperationalFlow(queryClient: QueryClient) {
+  void queryClient.invalidateQueries({
+    predicate: ({ queryKey }) => syncedKeys.has(queryKey[0] as string),
+  });
+}
 
 function realtimeUrl(): string | undefined {
   const origin = process.env.EXPO_PUBLIC_SUPABASE_URL;

@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { View, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslation } from 'react-i18next';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { ApiError, apiRequest } from '../../services/api/apiClient';
+import { invalidateOperationalFlow } from '../../services/api/useFactoryUpdates';
 import { enqueueProductionEvent } from '../../services/offline/offlineQueueService';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
@@ -38,6 +39,7 @@ export function CuttingEntryView() {
   const { t } = useTranslation(['production', 'common', 'errors']);
   const { isDemoMode, user } = useAuthStore();
   const factoryId = user?.factoryId;
+  const queryClient = useQueryClient();
 
   const [selectedJob] = useState(JOBS[0]);
   const [rollNo, setRollNo] = useState('ROLL-9821');
@@ -87,6 +89,7 @@ export function CuttingEntryView() {
       }
     },
     onSuccess: () => {
+      invalidateOperationalFlow(queryClient);
       Alert.alert(t('production:cuttingEntry'), activeBundle?.bundleCode ?? '', [
         { text: t('common:confirm'), onPress: () => router.back() },
       ]);

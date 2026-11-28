@@ -7,6 +7,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDemoStore } from '../../store/demoStore';
 import { ApiError, apiRequest } from '../../services/api/apiClient';
+import { invalidateOperationalFlow } from '../../services/api/useFactoryUpdates';
 import { enqueueProductionEvent } from '../../services/offline/offlineQueueService';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
@@ -110,7 +111,7 @@ export function KajaIroningEntryView({ type }: { type: 'kaja' | 'ironing' }) {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['bundle-route', activeLive?.id] });
+      invalidateOperationalFlow(queryClient);
       Alert.alert(title, activeLive?.bundleCode ?? '', [
         { text: t('common:confirm'), onPress: () => router.back() },
       ]);

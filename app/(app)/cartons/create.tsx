@@ -8,6 +8,7 @@ import { useThemeStore } from '../../../src/store/themeStore';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useDemoStore } from '../../../src/store/demoStore';
 import { apiRequest } from '../../../src/services/api/apiClient';
+import { invalidateOperationalFlow } from '../../../src/services/api/useFactoryUpdates';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppText } from '../../../src/design-system/components/AppText';
 import { AppCard } from '../../../src/design-system/components/AppCard';
@@ -79,8 +80,7 @@ export default function CreateCartonScreen() {
       });
     },
     onSuccess: (created) => {
-      void queryClient.invalidateQueries({ queryKey: ['packing-released-bundles', user?.id, factoryId] });
-      void queryClient.invalidateQueries({ queryKey: ['dispatch-cartons', user?.id, factoryId] });
+      invalidateOperationalFlow(queryClient);
       Alert.alert(t('packing:cartonCreation'), created.barcode, [
         { text: t('common:confirm'), onPress: () => router.replace(`/(app)/cartons/${created.id}`) },
       ]);

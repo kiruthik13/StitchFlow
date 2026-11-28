@@ -7,6 +7,7 @@ import { useThemeStore } from '../../store/themeStore';
 import { useAuthStore } from '../../store/authStore';
 import { useDemoStore } from '../../store/demoStore';
 import { ApiError, apiRequest } from '../../services/api/apiClient';
+import { invalidateOperationalFlow } from '../../services/api/useFactoryUpdates';
 import { enqueueProductionEvent } from '../../services/offline/offlineQueueService';
 import { AppText } from '../../design-system/components/AppText';
 import { AppCard } from '../../design-system/components/AppCard';
@@ -108,7 +109,7 @@ export function SewingEntryView() {
       }
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['bundle-route', activeLive?.id] });
+      invalidateOperationalFlow(queryClient);
       Alert.alert(t('production:sewingEntry'), activeLive?.bundleCode ?? '', [
         { text: t('common:confirm'), onPress: () => router.back() },
       ]);

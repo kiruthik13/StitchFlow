@@ -15,6 +15,7 @@ import {
 } from '../../design-system/components/StructuredRecordCard';
 import { spacing } from '../../design-system/tokens/spacing';
 import { apiRequest } from '../../services/api/apiClient';
+import { invalidateOperationalFlow } from '../../services/api/useFactoryUpdates';
 import { useAuthStore } from '../../store/authStore';
 import { formatDateTime, formatQuantity, shortCode } from '../../utils/formatters';
 
@@ -70,8 +71,7 @@ export function ShipmentsPanel({ cartons }: { cartons: ManifestCarton[] }) {
   const [seal, setSeal] = useState('');
   const [destination, setDestination] = useState('');
   const refresh = () => {
-    void cache.invalidateQueries({ queryKey: key });
-    void cache.invalidateQueries({ queryKey: ['dispatch-cartons', user?.id, factory] });
+    invalidateOperationalFlow(cache);
   };
   const create = useMutation({
     mutationFn: () => apiRequest('/dispatch/manifests', {

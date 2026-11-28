@@ -10,6 +10,7 @@ import { useAuthStore } from '../../../src/store/authStore';
 import { apiBundles } from '../../../src/services/repositories/bundleRepository';
 import { ApiQCRepository } from '../../../src/services/repositories/qcRepository';
 import { ApiError, apiRequest } from '../../../src/services/api/apiClient';
+import { invalidateOperationalFlow } from '../../../src/services/api/useFactoryUpdates';
 import { AppHeader } from '../../../src/design-system/components/AppHeader';
 import { AppText } from '../../../src/design-system/components/AppText';
 import { AppCard } from '../../../src/design-system/components/AppCard';
@@ -108,9 +109,7 @@ export default function InspectionDetailScreen() {
     onSuccess: () => {
       setShowRelease(false);
       setPhase('done');
-      queryClient.invalidateQueries({ queryKey: ['inspection-bundle', id] });
-      queryClient.invalidateQueries({ queryKey: ['inspection-quality-status', id] });
-      queryClient.invalidateQueries({ queryKey: ['quality-bundles'] });
+      invalidateOperationalFlow(queryClient);
     },
     onError: (err: Error) => {
       setShowRelease(false);
