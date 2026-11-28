@@ -1,4 +1,6 @@
 import { DashboardController, DashboardService } from './dashboard-reports';
+import { Phase10IntelligenceController, Phase10IntelligenceService } from './phase10-intelligence.service';
+import { Phase11OptimizationController, Phase11OptimizationService } from './phase11-optimization.service';
 import { PlanningIntelligenceController, PlanningIntelligenceService } from './intelligence';
 import { WorkflowQueuesController, WorkflowQueuesService } from './workflow-queues';
 import { BadRequestException, Body, Controller, Injectable, Module, NotFoundException, Post } from '@nestjs/common';
@@ -140,7 +142,7 @@ class CuttingScenarioController {
 }
 
 @Module({
-  controllers: [CuttingScenarioController, PlanningIntelligenceController, WorkflowQueuesController, DashboardController],
-  providers: [CuttingScenarioService, PlanningIntelligenceService, WorkflowQueuesService, DashboardService],
+  controllers: [CuttingScenarioController, PlanningIntelligenceController, WorkflowQueuesController, DashboardController, Phase10IntelligenceController, Phase11OptimizationController],
+  providers: [CuttingScenarioService, PlanningIntelligenceService, WorkflowQueuesService, DashboardService, Phase10IntelligenceService, Phase11OptimizationService],
 })
 export class CuttingScenarioModule {}

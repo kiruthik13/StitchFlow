@@ -12,6 +12,7 @@ import { AuthenticatedUser } from '../../common/types/auth-user.type';
 import { QualityDisposition, QualityReinspection, QuantityRequest, StageCompletion } from './workflow.dto';
 import { FactoryQuery } from '../jobs/jobs.dto';
 import { WorkflowService } from './workflow.service';
+import { WorkflowIntelligenceController, WorkflowIntelligenceService } from './workflow-intelligence.service';
 
 @ApiTags('Production workflow')
 @ApiBearerAuth()
@@ -104,5 +105,5 @@ class WorkflowController {
   }
 }
 
-@Module({ imports: [JobsModule], controllers: [InlineQcController, ProductionFloorController, ProductionReplayController, ShipmentsController, WorkflowController, RouteSetupController, QualityEvidenceController], providers: [InlineQcService, ProductionFloorService, ProductionReplayService, ShipmentsService, WorkflowService, RouteSetupService, QualityEvidenceService] })
+@Module({ imports: [JobsModule], controllers: [InlineQcController, ProductionFloorController, ProductionReplayController, ShipmentsController, WorkflowController, RouteSetupController, QualityEvidenceController, WorkflowIntelligenceController], providers: [InlineQcService, ProductionFloorService, ProductionReplayService, ShipmentsService, WorkflowService, RouteSetupService, QualityEvidenceService, WorkflowIntelligenceService] })
 export class WorkflowModule {}

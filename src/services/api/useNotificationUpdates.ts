@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store/authStore';
 import { useLanguageStore } from '../../store/languageStore';
 import { AppNotification, useNotificationStore } from '../../store/notificationStore';
 import { apiRequest, getStoredSession } from './apiClient';
+import { invalidateOperationalFlow } from './useFactoryUpdates';
 import {
   navigateFromNotification,
   registerDeviceForPushNotifications,
@@ -78,6 +79,7 @@ export function useNotificationUpdates() {
       receivedSub = Notifications.addNotificationReceivedListener((event) => {
         const data = (event.request.content.data ?? {}) as Record<string, unknown>;
         void queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+        invalidateOperationalFlow(queryClient);
         if (!isDemoMode) {
           void apiRequest<{ unreadCount: number; actionRequiredCount: number }>('/notifications/unread-count')
             .then((res) => useNotificationStore.getState().setCounts(res.unreadCount, res.actionRequiredCount))
@@ -185,7 +187,7 @@ export function useNotificationUpdates() {
           } else if (frame.event === 'broadcast' && frame.payload) {
             const p = frame.payload as unknown as AppNotification;
             void queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
-            void queryClient.invalidateQueries({ queryKey: ['live-dashboard-metrics'] });
+            invalidateOperationalFlow(queryClient);
             const st = useNotificationStore.getState();
             st.setCounts(st.unreadCount + 1, p.actionRequired ? st.actionRequiredCount + 1 : st.actionRequiredCount);
             if (!pathname.includes('/scan')) {
@@ -208,7 +210,10 @@ export function useNotificationUpdates() {
 
     const appSub = AppState.addEventListener('change', (state) => {
       close();
-      if (state === 'active') void connect();
+      if (state === 'active') {
+        invalidateOperationalFlow(queryClient);
+        void connect();
+      }
     });
 
     void connect();

@@ -19,6 +19,9 @@
 | **Phase 6** | Persisted SAM & Workforce planning, Rework-aware Bottleneck Detection, Calendar Delivery Prediction, What-If Simulation | **Locally Verified** | SQL migration `0022`; planning/MD screens wired; Jest tests pass |
 | **Phase 7** | Frontend `Api*Repository` classes, TanStack Query, AsyncStorage durable offline queue + `/sync/production` replay, Supabase Realtime | **Locally Verified** | All 5 `Api*Repository` classes + `OfflineSyncBanner`; `tsc --noEmit` 0 errors |
 | **Phase 8** | Full `AppModule` E2E OpenAPI smoke tests, migration runner (`migrate:up`), live E2E checker (`verify:e2e`), deployment guide | **Locally Verified (Code)** / **Pending (Live DB & Device)** | 17 Jest suites pass; live Supabase/Redis & physical Android/printer tests await environment credentials |
+| **Phase 9** | Digital Garment Passport, Smart Task Inbox, Production Exception Center, Smart WIP Aging, Shift Handover Intelligence | **Locally Verified** | `workflow-intelligence.service.ts`, 5 Expo Router screens, `phases-9-11-intelligence.spec.ts` |
+| **Phase 10** | Employee Skill Matrix, Intelligent Line Balancing, Rework Cost Intelligence, Defect Heatmap, Production Replay | **Locally Verified** | `phase10-intelligence.service.ts`, 5 Expo Router screens, `phases-9-11-intelligence.spec.ts` |
+| **Phase 11** | Smart Bundle Split & Merge, Machine Maintenance Intelligence, Fabric Lot Traceability, Smart Carton Optimization, Production Daily Digest | **Locally Verified** | `phase11-optimization.service.ts`, 5 Expo Router screens, `22 suites / 115 tests` pass |
 
 ## Current local rollout
 

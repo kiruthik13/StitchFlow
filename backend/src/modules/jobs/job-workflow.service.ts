@@ -136,9 +136,37 @@ export class JobWorkflowService {
     }
     const upperCandidates = candidates.map((c) => c.toUpperCase());
 
-    // 1. Registered production bundle
+    // 1. Registered production bundle (enriched with authorized master, route, and QC state)
     const { rows: bundleRows } = await this.db.query(
-      `${bundleProjection}
+      `SELECT b.id, b.barcode AS "bundleCode", b.job_id AS "jobId", j.job_code AS "jobCode",
+              j.factory_id AS "factoryId", j.line_id AS "lineId", b.size, b.color, b.quantity,
+              b.created_at AS "createdAt", gen_random_uuid() AS "requestId",
+              bu.name AS "buyerName", s.name AS "styleName", f.name AS "factoryName",
+              u.name AS "unitName", l.name AS "lineName",
+              (SELECT jrs.stage_code FROM public.job_route_steps jrs
+               JOIN public.bundle_route_progress brp ON brp.step_id = jrs.id AND brp.bundle_id = b.id
+               WHERE jrs.job_id = j.id AND brp.completed_at IS NOT NULL
+               ORDER BY jrs.ordinal DESC LIMIT 1) AS "currentStage",
+              (SELECT jrs.stage_code FROM public.job_route_steps jrs
+               JOIN public.bundle_route_progress brp ON brp.step_id = jrs.id AND brp.bundle_id = b.id
+               WHERE jrs.job_id = j.id AND brp.completed_at IS NULL AND brp.available > 0
+               ORDER BY jrs.ordinal ASC LIMIT 1) AS "nextEligibleStage",
+              CASE WHEN qb.bundle_id IS NOT NULL THEN jsonb_build_object(
+                'inspected', qb.inspected,
+                'passed', qb.passed,
+                'rework', qb.rework,
+                'rejected', qb.rejected,
+                'released', qb.released
+              ) ELSE NULL END AS "qcBalance"
+       FROM public.bundles b
+       JOIN public.jobs j ON j.id = b.job_id
+       JOIN public.factories f ON f.id = j.factory_id
+       LEFT JOIN public.buyers bu ON bu.id = j.buyer_id
+       LEFT JOIN public.garment_styles s ON s.id = j.style_id
+       LEFT JOIN public.production_lines l ON l.id = j.line_id
+       LEFT JOIN public.departments d ON d.id = l.department_id
+       LEFT JOIN public.units u ON u.id = d.unit_id
+       LEFT JOIN public.bundle_quality_balances qb ON qb.bundle_id = b.id
        WHERE ${jobReadScope} AND UPPER(b.barcode) = ANY($4::text[])
        LIMIT 1`,
       [...jobScopeParams(user), upperCandidates],

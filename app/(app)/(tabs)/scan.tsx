@@ -12,10 +12,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { BundleEvidencePanel } from '../../../src/features/operations/BundleEvidencePanel';
 import { BundleDutyPanel } from '../../../src/features/operations/BundleDutyPanel';
 import { ApiError, apiRequest } from '../../../src/services/api/apiClient';
+import { invalidateOperationalFlow } from '../../../src/services/api/useFactoryUpdates';
+import { enqueueProductionEvent } from '../../../src/services/offline/offlineQueueService';
 import { hidScannerAdapter, validateBarcodeFormat } from '../../../src/services/adapters/hidScannerAdapter';
 import {
   formatBarcodeShareReport,
@@ -63,6 +66,20 @@ interface LiveBundle {
   size: string;
   color: string;
   quantity: number;
+  buyerName?: string | null;
+  styleName?: string | null;
+  factoryName?: string | null;
+  unitName?: string | null;
+  lineName?: string | null;
+  currentStage?: string | null;
+  nextEligibleStage?: string | null;
+  qcBalance?: {
+    inspected: number;
+    passed: number;
+    rework: number;
+    rejected: number;
+    released: number;
+  } | null;
 }
 interface LiveStep {
   id: string;
@@ -84,6 +101,7 @@ export default function ScanTabScreen() {
   const { addScan, submitProductionQty, recentScans } = useDemoStore();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { t } = useTranslation(['common', 'production', 'quality', 'inventory', 'packing', 'errors']);
 
   const [manualCode, setManualCode] = useState('');
@@ -263,16 +281,39 @@ export default function ScanTabScreen() {
     if (!liveBundle || inFlight.current || !step.ready) return;
     inFlight.current = true;
     setBusy(true);
+    const occurredAt = new Date().toISOString();
     try {
       await apiRequest('/production/stages/complete', {
         method: 'POST',
-        body: JSON.stringify({ bundleId: liveBundle.id, stepId: step.id, requestId: step.requestId, quantity }),
+        body: JSON.stringify({
+          bundleId: liveBundle.id,
+          stepId: step.id,
+          requestId: step.requestId,
+          quantity,
+          clientOccurredAt: occurredAt,
+        }),
       });
       setSteps(current => current.map(item => item.id === step.id
         ? { ...item, ready: false, completed: item.completed + quantity } : item));
       setSteps(await apiRequest<LiveStep[]>(`/production/bundles/${liveBundle.id}/route`));
+      invalidateOperationalFlow(queryClient);
     } catch (error) {
-      Alert.alert(t(error instanceof ApiError && error.statusCode === 0 ? 'errors:networkError' : 'errors:scanFailed'));
+      if (error instanceof ApiError && error.statusCode === 0 && user?.id) {
+        await enqueueProductionEvent({
+          kind: 'stage',
+          requestId: step.requestId,
+          bundleId: liveBundle.id,
+          stepId: step.id,
+          quantity,
+          occurredAt,
+          actorId: user.id,
+        });
+        setSteps(current => current.map(item => item.id === step.id
+          ? { ...item, ready: false, completed: item.completed + quantity } : item));
+        Alert.alert(t('common:sync'), `${liveBundle.bundleCode} · ${step.stageCode} · ${quantity} (Pending Sync)`);
+      } else {
+        Alert.alert(t(error instanceof ApiError && error.statusCode === 0 ? 'errors:networkError' : 'errors:scanFailed'));
+      }
     } finally {
       inFlight.current = false;
       setBusy(false);
@@ -643,6 +684,20 @@ export default function ScanTabScreen() {
             <AppText variant="bodySmall" color="secondary">
               {liveBundle.jobCode} · {liveBundle.color} · {liveBundle.size} · {liveBundle.quantity}
             </AppText>
+            {(liveBundle.buyerName || liveBundle.styleName || liveBundle.lineName) && (
+              <AppText variant="caption" color="secondary" style={{ marginTop: 2 }}>
+                {[liveBundle.buyerName, liveBundle.styleName, liveBundle.factoryName, liveBundle.unitName, liveBundle.lineName]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </AppText>
+            )}
+            {(liveBundle.currentStage || liveBundle.nextEligibleStage) && (
+              <AppText variant="caption" style={{ color: tokens.brand, marginTop: 2 }}>
+                {liveBundle.currentStage ? `Current: ${liveBundle.currentStage}` : ''}
+                {liveBundle.currentStage && liveBundle.nextEligibleStage ? ' · ' : ''}
+                {liveBundle.nextEligibleStage ? `Next: ${liveBundle.nextEligibleStage}` : ''}
+              </AppText>
+            )}
             {steps.filter(step => step.ready).map(step => {
               const value = stageQuantities[step.id] ?? String(step.available);
               const amount = Number(value);
@@ -666,6 +721,13 @@ export default function ScanTabScreen() {
               );
             })}
             <BundleDutyPanel key={liveBundle.id} bundleId={liveBundle.id} />
+            <AppButton
+              title={t('production:digitalPassport', { defaultValue: 'Digital Garment Passport' })}
+              variant="outline"
+              size="sm"
+              style={{ marginTop: spacing[2] }}
+              onPress={() => router.push({ pathname: '/(app)/bundles/passport', params: { bundleId: liveBundle.id } } as never)}
+            />
             {(user?.role === 'qc-inspector' || user?.role === 'factory-manager') && (
               <BundleEvidencePanel key={liveBundle.id} bundleId={liveBundle.id} />
             )}
